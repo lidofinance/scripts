@@ -18,6 +18,8 @@ Launch of the NEST Automated Buybacks system in treasury-only mode (LIP-36).
 7. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE 0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd to Emergency Committee 0x73b047fe6337183A454c5217241D780a932777bD on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
 8. Grant Buybacks.MANAGER_ROLE 0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889
 9. Call activate() on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889
+10. Remove UpdateStakingModuleShareLimits EVM script factory 0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8
+11. Add replacement UpdateStakingModuleShareLimits EVM script factory 0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -32,6 +34,7 @@ from utils.mainnet_fork import pass_and_exec_dao_vote
 from utils.dual_governance import submit_proposals
 
 from utils.agent import agent_forward
+from utils.easy_track import add_evmscript_factory, create_permissions, remove_evmscript_factory
 
 
 # ============================== Addresses ===================================
@@ -42,6 +45,7 @@ ORACLE_ROUTER = "0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31"
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477ac14b2a80d5398e3c32ffe"
 STONKS_STETH_TOPUP_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 
 # NEST contracts
 NEW_TOKEN_RATE_NOTIFIER = "0xbe05d12Fd10919F1881125006523452F6aFF791b"
@@ -50,6 +54,10 @@ STAKING_REVENUE_SOURCE = "0x6220212a33a87Ed7Cc386B67eB2c393974F28C38"
 BUYBACK_EXECUTOR = "0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7"
 BUYBACK_STONKS_TREASURY = "0xb368586CB980895E51e1D82102E63b3F69d3F151"
 BUYBACK_ALLOCATOR = "0xAA568141c051f2D1132b110f8391F18D48E8D889"
+
+# Easy Track factories
+OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8"
+NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1"
 
 
 # ============================== Constants ===================================
@@ -76,6 +84,8 @@ Track registry. Item 1.
 Committee as the OracleRouter manager, configure the treasury-mode Stonks on the BuybackExecutor,
 grant the manager, allocator, and emergency roles on the BuybackExecutor and BuybackAllocator,
 and activate the BuybackAllocator. Items 2-9.
+3. **Replace the incorrectly configured UpdateStakingModuleShareLimits Easy Track factory** with
+the corrected deployment. Items 10-11.
 """
 
 
@@ -115,6 +125,10 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     oracle_router = interface.OracleRouter(ORACLE_ROUTER)
     buyback_executor = interface.BuybackExecutor(BUYBACK_EXECUTOR)
     buyback_allocator = interface.BuybackAllocator(BUYBACK_ALLOCATOR)
+    new_update_staking_module_share_limits_factory = interface.UpdateStakingModuleShareLimits(
+        NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY
+    )
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
 
     dg_items = get_dg_items()
     dg_call_script = submit_proposals([(dg_items, DG_PROPOSAL_METADATA)])
@@ -178,6 +192,18 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             (
                 buyback_allocator.address,
                 buyback_allocator.activate.encode_input(),
+            ),
+        ),
+        (
+            "10. Remove the UpdateStakingModuleShareLimits EVM script factory from Easy Track",
+            remove_evmscript_factory(OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY),
+        ),
+        (
+            "11. Add the replacement UpdateStakingModuleShareLimits EVM script factory to Easy Track",
+            add_evmscript_factory(
+                NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
+                create_permissions(new_update_staking_module_share_limits_factory, "validateParams")
+                + create_permissions(staking_router, "updateModuleShares")[2:],
             ),
         ),
     )

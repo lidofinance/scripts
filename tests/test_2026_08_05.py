@@ -19,6 +19,12 @@ from utils.test.event_validators.dual_governance import validate_dual_governance
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.test.event_validators.permission import validate_grant_role_event
 from utils.test.event_validators.allowed_recipients_registry import validate_recipient_added_event
+from utils.test.event_validators.easy_track import (
+    EVMScriptFactoryAdded,
+    validate_evmscript_factory_added_event,
+    validate_evmscript_factory_removed_event,
+)
+from utils.easy_track import create_permissions
 
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -46,6 +52,8 @@ EMERGENCY_COMMITTEE = "0x73b047fe6337183A454c5217241D780a932777bD"
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
 OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477ac14b2a80d5398e3c32ffe"
 STONKS_STETH_TOPUP_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
+EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 OLD_TOKEN_RATE_NOTIFIER = "0x25e35855783bec3E49355a29e110f02Ed8b05ba9"
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
@@ -61,6 +69,12 @@ STAKING_REVENUE_SOURCE = "0x6220212a33a87Ed7Cc386B67eB2c393974F28C38"
 BUYBACK_EXECUTOR = "0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7"
 BUYBACK_STONKS_TREASURY = "0xb368586CB980895E51e1D82102E63b3F69d3F151"
 BUYBACK_ALLOCATOR = "0xAA568141c051f2D1132b110f8391F18D48E8D889"
+
+# --- Easy Track factories ---
+OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8"
+NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1"
+CSM_TRUSTED_CALLER = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
+CSM_STAKING_MODULE_ID = 3
 
 # --- Roles ---
 MANAGER_ROLE = "0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e"  # keccak256("Buybacks.MANAGER_ROLE")
@@ -81,8 +95,8 @@ DIRECT_GRANT_ROLE_EVENTS_CHAIN = ["LogScriptCall", "RoleGranted"]
 # ============================= Test params ==================================
 # ============================================================================
 EXPECTED_VOTE_ID = 204
-EXPECTED_VOTE_ITEMS_COUNT = 9
-EXPECTED_VOTE_EVENTS_COUNT = 9
+EXPECTED_VOTE_ITEMS_COUNT = 11
+EXPECTED_VOTE_EVENTS_COUNT = 11
 EXPECTED_DG_PROPOSAL_ID = 13
 EXPECTED_DG_EVENTS_FROM_AGENT = 4
 EXPECTED_DG_EVENTS_COUNT = 1
@@ -192,6 +206,18 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     old_token_rate_notifier = interface.TokenRateNotifier(OLD_TOKEN_RATE_NOTIFIER)
     lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
     stonks_topup_registry = interface.AllowedRecipientRegistry(STONKS_STETH_TOPUP_REGISTRY)
+    easy_track = interface.EasyTrack(EASY_TRACK)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    old_update_staking_module_share_limits_factory = interface.UpdateStakingModuleShareLimits(
+        OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY
+    )
+    new_update_staking_module_share_limits_factory = interface.UpdateStakingModuleShareLimits(
+        NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY
+    )
+    new_factory_permissions = (
+        create_permissions(new_update_staking_module_share_limits_factory, "validateParams")
+        + create_permissions(staking_router, "updateModuleShares")[2:]
+    )
 
 
     # =========================================================================
@@ -235,6 +261,22 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert not buyback_allocator.hasRole(MANAGER_ROLE, TMC)
         # vote item 9
         assert buyback_allocator.activationTS() == 0, "BuybackAllocator already activated"
+        # vote items 10-11
+        initial_factories = easy_track.getEVMScriptFactories()
+        assert OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY in initial_factories
+        assert NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY not in initial_factories
+        assert old_update_staking_module_share_limits_factory.maxStakeShareLimitIncrease() == 500
+        assert old_update_staking_module_share_limits_factory.maxStakeShareLimitDecrease() == 500
+        assert old_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdIncrease() == 600
+        assert old_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdDecrease() == 600
+        assert new_update_staking_module_share_limits_factory.name() == "CSM"
+        assert new_update_staking_module_share_limits_factory.trustedCaller() == CSM_TRUSTED_CALLER
+        assert new_update_staking_module_share_limits_factory.stakingRouter() == STAKING_ROUTER
+        assert new_update_staking_module_share_limits_factory.stakingModuleId() == CSM_STAKING_MODULE_ID
+        assert new_update_staking_module_share_limits_factory.maxStakeShareLimitIncrease() == 50
+        assert new_update_staking_module_share_limits_factory.maxStakeShareLimitDecrease() == 50
+        assert new_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdIncrease() == 60
+        assert new_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdDecrease() == 60
 
         if IPFS_DESCRIPTION_HASH:
             assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -264,6 +306,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # vote item 9: activate() records activationTS as midnight UTC of the execution day
         assert buyback_allocator.activationTS() == vote_tx.timestamp - (vote_tx.timestamp % ONE_DAY), \
             "BuybackAllocator not activated at the vote-execution day's midnight UTC"
+        # vote items 10-11
+        updated_factories = easy_track.getEVMScriptFactories()
+        assert OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY not in updated_factories
+        assert bytes(easy_track.evmScriptFactoryPermissions(OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)) == b""
+        assert NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY in updated_factories
+        assert bytes(easy_track.evmScriptFactoryPermissions(NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)) == bytes.fromhex(
+            new_factory_permissions.removeprefix("0x")
+        )
 
         # vote items 4-8: a non-admin (stranger) cannot grant the buyback roles
         with reverts():
@@ -322,6 +372,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         )
         # vote item 9
         validate_activated_event(vote_events[8], emitted_by=BUYBACK_ALLOCATOR)
+        # vote item 10
+        validate_evmscript_factory_removed_event(
+            vote_events[9],
+            factory_addr=OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
+            emitted_by=easy_track,
+        )
+        # vote item 11
+        validate_evmscript_factory_added_event(
+            event=vote_events[10],
+            p=EVMScriptFactoryAdded(
+                factory_addr=NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
+                permissions=new_factory_permissions,
+            ),
+            emitted_by=easy_track,
+        )
 
 
     # =========================================================================
