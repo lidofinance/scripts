@@ -12,7 +12,7 @@ the deployed vote script against the expected mainnet configuration.
 
 Run:
     ETHERSCAN_TOKEN=<token> \
-    poetry run brownie test tests/test_upgrade_2026_07_15_srv3_cmv2.py --network=mfh-1 -v
+    poetry run brownie test archive/tests/test_upgrade_2026_07_15_srv3_cmv2.py --network=mfh-1 -v
 """
 
 from typing import NamedTuple, Optional
@@ -48,7 +48,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_07_15_srv3_cmv2 import (
+from archive.scripts.upgrade_2026_07_15_srv3_cmv2 import (
     IPFS_DESCRIPTION,
     start_vote,
     get_vote_items,
