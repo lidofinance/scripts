@@ -108,7 +108,7 @@ jobs:
         uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
         with:
           repository: lidofinance/staking-modules
-          ref: develop
+          ref: main
           path: staking-modules
           rpc_url: ${{ env.HARDHAT_NODE_URL }}
           vote_prev_block: ${{ steps.modules-regression-vote-block.outputs.vote_prev_block }}
