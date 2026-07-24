@@ -47,27 +47,8 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
-    """Slots intentionally modified by the SRV3/CMV2 upgrade."""
-    return [
-        (
-            # EasyTrack factories array: the vote removes two factories and adds nine.
-            contracts.easy_track.address,
-            0x05,
-        ),
-        (
-            # CSM v3 repurposes the old DepositQueueLib.Queue pointers as
-            # totalWithdrawnValidators; finalizeUpgradeV3 resets this value.
-            contracts.csm.address,
-            0x01,
-        ),
-        (
-            # CSM v3 repurposes this formerly unused mapping slot as
-            # upToDateOperatorDepositInfoCount and initializes it from
-            # nodeOperatorsCount during finalizeUpgradeV3.
-            contracts.csm.address,
-            0x02,
-        ),
-    ]
+    """Slots that are not checked for equality"""
+    return []
 
 
 @pytest.fixture(scope="module")
