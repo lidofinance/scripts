@@ -98,7 +98,7 @@ jobs:
         working-directory: scripts
 
       - name: Prepare test environment with Brownie
-        run: DG_PROPOSAL_IDS=12 PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
+        run: PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
         working-directory: scripts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,8 +106,6 @@ jobs:
 
       - name: Run staking modules regression tests
         uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
-        env:
-          DG_PROPOSAL_IDS: "12"
         with:
           repository: lidofinance/staking-modules
           ref: post-vote-test
