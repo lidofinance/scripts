@@ -349,9 +349,7 @@ def do_snapshot(
             # Lido.sol
             "lido.Lido.beaconBalance",
             "lido.Lido.beaconValidators",
-            "lido.Lido.clBalanceAndClValidators",
             "lido.Lido.bufferedEther",
-            "lido.Lido.bufferedEtherAndDepositedValidators",
             "lido.Lido.depositContract",
             "lido.Lido.lidoLocator",
             "lido.Lido.depositedValidators",
@@ -369,6 +367,16 @@ def do_snapshot(
             "lido.Lido.treasuryFee",
             "lido.Lido.withdrawalCredentials",
             "lido.Lido.lidoLocatorAndMaxExternalRatio",
+            # Lido.sol v4: finalizeUpgrade_v4 -> _migrateStorage_v3_to_v4 wipes the v3
+            # packed slots clBalanceAndClValidators / bufferedEtherAndDepositedValidators
+            # (now always 0) and moves the data into these live slots.
+            "lido.Lido.clValidatorsBalanceAndClPendingBalance",
+            "lido.Lido.bufferedEtherAndDepositedPostReport",
+            "lido.Lido.depositedNextReportAndLastDepositNonce",
+            "lido.Lido.seedDepositsCount",
+            # New v4 slots introduced by finalizeUpgrade_v4.
+            "lido.Lido.depositsReserve",
+            "lido.Lido.depositsReserveTarget",
             # StETH.sol
             "lido.StETH.totalShares",
             "lido.StETH.totalAndExternalShares",
