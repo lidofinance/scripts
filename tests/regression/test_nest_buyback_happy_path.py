@@ -5,16 +5,14 @@ from utils.test.helpers import ETH
 from utils.test.deposits_helpers import WEI_TOLERANCE
 from utils.test.oracle_report_helpers import oracle_report
 
-from scripts.upgrade_2026_08_05 import (
-    TMC,
-    ORACLE_ROUTER,
-    LIDO_LOCATOR,
-    NEW_TOKEN_RATE_NOTIFIER,
-    STAKING_REVENUE_SOURCE,
-    BUYBACK_EXECUTOR,
-    BUYBACK_STONKS_TREASURY,
-    BUYBACK_ALLOCATOR,
-)
+TMC = "0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647"  # Treasury Management Committee (OracleRouter manager)
+ORACLE_ROUTER = "0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31"
+LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
+NEW_TOKEN_RATE_NOTIFIER = "0xbe05d12Fd10919F1881125006523452F6aFF791b"
+STAKING_REVENUE_SOURCE = "0x6220212a33a87Ed7Cc386B67eB2c393974F28C38"
+BUYBACK_EXECUTOR = "0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7"
+BUYBACK_STONKS_TREASURY = "0xb368586CB980895E51e1D82102E63b3F69d3F151"
+BUYBACK_ALLOCATOR = "0xAA568141c051f2D1132b110f8391F18D48E8D889"
 
 QUOTE_DENOMINATION_ETH = 1
 ONE_DAY = 86400
@@ -70,6 +68,8 @@ def test_nest_buyback_happy_path(accounts, stranger):
     buyback_executor = interface.BuybackExecutor(BUYBACK_EXECUTOR)
     buyback_allocator = interface.BuybackAllocator(BUYBACK_ALLOCATOR)
     staking_revenue_source = interface.StakingRevenueSource(STAKING_REVENUE_SOURCE)
+    notifier = interface.TokenRateNotifierV2(NEW_TOKEN_RATE_NOTIFIER)
+    observer_addresses = [notifier.observers(index)["observer"] for index in range(notifier.observersLength())]
 
     # Preconditions: the launch is in place
     assert interface.LidoLocator(LIDO_LOCATOR).postTokenRebaseReceiver() == NEW_TOKEN_RATE_NOTIFIER
@@ -77,10 +77,13 @@ def test_nest_buyback_happy_path(accounts, stranger):
     assert buyback_executor.stonks() == BUYBACK_STONKS_TREASURY, "BuybackExecutor stonks not set"
     assert buyback_allocator.STETH() == steth.address, "Allocator stETH handle mismatch"
 
+    # Wiring the launch established: revenue source registered on the notifier and the allocator granted its role
+    assert STAKING_REVENUE_SOURCE in observer_addresses, "StakingRevenueSource not registered as a TokenRateNotifier observer"
+    assert STAKING_REVENUE_SOURCE in buyback_allocator.revenueSources(), "StakingRevenueSource not a revenue source on the allocator"
+    assert buyback_executor.hasRole(buyback_executor.ALLOCATOR_ROLE(), BUYBACK_ALLOCATOR), "allocator lacks ALLOCATOR_ROLE on the executor"
+
     _configure_oracle_router_feeds(oracle_router, tmc)
     assert oracle_router.tokenConfig(steth.address)["isActive"], "stETH feed not configured on OracleRouter"
-
-    min_order_steth = buyback_executor.minAllowedOrderAmount()
 
     # Rebase -> revenue accrues in the StakingRevenueSource, then convert it to USD
     cumulative_revenue_before = staking_revenue_source.getCumulativeRevenueUSD()
@@ -93,12 +96,13 @@ def test_nest_buyback_happy_path(accounts, stranger):
 
     # Fund the allocator with fresh stETH
     steth_to_fund = ETH(1000)
-    steth.submit(ZERO_ADDRESS, {"from": stranger, "value": steth_to_fund})
+    # submit rounds minted shares down; mint a few extra wei so the exact transfer below can't revert
+    steth.submit(ZERO_ADDRESS, {"from": stranger, "value": steth_to_fund + WEI_TOLERANCE})
     steth.transfer(BUYBACK_ALLOCATOR, steth_to_fund, {"from": stranger})
     assert steth.balanceOf(BUYBACK_ALLOCATOR) >= steth_to_fund - WEI_TOLERANCE, "allocator not funded with stETH"
 
-    spendable_steth = buyback_allocator.spendable()["spendableStEth"]
-    assert spendable_steth > 0, "allocator reports nothing spendable"
+    spendable_status, _spendable_usd, spendable_steth = buyback_allocator.spendable()
+    assert spendable_steth > 0, f"allocator reports nothing spendable (status={spendable_status})"
 
     # allocate() spends and forwards stETH to Stonks
     stonks_steth_before = steth.balanceOf(BUYBACK_STONKS_TREASURY)
@@ -113,6 +117,7 @@ def test_nest_buyback_happy_path(accounts, stranger):
     assert steth.balanceOf(BUYBACK_STONKS_TREASURY) > stonks_steth_before, "Stonks stETH balance did not grow"
 
     # placeOrder() creates the Stonks/CoW order (stop before off-chain settlement)
+    min_order_steth = buyback_executor.minAllowedOrderAmount()
     placement = buyback_executor.getPlacementStatus()
     assert placement["canPlace"], "executor cannot place an order"
     assert not placement["isStonksCreationPaused"] and not placement["isStonksKilled"], "Stonks creation blocked"
@@ -126,4 +131,6 @@ def test_nest_buyback_happy_path(accounts, stranger):
     assert convert.to_address(order_placed["order"]) == convert.to_address(order), "OrderPlaced order mismatch"
     assert order_placed["sellAmount"] > 0 and order_placed["minBuyAmount"] > 0, "order has zero sell/buy amount"
     assert buyback_executor.lastOrderAddress() == order, "lastOrderAddress not updated"
-    assert buyback_executor.lastOrderValidTo() > 0, "lastOrderValidTo not set"
+    expected_valid_to = place_order_tx.timestamp + buyback_executor.stonksOrderDurationSeconds()
+    assert buyback_executor.lastOrderValidTo() == expected_valid_to, "lastOrderValidTo not placement time + order duration"
+    assert steth.balanceOf(order) >= order_placed["sellAmount"] - WEI_TOLERANCE, "order does not hold the sold stETH"
