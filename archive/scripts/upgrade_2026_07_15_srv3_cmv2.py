@@ -95,7 +95,7 @@ VI. EasyTrack
 11. Add EVM script factory SettleGeneralDelayedPenalty `0xfffEFC16231eDC6Dc9C93e364ff4D4E3f787f416` with permissions `0xda5f930ce326eb5205085d66c72a4e79d60cb8c1187d9f92` on EasyTrack `0xf0211b7660680b49de1a7e9f25c65660f0a13fea`
 12. Add EVM script factory CreateOrUpdateOperatorGroup `0x2fC78638b77381e9D040163Bd6EB1cac967bDBdF` with permissions `0x2fc78638b77381e9d040163bd6eb1cac967bdbdfc4e88725a64b339eebd3dc3de848298b6a140955932901d852d13274` on EasyTrack `0xf0211b7660680b49de1a7e9f25c65660f0a13fea`
 
-Vote passed & executed on [TBA] +UTC, block [TBA]
+Vote passed & executed on Jul-24-2026 02:47:59 PM +UTC, block 25603297.
 
 """
 

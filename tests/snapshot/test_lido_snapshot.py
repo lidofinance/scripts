@@ -38,10 +38,6 @@ ZERO_BYTES32 = b'\x00' * 32
 
 
 EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
-    # Lido v4 migrates these v3 packed slots to new storage locations and clears
-    # the legacy slots. They must stay cleared after every scenario action.
-    "lido.Lido.clBalanceAndClValidators": ZERO_BYTES32,
-    "lido.Lido.bufferedEtherAndDepositedValidators": ZERO_BYTES32,
 }
 
 
@@ -53,22 +49,6 @@ SNAPSHOT_ABS_TOLERANCES: dict[str, int] = {
 
 
 IGNORED_SNAPSHOT_KEYS: set[str] = {
-    # The upgrade requires an AccountingOracle report before Lido v4 migration.
-    # That report rebases stETH; v4 also changes the representation returned by
-    # getBeaconStat. Their absolute values are therefore not comparable across
-    # the pre-upgrade and post-upgrade frames.
-    "totalSupply",
-    "balanceOf(eth_whale)",
-    "balanceOf(steth_whale)",
-    "sharesOf(eth_whale)",
-    "getBeaconStat",
-    "getBufferedEther",
-    "getTotalPooledEther",
-    "getTotalELRewardsCollected",
-    "getTotalShares",
-    "getSharesByPooledEth(1 ETH)",
-    "lido.Lido.totalELRewardsCollected",
-    "lido.StETH.totalAndExternalShares",
     "getFeeDistribution",
 }
 
@@ -369,9 +349,7 @@ def do_snapshot(
             # Lido.sol
             "lido.Lido.beaconBalance",
             "lido.Lido.beaconValidators",
-            "lido.Lido.clBalanceAndClValidators",
             "lido.Lido.bufferedEther",
-            "lido.Lido.bufferedEtherAndDepositedValidators",
             "lido.Lido.depositContract",
             "lido.Lido.lidoLocator",
             "lido.Lido.depositedValidators",
@@ -389,6 +367,16 @@ def do_snapshot(
             "lido.Lido.treasuryFee",
             "lido.Lido.withdrawalCredentials",
             "lido.Lido.lidoLocatorAndMaxExternalRatio",
+            # Lido.sol v4: finalizeUpgrade_v4 -> _migrateStorage_v3_to_v4 wipes the v3
+            # packed slots clBalanceAndClValidators / bufferedEtherAndDepositedValidators
+            # (now always 0) and moves the data into these live slots.
+            "lido.Lido.clValidatorsBalanceAndClPendingBalance",
+            "lido.Lido.bufferedEtherAndDepositedPostReport",
+            "lido.Lido.depositedNextReportAndLastDepositNonce",
+            "lido.Lido.seedDepositsCount",
+            # New v4 slots introduced by finalizeUpgrade_v4.
+            "lido.Lido.depositsReserve",
+            "lido.Lido.depositsReserveTarget",
             # StETH.sol
             "lido.StETH.totalShares",
             "lido.StETH.totalAndExternalShares",
