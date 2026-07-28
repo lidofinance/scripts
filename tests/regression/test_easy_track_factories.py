@@ -11,7 +11,11 @@ from eth_abi.abi import encode
 from configs.config_mainnet import *
 from utils.balance import set_balance
 from utils.config import contracts, EASYTRACK_SIMPLE_DVT_TRUSTED_CALLER
-from utils.test.easy_track_helpers import _encode_calldata, create_and_enact_motion
+from utils.test.easy_track_helpers import (
+    _encode_calldata,
+    assert_create_evm_script_reverts,
+    create_and_enact_motion,
+)
 from utils.test.csm_helpers import csm_add_ics_node_operator, csm_add_node_operator
 from utils.test.helpers import ETH
 from utils.test.keys_helpers import random_pubkeys_batch, random_signatures_batch
@@ -1232,15 +1236,6 @@ def _link_consolidation_pair(stranger, targets_count=1):
     return source_id, reward_address, sorted(target_ids)
 
 
-def _assert_create_evm_script_reverts(factory, creator, calldata, reason):
-    try:
-        factory.createEVMScript(creator, calldata)
-    except VirtualMachineError as error:
-        assert reason in error.message, f"expected {reason}, got: {error.message}"
-        return
-    raise AssertionError(f"Expected {reason} revert")
-
-
 def test_allow_consolidation_pair_factory():
     factory = interface.AllowConsolidationPair(EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY)
     migrator = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
@@ -1268,7 +1263,7 @@ def test_allow_consolidation_pair_factory_input_validation(stranger):
     source_count = nor.getNodeOperatorsCount()
 
     # submitter must be non-zero
-    _assert_create_evm_script_reverts(
+    assert_create_evm_script_reverts(
         factory,
         reward_address,
         _encode_calldata(["address", "uint256", "uint256[]"], [ZERO_ADDRESS, source_id, [0]]),
@@ -1276,7 +1271,7 @@ def test_allow_consolidation_pair_factory_input_validation(stranger):
     )
 
     # source operator must exist in the curated module
-    _assert_create_evm_script_reverts(
+    assert_create_evm_script_reverts(
         factory,
         reward_address,
         _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_count + 1000, [0]]),
@@ -1284,7 +1279,7 @@ def test_allow_consolidation_pair_factory_input_validation(stranger):
     )
 
     # creator must be the source operator reward address (or its manager)
-    _assert_create_evm_script_reverts(
+    assert_create_evm_script_reverts(
         factory,
         stranger,
         _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_id, [0]]),
@@ -1292,7 +1287,7 @@ def test_allow_consolidation_pair_factory_input_validation(stranger):
     )
 
     # source operator is not linked to any target group in the MetaRegistry
-    _assert_create_evm_script_reverts(
+    assert_create_evm_script_reverts(
         factory,
         reward_address,
         _encode_calldata(["address", "uint256", "uint256[]"], [stranger.address, source_id, [0]]),

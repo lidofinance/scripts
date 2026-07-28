@@ -24,6 +24,7 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     validate_evmscript_factory_removed_event,
 )
+from utils.allowed_recipients_registry import create_top_up_allowed_recipient_permission
 from utils.easy_track import create_permissions
 
 from utils.voting import find_metadata_by_vote_id
@@ -60,6 +61,9 @@ AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
+ALLOWED_TOKENS_REGISTRY = "0x4AC40c34f8992bb1e5E856A448792158022551ca"
 
 # --- NEST contracts ---
 ORACLE_ROUTER = "0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31"
@@ -76,10 +80,32 @@ NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0xde3e46E3129fA4e4e3f66c9024B0
 CSM_TRUSTED_CALLER = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
 CSM_STAKING_MODULE_ID = 3
 
+# --- LOL (Liquidity Observation Lab) stablecoins Easy Track setup ---
+LOL_STABLES_REGISTRY = "0x8d8b35cA51e7808098afF4918C21Ce428c943F89"
+LOL_STABLES_TOP_UP_FACTORY = "0xc72d4C3e86b681D7c9EE306D41193C64D709C303"
+LOL_STABLES_ADD_RECIPIENT_FACTORY = "0xe24230619e9218C1eed3de3489a22f6BC3ce18FF"
+LOL_STABLES_REMOVE_RECIPIENT_FACTORY = "0xF4d5D97C85eD18f77F99B57f55E9E11d52992632"
+LOL_STABLES_FACTORIES = [
+    LOL_STABLES_TOP_UP_FACTORY,
+    LOL_STABLES_ADD_RECIPIENT_FACTORY,
+    LOL_STABLES_REMOVE_RECIPIENT_FACTORY,
+]
+LOL_TRUSTED_CALLER = "0x87D93d9B2C672bf9c9642d853a8682546a5012B5"  # LOL multisig, also the only allowed recipient
+LOL_STABLES_LIMIT = 8_000_000 * 10**18
+LOL_STABLES_PERIOD_DURATION_MONTHS = 6
+LOL_STABLES_PERIOD_START = 1782864000  # 2026-07-01 00:00:00 UTC
+LOL_STABLES_PERIOD_END = 1798761600  # 2027-01-01 00:00:00 UTC
+
 # --- Roles ---
 MANAGER_ROLE = "0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e"  # keccak256("Buybacks.MANAGER_ROLE")
 ALLOCATOR_ROLE = "0x87905334ad07701d0cd9b21ea0599de1a0cab067e0ab49596d423d87159ac7f2"  # keccak256("Buybacks.BuybackExecutor.ALLOCATOR_ROLE")
 EMERGENCY_ROLE = "0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd"  # keccak256("Buybacks.BuybackExecutor.EMERGENCY_ROLE")
+# AllowedRecipientsRegistry roles — each hash is keccak256 of the constant's own name
+ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE = "0xec20c52871c824e5437859e75ac830e83aaaaeb7b0ffd850de830ddd3e385276"
+REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE = "0x491d7752c25cfca0f73715cde1130022a9b815373f91a996bbb1ba8943efc99b"
+UPDATE_SPENT_AMOUNT_ROLE = "0xc5260260446719a726d11a6faece21d19daa48b4cbcca118345832d4cb71df99"
+SET_PARAMETERS_ROLE = "0x260b83d52a26066d8e9db550fa70395df5f3f064b50ff9d8a94267d9f1fe1967"
+DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 # TokenRateNotifier.ObserverKind
 OBSERVER_KIND_NO_ARGS = 0
@@ -91,14 +117,18 @@ ONE_DAY = 86400
 # not forwarded through the Agent, so each grant emits a single LogScriptCall followed by RoleGranted.
 DIRECT_GRANT_ROLE_EVENTS_CHAIN = ["LogScriptCall", "RoleGranted"]
 
+# The LOL registry role grants (DG items 1.5-1.6) run inside the Agent-forwarded call script, and
+# _group_agent_dg_events_from_receipt splits it per Agent LogScriptCall — one per group, like ObserverAdded.
+AGENT_FORWARDED_GRANT_ROLE_EVENTS_CHAIN = ["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
 EXPECTED_VOTE_ID = 204
-EXPECTED_VOTE_ITEMS_COUNT = 11
-EXPECTED_VOTE_EVENTS_COUNT = 11
+EXPECTED_VOTE_ITEMS_COUNT = 14
+EXPECTED_VOTE_EVENTS_COUNT = 14
 EXPECTED_DG_PROPOSAL_ID = 13
-EXPECTED_DG_EVENTS_FROM_AGENT = 4
+EXPECTED_DG_EVENTS_FROM_AGENT = 6
 EXPECTED_DG_EVENTS_COUNT = 1
 
 # TODO set once the IPFS description is uploaded.
@@ -219,6 +249,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         + create_permissions(staking_router, "updateModuleShares")[2:]
     )
 
+    lol_stables_registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    lol_stables_top_up_factory = interface.TopUpAllowedRecipients(LOL_STABLES_TOP_UP_FACTORY)
+    lol_stables_add_recipient_factory = interface.AddAllowedRecipient(LOL_STABLES_ADD_RECIPIENT_FACTORY)
+    lol_stables_remove_recipient_factory = interface.RemoveAllowedRecipient(LOL_STABLES_REMOVE_RECIPIENT_FACTORY)
+    lol_stables_top_up_permissions = create_top_up_allowed_recipient_permission(registry_address=LOL_STABLES_REGISTRY)
+    lol_stables_add_recipient_permissions = create_permissions(lol_stables_registry, "addRecipient")
+    lol_stables_remove_recipient_permissions = create_permissions(lol_stables_registry, "removeRecipient")
+
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -277,6 +315,34 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert new_update_staking_module_share_limits_factory.maxStakeShareLimitDecrease() == 50
         assert new_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdIncrease() == 60
         assert new_update_staking_module_share_limits_factory.maxPriorityExitShareThresholdDecrease() == 60
+        # vote items 12-14: none of the LOL stablecoins factories is registered yet
+        for factory_address in LOL_STABLES_FACTORIES:
+            assert factory_address not in initial_factories, f"{factory_address} already registered in Easy Track"
+        # vote items 12-14: the pre-configured registry state the factories will operate on
+        assert lol_stables_registry.getLimitParameters() == (LOL_STABLES_LIMIT, LOL_STABLES_PERIOD_DURATION_MONTHS)
+        assert lol_stables_registry.getPeriodState() == (
+            0,
+            LOL_STABLES_LIMIT,
+            LOL_STABLES_PERIOD_START,
+            LOL_STABLES_PERIOD_END,
+        )
+        assert lol_stables_registry.getAllowedRecipients() == [LOL_TRUSTED_CALLER]
+        # vote item 12: the top up factory is wired to the LOL registry and the canonical Lido contracts
+        assert lol_stables_top_up_factory.trustedCaller() == LOL_TRUSTED_CALLER
+        assert lol_stables_top_up_factory.allowedRecipientsRegistry() == LOL_STABLES_REGISTRY
+        assert lol_stables_top_up_factory.allowedTokensRegistry() == ALLOWED_TOKENS_REGISTRY
+        assert lol_stables_top_up_factory.finance() == FINANCE
+        assert lol_stables_top_up_factory.easyTrack() == EASY_TRACK
+        # vote item 13
+        assert lol_stables_add_recipient_factory.trustedCaller() == LOL_TRUSTED_CALLER
+        assert lol_stables_add_recipient_factory.allowedRecipientsRegistry() == LOL_STABLES_REGISTRY
+        # vote item 14
+        assert lol_stables_remove_recipient_factory.trustedCaller() == LOL_TRUSTED_CALLER
+        assert lol_stables_remove_recipient_factory.allowedRecipientsRegistry() == LOL_STABLES_REGISTRY
+        # DG items 1.5-1.6: the EVMScriptExecutor can already update the spent amount, but not the recipients list
+        assert lol_stables_registry.hasRole(UPDATE_SPENT_AMOUNT_ROLE, EVM_SCRIPT_EXECUTOR)
+        assert not lol_stables_registry.hasRole(ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR)
+        assert not lol_stables_registry.hasRole(REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR)
 
         if IPFS_DESCRIPTION_HASH:
             assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
@@ -313,6 +379,21 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY in updated_factories
         assert bytes(easy_track.evmScriptFactoryPermissions(NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)) == bytes.fromhex(
             new_factory_permissions.removeprefix("0x")
+        )
+        # vote item 12
+        assert LOL_STABLES_TOP_UP_FACTORY in updated_factories
+        assert bytes(easy_track.evmScriptFactoryPermissions(LOL_STABLES_TOP_UP_FACTORY)) == bytes.fromhex(
+            lol_stables_top_up_permissions.removeprefix("0x")
+        )
+        # vote item 13
+        assert LOL_STABLES_ADD_RECIPIENT_FACTORY in updated_factories
+        assert bytes(easy_track.evmScriptFactoryPermissions(LOL_STABLES_ADD_RECIPIENT_FACTORY)) == bytes.fromhex(
+            lol_stables_add_recipient_permissions.removeprefix("0x")
+        )
+        # vote item 14
+        assert LOL_STABLES_REMOVE_RECIPIENT_FACTORY in updated_factories
+        assert bytes(easy_track.evmScriptFactoryPermissions(LOL_STABLES_REMOVE_RECIPIENT_FACTORY)) == bytes.fromhex(
+            lol_stables_remove_recipient_permissions.removeprefix("0x")
         )
 
         # vote items 4-8: a non-admin (stranger) cannot grant the buyback roles
@@ -387,6 +468,33 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             ),
             emitted_by=easy_track,
         )
+        # vote item 12
+        validate_evmscript_factory_added_event(
+            event=vote_events[11],
+            p=EVMScriptFactoryAdded(
+                factory_addr=LOL_STABLES_TOP_UP_FACTORY,
+                permissions=lol_stables_top_up_permissions,
+            ),
+            emitted_by=easy_track,
+        )
+        # vote item 13
+        validate_evmscript_factory_added_event(
+            event=vote_events[12],
+            p=EVMScriptFactoryAdded(
+                factory_addr=LOL_STABLES_ADD_RECIPIENT_FACTORY,
+                permissions=lol_stables_add_recipient_permissions,
+            ),
+            emitted_by=easy_track,
+        )
+        # vote item 14
+        validate_evmscript_factory_added_event(
+            event=vote_events[13],
+            p=EVMScriptFactoryAdded(
+                factory_addr=LOL_STABLES_REMOVE_RECIPIENT_FACTORY,
+                permissions=lol_stables_remove_recipient_permissions,
+            ),
+            emitted_by=easy_track,
+        )
 
 
     # =========================================================================
@@ -413,6 +521,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # DG item 1.4
             assert not stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator already an allowed recipient"
+
+            # DG items 1.5-1.6
+            assert not lol_stables_registry.hasRole(
+                ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR
+            ), "Add recipient role already granted"
+            assert not lol_stables_registry.hasRole(
+                REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR
+            ), "Remove recipient role already granted"
 
 
             if details["status"] == PROPOSAL_STATUS["submitted"]:
@@ -454,6 +570,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                     title="Buyback Allocator",
                     emitted_by=STONKS_STETH_TOPUP_REGISTRY,
                 )
+                # DG item 1.5: ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE granted to the EVMScriptExecutor
+                validate_grant_role_event(
+                    agent_dg_events[4],
+                    role=ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE,
+                    grant_to=EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=LOL_STABLES_REGISTRY,
+                    event_chain=AGENT_FORWARDED_GRANT_ROLE_EVENTS_CHAIN,
+                )
+                # DG item 1.6: REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE granted to the EVMScriptExecutor
+                validate_grant_role_event(
+                    agent_dg_events[5],
+                    role=REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE,
+                    grant_to=EVM_SCRIPT_EXECUTOR,
+                    sender=AGENT,
+                    emitted_by=LOL_STABLES_REGISTRY,
+                    event_chain=AGENT_FORWARDED_GRANT_ROLE_EVENTS_CHAIN,
+                )
 
 
         # =========================================================================
@@ -492,3 +626,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         # DG item 1.4
         assert stonks_topup_registry.isRecipientAllowed(BUYBACK_ALLOCATOR), "Allocator not an allowed recipient"
+
+        # DG items 1.5-1.6: without these roles the Add/Remove factories would revert on enactment
+        assert lol_stables_registry.hasRole(
+            ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR
+        ), "Add recipient role not granted to the EVMScriptExecutor"
+        assert lol_stables_registry.hasRole(
+            REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR
+        ), "Remove recipient role not granted to the EVMScriptExecutor"
+        # the grants must not widen anything else on the registry
+        assert not lol_stables_registry.hasRole(SET_PARAMETERS_ROLE, EVM_SCRIPT_EXECUTOR)
+        assert not lol_stables_registry.hasRole(DEFAULT_ADMIN_ROLE, EVM_SCRIPT_EXECUTOR)

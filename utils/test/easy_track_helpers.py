@@ -1,4 +1,5 @@
 from brownie import chain, accounts, interface
+from brownie.exceptions import VirtualMachineError
 from eth_abi.abi import encode
 from utils.config import contracts
 from utils.agent import agent_forward
@@ -14,6 +15,15 @@ TEST_RELAY = ("https://0xaaccee.example.com", "Lorem Ipsum Operator", True, "Des
 
 def _encode_calldata(signature, values):
     return "0x" + encode(signature, values).hex()
+
+
+def assert_create_evm_script_reverts(factory, creator, calldata, reason):
+    try:
+        factory.createEVMScript(creator, calldata)
+    except VirtualMachineError as error:
+        assert reason in error.message, f"expected {reason}, got: {error.message}"
+        return
+    raise AssertionError(f"Expected {reason} revert")
 
 
 def create_and_enact_motion(easy_track, trusted_caller, factory, calldata, stranger):
@@ -81,7 +91,7 @@ def create_and_enact_payment_motion(
     for i in range(len(recievers)):
         reciever_address = recievers[i].address
         recievers_total_amounts[reciever_address] = recievers_total_amounts.get(reciever_address, 0) + transfer_amounts[i]
-    
+
     for i in range(len(recievers)):
         reciever_address = recievers[i].address
         assert almostEqWithDiff(
@@ -303,7 +313,7 @@ def create_and_enact_remove_mev_boost_relay_motion(
     # If relay is not in the list, add it first, or else the motion will fail
     if relay_uri not in [x[0] for x in mev_boost_allowed_list.get_relays()]:
         check_and_add_mev_boost_relay_with_voting(mev_boost_allowed_list, TEST_RELAY, helpers, ldo_holder, dao_voting)
-    
+
     # get the list of relays before the motion
     relays_before = mev_boost_allowed_list.get_relays()
     calldata = "0x" + encode(["string[]"], [[relay_uri]]).hex()
@@ -348,7 +358,7 @@ def create_and_enact_edit_mev_boost_relay_motion(
     assert len(relays_after) == len(relays_before)
     assert relay in relays_after
 
-    # Last sanity check that relay is updated 
+    # Last sanity check that relay is updated
     relay_from_list = mev_boost_allowed_list.get_relay_by_uri(relay[0])
     assert relay_from_list[0] == relay[0]
     assert relay_from_list[1] == new_operator
