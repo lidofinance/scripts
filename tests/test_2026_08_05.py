@@ -27,6 +27,19 @@ from utils.test.event_validators.easy_track import (
 from utils.allowed_recipients_registry import create_top_up_allowed_recipient_permission
 from utils.easy_track import create_permissions
 
+from utils.config import contracts, DAI_TOKEN
+from utils.test.helpers import ETH
+from utils.test.deposits_helpers import WEI_TOLERANCE
+from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.test.oracle_report_helpers import oracle_report
+from utils.test.easy_track_helpers import (
+    _encode_calldata,
+    assert_create_evm_script_reverts,
+    create_and_enact_payment_motion,
+    create_and_enact_add_recipient_motion,
+    create_and_enact_remove_recipient_motion,
+)
+
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 
@@ -112,6 +125,24 @@ OBSERVER_KIND_NO_ARGS = 0
 OBSERVER_KIND_WITH_ARGS = 1
 
 ONE_DAY = 86400
+
+# --- NEST buyback scenario params ---
+QUOTE_DENOMINATION_ETH = 1
+TOTAL_BASIS_POINTS = 10_000
+SECONDS_PER_YEAR = 365 * ONE_DAY
+NORMAL_CL_APR_BP = 300  # 3%, well under the oracle's ~10% annual CL-increase sanity limit
+
+# Launch staleness (finance) is 1h ETH/USD bridge, 24h token feeds. Not usable on the fork: fast-forwarded
+# DG timelock delays plus the oracle_report frame push the clock past the Chainlink feeds' frozen updatedAt,
+# so 1h/24h trip OracleStale. We widen the bound to cover that gap for the fork run — quote (ETH), active
+# flag and underlying feeds are identical to launch.
+FORK_FEED_STALENESS_SECONDS = 30 * ONE_DAY
+
+# --- LOL stablecoins scenario params ---
+DAI_WARD = "0x9759A6Ac90977b93B58547b4A71c78317f391A28"  # authorized DAI minter, funds the Agent on a fork
+# ACL cap on a single newImmediatePayment by the EVMScriptExecutor
+FINANCE_DAI_MAX_PER_CALL = 2_000_000 * 10**18
+PAYMENT_CALLDATA_SIGNATURE = ["address", "address[]", "uint256[]"]
 
 # The Buybacks role grants (vote items 4-8) are executed directly by Aragon Voting,
 # not forwarded through the Agent, so each grant emits a single LogScriptCall followed by RoleGranted.
@@ -217,6 +248,16 @@ def dual_governance_proposal_calls():
         })
 
     return proposal_calls
+
+
+@pytest.fixture(scope="module")
+def vote_applied(module_isolation, helpers, vote_ids_from_env, dg_proposal_ids_from_env):
+    """Post-launch state for the scenario tests below: the omnibus and its DG proposal are applied.
+
+    `test_vote` applies them itself, but function-level isolation rolls that back, so the scenarios
+    take a module-scoped snapshot of their own.
+    """
+    execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
 
 
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
@@ -637,3 +678,359 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # the grants must not widen anything else on the registry
         assert not lol_stables_registry.hasRole(SET_PARAMETERS_ROLE, EVM_SCRIPT_EXECUTOR)
         assert not lol_stables_registry.hasRole(DEFAULT_ADMIN_ROLE, EVM_SCRIPT_EXECUTOR)
+
+
+# ============================================================================
+# ======================= NEST buyback happy path ============================
+# ============================================================================
+def _configure_oracle_router_feeds(oracle_router, tmc):
+    """Set the OracleRouter feeds as TMC — the operational step the vote leaves to TMC post-launch."""
+    steth = contracts.lido.address
+    ldo = contracts.ldo_token.address
+    if oracle_router.ethUsdBridge()["aggregator"] == ZERO_ADDRESS:
+        oracle_router.setEthUsdBridge(FORK_FEED_STALENESS_SECONDS, {"from": tmc})
+    if not oracle_router.tokenConfig(steth)["isActive"]:
+        oracle_router.setTokenFeed(steth, QUOTE_DENOMINATION_ETH, FORK_FEED_STALENESS_SECONDS, True, {"from": tmc})
+    if not oracle_router.tokenConfig(ldo)["isActive"]:
+        oracle_router.setTokenFeed(ldo, QUOTE_DENOMINATION_ETH, FORK_FEED_STALENESS_SECONDS, True, {"from": tmc})
+
+
+def _production_rebase_cl_diff():
+    """CL rewards a normal report carries: current CL balance at ~3% APR over the report's period."""
+    consensus = contracts.hash_consensus_for_accounting_oracle
+    slots_per_epoch, seconds_per_slot, _ = consensus.getChainConfig()
+    _, epochs_per_frame, _ = consensus.getFrameConfig()
+    current_ref_slot, _ = consensus.getCurrentFrame()
+    last_processing_ref_slot = contracts.accounting_oracle.getLastProcessingRefSlot()
+
+    next_ref_slot = current_ref_slot + epochs_per_frame * slots_per_epoch
+    elapsed_seconds = (next_ref_slot - last_processing_ref_slot) * seconds_per_slot
+
+    cl_validators_balance, cl_pending_balance, *_ = contracts.lido.getBalanceStats()
+    cl_balance = cl_validators_balance + cl_pending_balance
+    return cl_balance * NORMAL_CL_APR_BP * elapsed_seconds // (TOTAL_BASIS_POINTS * SECONDS_PER_YEAR)
+
+
+def test_nest_buyback_happy_path(vote_applied, accounts, stranger):
+    """Drive the launched NEST buyback end to end: rebase -> revenue -> allocate -> CoW order."""
+    steth = contracts.lido
+    tmc = accounts.at(TMC, force=True)
+
+    oracle_router = interface.OracleRouter(ORACLE_ROUTER)
+    buyback_executor = interface.BuybackExecutor(BUYBACK_EXECUTOR)
+    buyback_allocator = interface.BuybackAllocator(BUYBACK_ALLOCATOR)
+    staking_revenue_source = interface.StakingRevenueSource(STAKING_REVENUE_SOURCE)
+    notifier = interface.TokenRateNotifierV2(NEW_TOKEN_RATE_NOTIFIER)
+    observer_addresses = [notifier.observers(index)["observer"] for index in range(notifier.observersLength())]
+
+    # Preconditions: the launch is in place
+    assert interface.LidoLocator(LIDO_LOCATOR).postTokenRebaseReceiver() == NEW_TOKEN_RATE_NOTIFIER
+    assert buyback_allocator.activationTS() > 0, "BuybackAllocator not activated"
+    assert buyback_executor.stonks() == BUYBACK_STONKS_TREASURY, "BuybackExecutor stonks not set"
+    assert buyback_allocator.STETH() == steth.address, "Allocator stETH handle mismatch"
+
+    # Wiring the launch established: revenue source registered on the notifier and the allocator granted its role
+    assert STAKING_REVENUE_SOURCE in observer_addresses, "StakingRevenueSource not registered as a TokenRateNotifier observer"
+    assert STAKING_REVENUE_SOURCE in buyback_allocator.revenueSources(), "StakingRevenueSource not a revenue source on the allocator"
+    assert buyback_executor.hasRole(buyback_executor.ALLOCATOR_ROLE(), BUYBACK_ALLOCATOR), "allocator lacks ALLOCATOR_ROLE on the executor"
+
+    _configure_oracle_router_feeds(oracle_router, tmc)
+    assert oracle_router.tokenConfig(steth.address)["isActive"], "stETH feed not configured on OracleRouter"
+
+    # Rebase -> revenue accrues in the StakingRevenueSource, then convert it to USD
+    cumulative_revenue_before = staking_revenue_source.getCumulativeRevenueUSD()
+    oracle_report(cl_diff=_production_rebase_cl_diff(), silent=True)
+    assert staking_revenue_source.pendingRevenueStEth() > 0, "no fee shares reached the StakingRevenueSource"
+
+    staking_revenue_source.convertPendingRevenueToUSD({"from": stranger})
+    assert staking_revenue_source.getCumulativeRevenueUSD() > cumulative_revenue_before, "cumulative revenue did not grow"
+    assert staking_revenue_source.pendingRevenueStEth() == 0, "pending revenue not fully converted"
+
+    # Fund the allocator with fresh stETH
+    steth_to_fund = ETH(1000)
+    # submit rounds minted shares down; mint a few extra wei so the exact transfer below can't revert
+    steth.submit(ZERO_ADDRESS, {"from": stranger, "value": steth_to_fund + WEI_TOLERANCE})
+    steth.transfer(BUYBACK_ALLOCATOR, steth_to_fund, {"from": stranger})
+    assert steth.balanceOf(BUYBACK_ALLOCATOR) >= steth_to_fund - WEI_TOLERANCE, "allocator not funded with stETH"
+
+    spendable_status, _spendable_usd, spendable_steth = buyback_allocator.spendable()
+    assert spendable_steth > 0, f"allocator reports nothing spendable (status={spendable_status})"
+
+    # allocate() spends and forwards stETH to Stonks
+    stonks_steth_before = steth.balanceOf(BUYBACK_STONKS_TREASURY)
+    allocate_tx = buyback_allocator.allocate({"from": stranger})
+    assert "AllocationSkipped" not in allocate_tx.events, "allocate() skipped instead of spending"
+    allocated = allocate_tx.events["Allocated"]
+    assert allocated["spendStEth"] > 0 and allocated["spendUSD"] > 0, "allocate() spent nothing"
+    assert convert.to_address(allocated["executor"]) == convert.to_address(BUYBACK_EXECUTOR), "wrong executor"
+    processed = allocate_tx.events["AllocationProcessed"]
+    assert convert.to_address(processed["stonks"]) == convert.to_address(BUYBACK_STONKS_TREASURY), "wrong stonks"
+    assert processed["forwardedToStonks"] > 0, "nothing forwarded to Stonks"
+    assert steth.balanceOf(BUYBACK_STONKS_TREASURY) > stonks_steth_before, "Stonks stETH balance did not grow"
+
+    # placeOrder() creates the Stonks/CoW order (stop before off-chain settlement)
+    min_order_steth = buyback_executor.minAllowedOrderAmount()
+    placement = buyback_executor.getPlacementStatus()
+    assert placement["canPlace"], "executor cannot place an order"
+    assert not placement["isStonksCreationPaused"] and not placement["isStonksKilled"], "Stonks creation blocked"
+    assert placement["sellAmount"] >= min_order_steth, "sell amount below the minimum order amount"
+
+    place_order_tx = buyback_executor.placeOrder({"from": stranger})
+    order = place_order_tx.return_value
+    assert order is not None, "placeOrder returned no order"
+    assert order != ZERO_ADDRESS, "placeOrder returned the zero address"
+    order_placed = place_order_tx.events["OrderPlaced"]
+    assert convert.to_address(order_placed["order"]) == convert.to_address(order), "OrderPlaced order mismatch"
+    assert order_placed["sellAmount"] > 0 and order_placed["minBuyAmount"] > 0, "order has zero sell/buy amount"
+    assert buyback_executor.lastOrderAddress() == order, "lastOrderAddress not updated"
+    expected_valid_to = place_order_tx.timestamp + buyback_executor.stonksOrderDurationSeconds()
+    assert buyback_executor.lastOrderValidTo() == expected_valid_to, "lastOrderValidTo not placement time + order duration"
+    assert steth.balanceOf(order) >= order_placed["sellAmount"] - WEI_TOLERANCE, "order does not hold the sold stETH"
+
+
+# ============================================================================
+# ==================== LOL stablecoins Easy Track motions ====================
+# ============================================================================
+def _assert_setup_is_live(registry):
+    """What the omnibus set up: the factories are registered and the executor holds the registry roles."""
+    factories = contracts.easy_track.getEVMScriptFactories()
+    for factory_address in LOL_STABLES_FACTORIES:
+        assert factory_address in factories, f"{factory_address} not registered in Easy Track"
+    assert registry.hasRole(UPDATE_SPENT_AMOUNT_ROLE, EVM_SCRIPT_EXECUTOR)
+    assert registry.hasRole(ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR)
+    assert registry.hasRole(REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE, EVM_SCRIPT_EXECUTOR)
+
+
+def _start_fresh_spending_period(registry):
+    """Move past the stored period so the next payment opens a fresh one with spent == 0.
+
+    getPeriodState reports stored values, and every enacted motion advances the chain by the motion
+    duration — without this a run near a period boundary would measure a rollover as an under-spend.
+    """
+    _, _, _, period_end = registry.getPeriodState()
+    chain.mine(1, max(chain.time(), period_end) + 1)
+    return period_end
+
+
+def _fund_agent_with_dai(amount, accounts):
+    """Top the Agent up to `amount` DAI through a DAI ward."""
+    if contracts.dai_token.balanceOf(contracts.agent) < amount:
+        interface.Dai(DAI_TOKEN).mint(contracts.agent, amount, {"from": accounts.at(DAI_WARD, force=True)})
+    assert contracts.dai_token.balanceOf(contracts.agent) >= amount, "Insufficient DAI balance on Agent"
+
+
+def test_lol_stables_motion_guards(vote_applied, stranger):
+    """The factories reject unauthorized and out-of-bounds motions at creation."""
+    registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    top_up_factory = interface.TopUpAllowedRecipients(LOL_STABLES_TOP_UP_FACTORY)
+    add_recipient_factory = interface.AddAllowedRecipient(LOL_STABLES_ADD_RECIPIENT_FACTORY)
+    remove_recipient_factory = interface.RemoveAllowedRecipient(LOL_STABLES_REMOVE_RECIPIENT_FACTORY)
+    _assert_setup_is_live(registry)
+
+    # only the LOL multisig can create motions
+    assert_create_evm_script_reverts(
+        top_up_factory,
+        stranger,
+        _encode_calldata(PAYMENT_CALLDATA_SIGNATURE, [DAI_TOKEN, [LOL_TRUSTED_CALLER], [1]]),
+        "CALLER_IS_FORBIDDEN",
+    )
+    assert_create_evm_script_reverts(
+        add_recipient_factory,
+        stranger,
+        _encode_calldata(["address", "string"], [stranger.address, "Stranger"]),
+        "CALLER_IS_FORBIDDEN",
+    )
+    assert_create_evm_script_reverts(
+        remove_recipient_factory,
+        stranger,
+        _encode_calldata(["address"], [LOL_TRUSTED_CALLER]),
+        "CALLER_IS_FORBIDDEN",
+    )
+
+    # only tokens listed in the AllowedTokensRegistry
+    assert_create_evm_script_reverts(
+        top_up_factory,
+        LOL_TRUSTED_CALLER,
+        _encode_calldata(PAYMENT_CALLDATA_SIGNATURE, [contracts.lido.address, [LOL_TRUSTED_CALLER], [1]]),
+        "TOKEN_NOT_ALLOWED",
+    )
+    # only recipients the registry allows
+    assert_create_evm_script_reverts(
+        top_up_factory,
+        LOL_TRUSTED_CALLER,
+        _encode_calldata(PAYMENT_CALLDATA_SIGNATURE, [DAI_TOKEN, [stranger.address], [1]]),
+        "RECIPIENT_NOT_ALLOWED",
+    )
+    # never more than the period limit
+    limit, _ = registry.getLimitParameters()
+    assert_create_evm_script_reverts(
+        top_up_factory,
+        LOL_TRUSTED_CALLER,
+        _encode_calldata(PAYMENT_CALLDATA_SIGNATURE, [DAI_TOKEN, [LOL_TRUSTED_CALLER], [limit + 1]]),
+        "SUM_EXCEEDS_SPENDABLE_BALANCE",
+    )
+
+    # no duplicates in the recipients list, and nothing to remove that is not there
+    assert_create_evm_script_reverts(
+        add_recipient_factory,
+        LOL_TRUSTED_CALLER,
+        _encode_calldata(["address", "string"], [LOL_TRUSTED_CALLER, "LOL multisig once more"]),
+        "ALLOWED_RECIPIENT_ALREADY_ADDED",
+    )
+    assert_create_evm_script_reverts(
+        remove_recipient_factory,
+        LOL_TRUSTED_CALLER,
+        _encode_calldata(["address"], [stranger.address]),
+        "ALLOWED_RECIPIENT_NOT_FOUND",
+    )
+
+
+def test_lol_stables_add_and_remove_recipient(vote_applied, accounts, stranger):
+    """Whitelist a recipient, pay it, drop it — all three factories in one flow."""
+    registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
+    _assert_setup_is_live(registry)
+
+    payment_amount = 1_000 * 10**18
+    _fund_agent_with_dai(payment_amount, accounts)
+    recipients_before = registry.getAllowedRecipients()
+    _start_fresh_spending_period(registry)
+
+    create_and_enact_add_recipient_motion(
+        contracts.easy_track,
+        multisig,
+        registry,
+        LOL_STABLES_ADD_RECIPIENT_FACTORY,
+        stranger,
+        "Stranger",
+        stranger,
+    )
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        multisig,
+        LOL_STABLES_TOP_UP_FACTORY,
+        contracts.dai_token,
+        [stranger],
+        [payment_amount],
+        stranger,
+    )
+    create_and_enact_remove_recipient_motion(
+        contracts.easy_track,
+        multisig,
+        registry,
+        LOL_STABLES_REMOVE_RECIPIENT_FACTORY,
+        stranger,
+        stranger,
+    )
+
+    spent_after, _, _, _ = registry.getPeriodState()
+    assert spent_after == payment_amount, "the payment was not counted against the period limit"
+    assert registry.getAllowedRecipients() == recipients_before, "the allowed recipients list was not restored"
+
+
+def test_lol_stables_every_allowed_token_counts_against_the_limit(vote_applied, accounts, stranger):
+    """Each token the shared registry allows can be paid out, and counts normalized to 18 decimals.
+
+    USDC and USDT hold 6 decimals, so a factory that skipped normalizeAmount would let them spend
+    orders of magnitude past the budget while the registry barely noticed.
+    """
+    registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    tokens_registry = interface.AllowedTokensRegistry(ALLOWED_TOKENS_REGISTRY)
+    multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
+    _assert_setup_is_live(registry)
+
+    allowed_tokens = tokens_registry.getAllowedTokens()
+    assert len(allowed_tokens) > 0, "the shared tokens registry allows no tokens"
+    _start_fresh_spending_period(registry)
+
+    expected_spent = 0
+    for token_address in allowed_tokens:
+        token = interface.ERC20(token_address)
+        payment_amount = 1_000 * 10 ** token.decimals()
+        assert token.balanceOf(contracts.agent) >= payment_amount, f"Agent holds too little {token.symbol()}"
+
+        create_and_enact_payment_motion(
+            contracts.easy_track,
+            multisig,
+            LOL_STABLES_TOP_UP_FACTORY,
+            token,
+            [multisig],
+            [payment_amount],
+            stranger,
+        )
+
+        expected_spent += tokens_registry.normalizeAmount(payment_amount, token_address)
+        spent, _, _, _ = registry.getPeriodState()
+        assert spent == expected_spent, f"{token.symbol()} was not counted normalized to 18 decimals"
+
+
+def test_lol_stables_single_payment_capped_by_acl(vote_applied, accounts, stranger):
+    """A single newImmediatePayment cannot exceed the executor's ACL cap, even well under the limit."""
+    registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
+    _assert_setup_is_live(registry)
+
+    over_the_cap = FINANCE_DAI_MAX_PER_CALL + 1
+    limit, _ = registry.getLimitParameters()
+    assert over_the_cap < limit, "the ACL cap must bite before the period limit does"
+    _fund_agent_with_dai(over_the_cap, accounts)
+    _start_fresh_spending_period(registry)
+
+    with reverts("APP_AUTH_FAILED"):
+        create_and_enact_payment_motion(
+            contracts.easy_track,
+            multisig,
+            LOL_STABLES_TOP_UP_FACTORY,
+            contracts.dai_token,
+            [multisig],
+            [over_the_cap],
+            stranger,
+        )
+
+
+def test_lol_stables_period_limit(vote_applied, accounts, stranger):
+    """A whole period's limit can be spent — and not a wei more."""
+    registry = interface.AllowedRecipientRegistry(LOL_STABLES_REGISTRY)
+    multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
+    _assert_setup_is_live(registry)
+
+    limit, _ = registry.getLimitParameters()
+    _fund_agent_with_dai(limit, accounts)
+    period_end_before = _start_fresh_spending_period(registry)
+
+    # the whole budget, as several payments batched into one motion, each within the ACL cap
+    recipients = []
+    amounts = []
+    to_spend = limit
+    while to_spend > 0:
+        chunk_amount = min(FINANCE_DAI_MAX_PER_CALL, to_spend)
+        recipients.append(multisig)
+        amounts.append(chunk_amount)
+        to_spend -= chunk_amount
+
+    create_and_enact_payment_motion(
+        contracts.easy_track,
+        multisig,
+        LOL_STABLES_TOP_UP_FACTORY,
+        contracts.dai_token,
+        recipients,
+        amounts,
+        stranger,
+    )
+
+    spent_after, spendable_after, _, period_end_after = registry.getPeriodState()
+    assert period_end_after > period_end_before, "the spending period should have rolled over to a fresh one"
+    assert spent_after == limit
+    assert spendable_after == 0
+
+    # not a single wei beyond the limit
+    with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
+        create_and_enact_payment_motion(
+            contracts.easy_track,
+            multisig,
+            LOL_STABLES_TOP_UP_FACTORY,
+            contracts.dai_token,
+            [multisig],
+            [1],
+            stranger,
+        )
