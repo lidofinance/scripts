@@ -64,7 +64,7 @@ EMERGENCY_COMMITTEE = "0x73b047fe6337183A454c5217241D780a932777bD"
 
 # --- Lido contracts ---
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
-OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477ac14b2a80d5398e3c32ffe"
+OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE"
 STONKS_STETH_TOPUP_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
@@ -451,6 +451,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_ITEMS_COUNT
 
+        # vote item 1
         if EXPECTED_DG_PROPOSAL_ID is not None:
             assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
 
@@ -547,11 +548,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             # =========================================================================
             # ================== DG before proposal executed checks ===================
             # =========================================================================
-            # DG item 1.2
+            # DG items 1.1-1.2: neither observer is on the new TokenRateNotifier yet
             new_notifier_observers_before = [
                 str(new_token_rate_notifier.observers(i)[0]).lower()
                 for i in range(new_token_rate_notifier.observersLength())
             ]
+            # DG item 1.1
+            assert str(OP_STACK_TOKEN_RATE_PUSHER).lower() not in new_notifier_observers_before, "OpStack rate pusher already registered"
+            # DG item 1.2
             assert str(STAKING_REVENUE_SOURCE).lower() not in new_notifier_observers_before, "Revenue source already registered"
 
             # DG item 1.3: LidoLocator still uses the old implementation and still resolves to the old postTokenRebaseReceiver

@@ -1,30 +1,32 @@
 """
 Vote 2026_08_05
 
-Launch of the NEST Automated Buybacks system in treasury-only mode (LIP-36).
+1. Submit a Dual Governance proposal containing a single Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c forward call to Dual Governance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
 
-=== 1. DG PROPOSAL ===
-1.1. Add OpStackTokenRatePusher 0xd54c1c6413caac3477ac14b2a80d5398e3c32ffe as NoArgs (kind = 0) to the new TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
-1.2. Add StakingRevenueSource 0x6220212a33a87Ed7Cc386B67eB2c393974F28C38 as WithArgs (kind = 1) to the new TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
-1.3. Upgrade LidoLocator proxy 0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb implementation to 0xF2Ffb952e129a63F0614Ff87126E1d4a494A2313
-1.4. Add BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889 as allowed recipient "Buyback Allocator" on the Stonks stETH top-up AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
-1.5. Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE 0xec20c52871c824e5437859e75ac830e83aaaaeb7b0ffd850de830ddd3e385276 to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on the LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
-1.6. Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE 0x491d7752c25cfca0f73715cde1130022a9b815373f91a996bbb1ba8943efc99b to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on the LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
-
-=== NON-DG ITEMS ===
+I. NEST Activation
+1.1. Add OpStackTokenRatePusher 0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE as NoArgs observer kind 0 to TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
+1.2. Add StakingRevenueSource 0x6220212a33a87Ed7Cc386B67eB2c393974F28C38 as WithArgs observer kind 1 to TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
+1.3. Upgrade Lido Locator 0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb to implementation 0xF2Ffb952e129a63F0614Ff87126E1d4a494A2313
+1.4. Add BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889 as allowed recipient with name Buyback Allocator on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
 2. Set Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 as manager on OracleRouter 0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31
 3. Set treasury-mode Stonks 0xb368586CB980895E51e1D82102E63b3F69d3F151 on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
 4. Grant Buybacks.BuybackExecutor.ALLOCATOR_ROLE 0x87905334ad07701d0cd9b21ea0599de1a0cab067e0ab49596d423d87159ac7f2 to BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889 on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
 5. Grant Buybacks.MANAGER_ROLE 0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
 6. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE 0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
-7. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE 0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd to Emergency Committee 0x73b047fe6337183A454c5217241D780a932777bD on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
+7. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE 0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd to Ethereum Emergency Brakes multisig 0x73b047fe6337183A454c5217241D780a932777bD on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7
 8. Grant Buybacks.MANAGER_ROLE 0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889
 9. Call activate() on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889
-10. Remove UpdateStakingModuleShareLimits EVM script factory 0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8
-11. Add replacement UpdateStakingModuleShareLimits EVM script factory 0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1
-12. Add LOL stablecoins TopUpAllowedRecipients EVM script factory 0xc72d4C3e86b681D7c9EE306D41193C64D709C303 (AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89)
-13. Add LOL stablecoins AddAllowedRecipient EVM script factory 0xe24230619e9218C1eed3de3489a22f6BC3ce18FF
-14. Add LOL stablecoins RemoveAllowedRecipient EVM script factory 0xF4d5D97C85eD18f77F99B57f55E9E11d52992632
+
+II. LOL ET stablecoins payment factories activation
+1.5. Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE 0xec20c52871c824e5437859e75ac830e83aaaaeb7b0ffd850de830ddd3e385276 to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
+1.6. Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE 0x491d7752c25cfca0f73715cde1130022a9b815373f91a996bbb1ba8943efc99b to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
+12. Add LOL stablecoins TopUpAllowedRecipients EVM script factory 0xc72d4C3e86b681D7c9EE306D41193C64D709C303 with newImmediatePayment permission on Aragon Finance 0xB9E5CBB9CA5b0d659238807E84D0176930753d86 and updateSpentAmount permission on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
+13. Add LOL stablecoins AddAllowedRecipient EVM script factory 0xe24230619e9218C1eed3de3489a22f6BC3ce18FF with addRecipient permission on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
+14. Add LOL stablecoins RemoveAllowedRecipient EVM script factory 0xF4d5D97C85eD18f77F99B57f55E9E11d52992632 with removeRecipient permission on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
+
+III. ET factory for CSM share limit updates replacement
+10. Remove UpdateStakingModuleShareLimits EVM script factory 0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8 from EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
+11. Add UpdateStakingModuleShareLimits EVM script factory 0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1 with validateParams permission on itself and updateModuleShares permission on Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -45,12 +47,11 @@ from utils.permissions import encode_oz_grant_role
 
 
 # ============================== Addresses ===================================
-ARAGON_AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 TMC = "0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647"  # Treasury Management Committee (MANAGER_ROLE)
-EMERGENCY_COMMITTEE = "0x73b047fe6337183A454c5217241D780a932777bD"  # Emergency Brakes (EMERGENCY_ROLE)
+EMERGENCY_COMMITTEE = "0x73b047fe6337183A454c5217241D780a932777bD"  # Ethereum Emergency Brakes multisig (EMERGENCY_ROLE)
 ORACLE_ROUTER = "0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31"
 LIDO_LOCATOR = "0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb"
-OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477ac14b2a80d5398e3c32ffe"
+OP_STACK_TOKEN_RATE_PUSHER = "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE"
 STONKS_STETH_TOPUP_REGISTRY = "0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0"
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
 EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
@@ -114,33 +115,33 @@ def get_dg_items() -> List[Tuple[str, str]]:
 
     return [
         agent_forward([
-            # 1.1. Add OpStackTokenRatePusher as NoArgs (kind = 0) to the new TokenRateNotifier
+            # 1.1. Add OpStackTokenRatePusher 0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE as NoArgs observer kind 0 to TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
             (
                 new_token_rate_notifier.address,
                 new_token_rate_notifier.addObserver.encode_input(OP_STACK_TOKEN_RATE_PUSHER, OBSERVER_KIND_NO_ARGS),
             ),
-            # 1.2. Add StakingRevenueSource as WithArgs (kind = 1) to the new TokenRateNotifier
+            # 1.2. Add StakingRevenueSource 0x6220212a33a87Ed7Cc386B67eB2c393974F28C38 as WithArgs observer kind 1 to TokenRateNotifier 0xbe05d12Fd10919F1881125006523452F6aFF791b
             (
                 new_token_rate_notifier.address,
                 new_token_rate_notifier.addObserver.encode_input(STAKING_REVENUE_SOURCE, OBSERVER_KIND_WITH_ARGS),
             ),
-            # 1.3. Upgrade LidoLocator proxy implementation to the new implementation
+            # 1.3. Upgrade Lido Locator 0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb to implementation 0xF2Ffb952e129a63F0614Ff87126E1d4a494A2313
             (
                 lido_locator_proxy.address,
                 lido_locator_proxy.proxy__upgradeTo.encode_input(NEW_LIDO_LOCATOR_IMPL),
             ),
-            # 1.4. Add BuybackAllocator as allowed recipient "Buyback Allocator" on the Stonks stETH top-up AllowedRecipientsRegistry
+            # 1.4. Add BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889 as allowed recipient with name Buyback Allocator on Stonks stETH AllowedRecipientsRegistry 0x1a7cFA9EFB4D5BfFDE87B0FaEb1fC65d653868C0
             (
                 stonks_topup_registry.address,
                 stonks_topup_registry.addRecipient.encode_input(BUYBACK_ALLOCATOR, "Buyback Allocator"),
             ),
-            # 1.5. Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE to the EVMScriptExecutor on the LOL stablecoins registry
+            # 1.5. Grant ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE 0xec20c52871c824e5437859e75ac830e83aaaaeb7b0ffd850de830ddd3e385276 to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
             encode_oz_grant_role(
                 contract=lol_stables_registry,
                 role_name="ADD_RECIPIENT_TO_ALLOWED_LIST_ROLE",
                 grant_to=EVM_SCRIPT_EXECUTOR,
             ),
-            # 1.6. Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE to the EVMScriptExecutor on the same registry
+            # 1.6. Grant REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE 0x491d7752c25cfca0f73715cde1130022a9b815373f91a996bbb1ba8943efc99b to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on LOL stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89
             encode_oz_grant_role(
                 contract=lol_stables_registry,
                 role_name="REMOVE_RECIPIENT_FROM_ALLOWED_LIST_ROLE",
@@ -165,71 +166,91 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to register the StakingRevenueSource on the new TokenRateNotifier and enable NEST",
+            "1. Submit a Dual Governance proposal containing a single Aragon Agent "
+            "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c forward call to Dual Governance "
+            "0xC1db28B3301331277e307FDCfF8DE28242A4486E",
             dg_call_script[0],
         ),
         (
-            "2. Set the Treasury Management Committee as manager on the OracleRouter",
+            "2. Set Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 as manager "
+            "on OracleRouter 0x79ef3a538200Fe4981D67E7e886bfb36D4Cb5a31",
             (
                 oracle_router.address,
                 oracle_router.setManager.encode_input(TMC),
             ),
         ),
         (
-            "3. Set the treasury-mode Stonks on the BuybackExecutor",
+            "3. Set treasury-mode Stonks 0xb368586CB980895E51e1D82102E63b3F69d3F151 "
+            "on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7",
             (
                 buyback_executor.address,
                 buyback_executor.setStonks.encode_input(BUYBACK_STONKS_TREASURY),
             ),
         ),
         (
-            "4. Grant Buybacks.BuybackExecutor.ALLOCATOR_ROLE to the BuybackAllocator on the BuybackExecutor",
+            "4. Grant Buybacks.BuybackExecutor.ALLOCATOR_ROLE "
+            "0x87905334ad07701d0cd9b21ea0599de1a0cab067e0ab49596d423d87159ac7f2 "
+            "to BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889 "
+            "on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7",
             (
                 buyback_executor.address,
                 buyback_executor.grantRole.encode_input(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR),
             ),
         ),
         (
-            "5. Grant Buybacks.MANAGER_ROLE to the Treasury Management Committee on the BuybackExecutor",
+            "5. Grant Buybacks.MANAGER_ROLE 0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e "
+            "to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 "
+            "on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7",
             (
                 buyback_executor.address,
                 buyback_executor.grantRole.encode_input(MANAGER_ROLE, TMC),
             ),
         ),
         (
-            "6. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE to the Treasury Management Committee on the BuybackExecutor",
+            "6. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE "
+            "0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd "
+            "to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 "
+            "on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7",
             (
                 buyback_executor.address,
                 buyback_executor.grantRole.encode_input(EMERGENCY_ROLE, TMC),
             ),
         ),
         (
-            "7. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE to the Emergency Committee on the BuybackExecutor",
+            "7. Grant Buybacks.BuybackExecutor.EMERGENCY_ROLE "
+            "0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c1996dbd "
+            "to Ethereum Emergency Brakes multisig 0x73b047fe6337183A454c5217241D780a932777bD "
+            "on BuybackExecutor 0x6c213ca5A10Cc26548C742229569B4AeD2A9C9B7",
             (
                 buyback_executor.address,
                 buyback_executor.grantRole.encode_input(EMERGENCY_ROLE, EMERGENCY_COMMITTEE),
             ),
         ),
         (
-            "8. Grant Buybacks.MANAGER_ROLE to the Treasury Management Committee on the BuybackAllocator",
+            "8. Grant Buybacks.MANAGER_ROLE 0x24bec1f1283f989ed510b4d89bc7ef5002f20db1b60c1b3192336791c868543e "
+            "to Treasury Management Committee 0xa02FC823cCE0D016bD7e17ac684c9abAb2d6D647 "
+            "on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889",
             (
                 buyback_allocator.address,
                 buyback_allocator.grantRole.encode_input(MANAGER_ROLE, TMC),
             ),
         ),
         (
-            "9. Call activate() on the BuybackAllocator",
+            "9. Call activate() on BuybackAllocator 0xAA568141c051f2D1132b110f8391F18D48E8D889",
             (
                 buyback_allocator.address,
                 buyback_allocator.activate.encode_input(),
             ),
         ),
         (
-            "10. Remove the UpdateStakingModuleShareLimits EVM script factory from Easy Track",
+            "10. Remove UpdateStakingModuleShareLimits EVM script factory "
+            "0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8 from EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             remove_evmscript_factory(OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY),
         ),
         (
-            "11. Add the replacement UpdateStakingModuleShareLimits EVM script factory to Easy Track",
+            "11. Add UpdateStakingModuleShareLimits EVM script factory 0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1 "
+            "with validateParams permission on itself and updateModuleShares permission on Staking Router "
+            "0xFdDf38947aFB03C621C71b06C9C70bce73f12999 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 NEW_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
                 create_permissions(new_update_staking_module_share_limits_factory, "validateParams")
@@ -237,24 +258,31 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             ),
         ),
         (
-            "12. Add an Easy Track EVM script factory 0xc72d4C3e86b681D7c9EE306D41193C64D709C303 for funding the "
-            "Liquidity Observation Lab multisig with stablecoins (AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89)",
+            "12. Add LOL stablecoins TopUpAllowedRecipients EVM script factory "
+            "0xc72d4C3e86b681D7c9EE306D41193C64D709C303 with newImmediatePayment permission on Aragon Finance "
+            "0xB9E5CBB9CA5b0d659238807E84D0176930753d86 and updateSpentAmount permission on LOL stablecoins "
+            "AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 "
+            "to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 factory=LOL_STABLES_TOP_UP_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=LOL_STABLES_REGISTRY),
             ),
         ),
         (
-            "13. Add an Easy Track EVM script factory 0xe24230619e9218C1eed3de3489a22f6BC3ce18FF for adding a recipient "
-            "to the Liquidity Observation Lab stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89",
+            "13. Add LOL stablecoins AddAllowedRecipient EVM script factory "
+            "0xe24230619e9218C1eed3de3489a22f6BC3ce18FF with addRecipient permission on LOL stablecoins "
+            "AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 "
+            "to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 factory=LOL_STABLES_ADD_RECIPIENT_FACTORY,
                 permissions=create_permissions(lol_stables_registry, "addRecipient"),
             ),
         ),
         (
-            "14. Add an Easy Track EVM script factory 0xF4d5D97C85eD18f77F99B57f55E9E11d52992632 for removing a recipient "
-            "from the Liquidity Observation Lab stablecoins AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89",
+            "14. Add LOL stablecoins RemoveAllowedRecipient EVM script factory "
+            "0xF4d5D97C85eD18f77F99B57f55E9E11d52992632 with removeRecipient permission on LOL stablecoins "
+            "AllowedRecipientsRegistry 0x8d8b35cA51e7808098afF4918C21Ce428c943F89 "
+            "to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
             add_evmscript_factory(
                 factory=LOL_STABLES_REMOVE_RECIPIENT_FACTORY,
                 permissions=create_permissions(lol_stables_registry, "removeRecipient"),
