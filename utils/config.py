@@ -495,8 +495,8 @@ class ContractsLazyLoader:
         return interface.VestingEscrowFactory(TRP_VESTING_ESCROW_FACTORY)
 
     @property
-    def token_rate_notifier(self) -> interface.TokenRateNotifier:
-        return interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
+    def token_rate_notifier(self) -> interface.TokenRateNotifierV2:
+        return interface.TokenRateNotifierV2(L1_TOKEN_RATE_NOTIFIER)
 
     @property
     def validator_exit_verifier(self) -> interface.ValidatorsExitBusOracle:
