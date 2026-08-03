@@ -162,8 +162,7 @@ EXPECTED_DG_PROPOSAL_ID = 13
 EXPECTED_DG_EVENTS_FROM_AGENT = 6
 EXPECTED_DG_EVENTS_COUNT = 1
 
-# TODO set once the IPFS description is uploaded.
-IPFS_DESCRIPTION_HASH = ""
+IPFS_DESCRIPTION_HASH = "bafkreiea5mkaprjkxfsxjv7vp6aireshqbvpy3iy5tcvwwhopujv6p25cy"
 
 
 # ============================================================================
