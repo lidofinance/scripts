@@ -725,7 +725,7 @@ def test_nest_buyback_happy_path(vote_applied, accounts, stranger):
     buyback_allocator = interface.BuybackAllocator(BUYBACK_ALLOCATOR)
     staking_revenue_source = interface.StakingRevenueSource(STAKING_REVENUE_SOURCE)
     notifier = interface.TokenRateNotifierV2(NEW_TOKEN_RATE_NOTIFIER)
-    observer_addresses = [notifier.observers(index)["observer"] for index in range(notifier.observersLength())]
+    observer_addresses = [notifier.observers(index)[0] for index in range(notifier.observersLength())]
 
     # Preconditions: the launch is in place
     assert interface.LidoLocator(LIDO_LOCATOR).postTokenRebaseReceiver() == NEW_TOKEN_RATE_NOTIFIER
