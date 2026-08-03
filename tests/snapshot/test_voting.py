@@ -14,6 +14,10 @@ from utils.config import (
     contracts,
 )
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.balance import set_balance
+
+
+SENDER_BALANCE_IN_ETH = 10
 
 
 @pytest.fixture(scope="module")
@@ -66,6 +70,11 @@ def snapshot(voting, vote_id):
 def steps(voting, call_target, vote_time) -> Dict[str, Dict[str, ValueChanged]]:
     result = {}
 
+    # Snapshot tests disable the implicit balance middleware. Fund every sender
+    # explicitly on both sides of chain.revert() so the two runs start alike.
+    for sender in {LDO_HOLDER_ADDRESS_FOR_TESTS, *LDO_VOTE_EXECUTORS_FOR_TESTS}:
+        set_balance(sender, SENDER_BALANCE_IN_ETH)
+
     params = {"from": LDO_HOLDER_ADDRESS_FOR_TESTS}
     vote_items = [(call_target.address, call_target.perform_call.encode_input())]
     vote_id = create_vote(bake_vote_items(["Test voting"], vote_items), params)[0]
@@ -108,7 +117,11 @@ def test_create_wait_enact(helpers, vote_time, call_target, vote_ids_from_env, d
         step_diffs[step] = dict_diff(before, after)
 
     for step_name, diff in step_diffs.items():
-        if not vote_ids_from_env:
+        # A fresh vote is created in the "after" run only when the upgrade is
+        # started from scripts (start_and_execute_votes). When votes and/or DG
+        # proposals are supplied via env, no new vote is created, so votesLength
+        # stays identical across both runs and must not be expected to differ.
+        if not vote_ids_from_env and not dg_proposal_ids_from_env:
             assert_expected_diffs(
                 step_name, diff, {"votesLength": ValueChanged(from_val=votesLength + 1, to_val=votesLength + 2)}
             )

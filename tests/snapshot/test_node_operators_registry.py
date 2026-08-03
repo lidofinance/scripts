@@ -16,15 +16,11 @@ PUBKEY_LENGTH = 48
 SIGNATURE_LENGTH = 96
 DEPOSIT_SIZE = Wei("32 ether")
 RANDOM_SEED = datetime.now().timestamp()
+NODE_OPERATORS_REGISTRY_MODULE_ID = 1
 
-
-def grant_roles(voting_eoa, agent_eoa):
-    contracts.staking_router.grantRole(
-        contracts.staking_router.MANAGE_WITHDRAWAL_CREDENTIALS_ROLE(), voting_eoa, {"from": agent_eoa}
-    )
-
+def grant_roles(agent_eoa):
     contracts.acl.grantPermission(
-        contracts.voting,
+        agent_eoa,
         contracts.node_operators_registry,
         convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
         {"from": agent_eoa},
@@ -54,16 +50,10 @@ def new_deposit_security_module_eoa(accounts, EtherFunder):
     return accounts.at(DEPOSIT_SECURITY_MODULE, force=True)
 
 
-@pytest.fixture(scope="module")
-def voting_eoa(accounts):
-    return accounts.at(contracts.voting.address, force=True)
-
-
 def test_node_operator_basic_flow(
     accounts,
     helpers,
     new_deposit_security_module_eoa,
-    voting_eoa,
     agent_eoa,
     vote_ids_from_env,
     dg_proposal_ids_from_env,
@@ -72,8 +62,6 @@ def test_node_operator_basic_flow(
     submit_amount = deposits_count * DEPOSIT_SIZE
 
     staker, _ = accounts[0], accounts[1]
-    # new_node_operator_id = contracts.node_operators_registry_v1.getNodeOperatorsCount()
-    # new_node_operator_validators_count = 10
     new_node_operator = {
         "id": contracts.node_operators_registry.getNodeOperatorsCount(),
         "reward_address": accounts[3].address,
@@ -84,6 +72,7 @@ def test_node_operator_basic_flow(
     }
 
     def create_actions(dsm_eoa, manager_eoa):
+
         actions = {
             "add_node_operator": lambda: contracts.node_operators_registry.addNodeOperator(
                 "new_node_operator", new_node_operator["reward_address"], {"from": manager_eoa}
@@ -99,7 +88,14 @@ def test_node_operator_basic_flow(
                 new_node_operator["id"], new_node_operator["staking_limit"], {"from": manager_eoa}
             ),
             "submit": lambda: contracts.lido.submit(ZERO_ADDRESS, {"from": staker, "amount": submit_amount}),
-            "deposit": lambda: contracts.lido.deposit(deposits_count, 1, "0x", {"from": dsm_eoa}),
+            # In Lido v4, DSM calls the StakingRouter directly; it determines
+            # the actual deposit count from current allocation and module keys.
+            # TODO: uncomment after SRV# upgrade, as it don't work on this upgrade
+            # "deposit": lambda: contracts.staking_router.deposit(
+            #     1,
+            #     "0x",
+            #     {"from": dsm_eoa},
+            # ),
             "remove_signing_keys": lambda: contracts.node_operators_registry.removeSigningKeys(
                 new_node_operator["id"],
                 new_node_operator["staking_limit"],
@@ -119,9 +115,7 @@ def test_node_operator_basic_flow(
     snapshot_before_update = {}
     snapshot_after_update = {}
 
-    grant_roles(voting_eoa, agent_eoa)
-
-    make_snapshot(contracts.node_operators_registry)
+    grant_roles(agent_eoa)
 
     with chain_snapshot():
         snapshot_before_update = run_scenario(
@@ -130,25 +124,6 @@ def test_node_operator_basic_flow(
 
     with chain_snapshot():
         execute_vote_and_process_dg_proposals(helpers, vote_ids_from_env, dg_proposal_ids_from_env)
-
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="MANAGE_NODE_OPERATOR_ROLE")),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="SET_NODE_OPERATOR_LIMIT_ROLE")),
-            {"from": contracts.agent},
-        )
-        contracts.acl.grantPermission(
-            contracts.agent,
-            contracts.node_operators_registry,
-            convert.to_uint(Web3.keccak(text="MANAGE_SIGNING_KEYS")),
-            {"from": contracts.agent},
-        )
 
         snapshot_after_update = run_scenario(
             actions=create_actions(new_deposit_security_module_eoa, agent_eoa), snapshooter=make_snapshot

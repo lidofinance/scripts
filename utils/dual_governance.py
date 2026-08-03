@@ -1,5 +1,7 @@
-from brownie import accounts, chain
+from brownie import accounts, chain, web3
 from typing import Tuple, Sequence
+
+from eth_abi.abi import encode
 
 from utils.config import contracts
 from tests.conftest import get_active_proposals_from_env
@@ -41,9 +43,7 @@ def submit_proposals(items: Sequence[Tuple[Sequence[Tuple[str, str]], str]]) -> 
         proposal_list.append(
             (
                 contracts.dual_governance.address,
-                contracts.dual_governance.submitProposal.encode_input(
-                    proposal_calldata, description
-                ),
+                contracts.dual_governance.submitProposal.encode_input(proposal_calldata, description),
             )
         )
     return proposal_list
@@ -96,14 +96,16 @@ def process_proposals(proposal_ids: Sequence[int]):
             assert proposal_status == PROPOSAL_STATUS["executed"], f"Proposal {proposal_id} execution failed"
 
     if len(proposals_to_be_processed):
-        raise Exception(f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled.")
+        raise Exception(
+            f"Unable to process proposals: {proposals_to_be_processed}. Proposals are already processed or cancelled."
+        )
 
 
-def process_pending_proposals():
+def process_pending_proposals() -> list[int]:
     last_proposal_id = contracts.emergency_protected_timelock.getProposalsCount()
 
     if is_proposal_executed(last_proposal_id):
-        return
+        return []
 
     current_proposal_id = last_proposal_id
     while not is_proposal_executed(current_proposal_id):
@@ -113,7 +115,9 @@ def process_pending_proposals():
 
     current_proposal_id += 1
 
-    process_proposals(list(range(current_proposal_id, last_proposal_id + 1)))
+    proposal_ids = list(range(current_proposal_id, last_proposal_id + 1))
+    process_proposals(proposal_ids)
+    return proposal_ids
 
 
 def wait_for_normal_state(stranger):
@@ -179,7 +183,7 @@ def wait_for_time_window(from_hour_utc: int, to_hour_utc: int):
 
 def wait_for_target_time_to_satisfy_time_constrains():
     current_time = chain.time()
-    target_time = 16 * 60 * 60 # 16:00 UTC
+    target_time = 16 * 60 * 60  # 16:00 UTC
     seconds_per_day = 24 * 60 * 60
 
     day_start = current_time - (current_time % seconds_per_day)

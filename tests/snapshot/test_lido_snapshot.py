@@ -10,9 +10,11 @@ from pytest_check import check
 from web3.types import Wei
 
 from tests.conftest import Helpers
+from utils.balance import set_balance
 from utils.config import contracts, LDO_TOKEN, VOTING, AGENT, INITIAL_MAX_EXTERNAL_RATIO_BP
 from utils.evm_script import EMPTY_CALLSCRIPT
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
+from utils.test.helpers import ETH
 from utils.test.snapshot_helpers import _chain_snapshot
 
 from .utils import get_slot
@@ -39,9 +41,26 @@ EXPECTED_SNAPSHOT_DIFFS: dict[str, Any] = {
 }
 
 
+SNAPSHOT_ABS_TOLERANCES: dict[str, int] = {
+    # Conversion between shares and pooled ETH rounds down. Actions that slightly
+    # change the share rate may therefore shift this view by one or two wei.
+    "getPooledEthByShares(100)": 2,
+}
+
+
 IGNORED_SNAPSHOT_KEYS: set[str] = {
     "getFeeDistribution",
 }
+
+
+@pytest.fixture(scope="function", autouse=True)
+def fund_lido_snapshot_senders(eth_whale: Account, some_contract: Account, stranger: Account):
+    """Fund impersonated external senders without relying on balance middleware."""
+    funding_balance = ETH(100_000)
+    set_balance(eth_whale.address, funding_balance)
+    set_balance(some_contract.address, funding_balance)
+    set_balance(stranger.address, funding_balance)
+    set_balance(contracts.execution_layer_rewards_vault.address, funding_balance)
 
 
 def test_lido_no_changes_in_views(sandwich_upgrade: SandwichFn):
@@ -68,12 +87,9 @@ def test_lido_end_user_snapshot(
     actions = (
         # send ether to Lido to mint stETH
         _call(
-            web3.eth.send_transaction,
-            {
-                "from": eth_whale.address,
-                "to": lido.address,
-                "value": Wei(eth_amount // 2),
-            },
+            eth_whale.transfer,
+            lido.address,
+            Wei(eth_amount // 2),
         ),
         _call(
             lido.submit,
@@ -333,9 +349,7 @@ def do_snapshot(
             # Lido.sol
             "lido.Lido.beaconBalance",
             "lido.Lido.beaconValidators",
-            "lido.Lido.clBalanceAndClValidators",
             "lido.Lido.bufferedEther",
-            "lido.Lido.bufferedEtherAndDepositedValidators",
             "lido.Lido.depositContract",
             "lido.Lido.lidoLocator",
             "lido.Lido.depositedValidators",
@@ -353,6 +367,16 @@ def do_snapshot(
             "lido.Lido.treasuryFee",
             "lido.Lido.withdrawalCredentials",
             "lido.Lido.lidoLocatorAndMaxExternalRatio",
+            # Lido.sol v4: finalizeUpgrade_v4 -> _migrateStorage_v3_to_v4 wipes the v3
+            # packed slots clBalanceAndClValidators / bufferedEtherAndDepositedValidators
+            # (now always 0) and moves the data into these live slots.
+            "lido.Lido.clValidatorsBalanceAndClPendingBalance",
+            "lido.Lido.bufferedEtherAndDepositedPostReport",
+            "lido.Lido.depositedNextReportAndLastDepositNonce",
+            "lido.Lido.seedDepositsCount",
+            # New v4 slots introduced by finalizeUpgrade_v4.
+            "lido.Lido.depositsReserve",
+            "lido.Lido.depositsReserveTarget",
             # StETH.sol
             "lido.StETH.totalShares",
             "lido.StETH.totalAndExternalShares",
@@ -481,6 +505,13 @@ def _acceptable_change(key: str, before: Any, after: Any) -> bool:
     return after == exp
 
 
+def _within_snapshot_tolerance(key: str, before: Any, after: Any) -> bool:
+    tolerance = SNAPSHOT_ABS_TOLERANCES.get(key)
+    if tolerance is None or not isinstance(before, int) or not isinstance(after, int):
+        return False
+    return abs(before - after) <= tolerance
+
+
 def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
     for v1_frame, v2_frame in zip(*stacks, strict=True):
         with check:
@@ -490,6 +521,8 @@ def _stacks_equal(stacks: tuple[Stack, Stack]) -> None:
                     continue
                 after_val = v2_frame["snap"].get(key)
                 if before_val == after_val:
+                    continue
+                if _within_snapshot_tolerance(key, before_val, after_val):
                     continue
                 if _acceptable_change(key, before_val, after_val):
                     continue

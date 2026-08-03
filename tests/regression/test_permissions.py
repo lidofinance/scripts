@@ -50,18 +50,37 @@ from utils.config import (
     SIMPLE_DVT,
     CSM_ADDRESS,
     CS_ACCOUNTING_ADDRESS,
+    CS_EJECTOR_V3_ADDRESS,
     CS_GATE_SEAL_V2_ADDRESS,
-    CS_VERIFIER_V2_ADDRESS,
+    CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+    CS_PERMISSIONLESS_GATE_V3_ADDRESS,
+    CS_VERIFIER_V3_ADDRESS,
     CS_FEE_DISTRIBUTOR_ADDRESS,
     CS_FEE_ORACLE_ADDRESS,
     CS_ORACLE_HASH_CONSENSUS_ADDRESS,
-    CS_PERMISSIONLESS_GATE_ADDRESS,
     TRIGGERABLE_WITHDRAWALS_GATEWAY,
+    TOP_UP_GATEWAY,
+    TOP_UP_GATEWAY_DEPOSITOR,
+    CONSOLIDATION_GATEWAY,
+    CONSOLIDATION_BUS,
+    CONSOLIDATION_MIGRATOR,
+    CONSOLIDATION_COMMITTEE,
     VEB_TWG_GATE_SEAL,
     CS_VETTED_GATE_ADDRESS,
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_STRIKES_ADDRESS,
-    CS_EJECTOR_ADDRESS,
+    CURATED_V2_STAKING_MODULE_ADDRESS,
+    CURATED_V2_ACCOUNTING,
+    CURATED_V2_FEE_DISTRIBUTOR,
+    CURATED_V2_FEE_ORACLE,
+    CURATED_V2_HASH_CONSENSUS,
+    CURATED_V2_META_REGISTRY_ADDRESS,
+    CURATED_V2_PARAMETERS_REGISTRY,
+    CURATED_V2_STRIKES,
+    CURATED_V2_VERIFIER,
+    CURATED_V2_EJECTOR,
+    CURATED_V2_MERKLE_GATE_ADDRESSES,
+    CURATED_V2_COMMITTEE_MS,
     L1_EMERGENCY_BRAKES_MULTISIG,
     DUAL_GOVERNANCE_EXECUTORS,
     RESEAL_MANAGER,
@@ -75,12 +94,109 @@ from utils.config import (
     GATE_SEAL_V3,
     L1_TOKEN_RATE_NOTIFIER,
     STAKING_VAULT_BEACON,
-    TWO_PHASE_FRAME_CONFIG_UPDATE
+    TWO_PHASE_FRAME_CONFIG_UPDATE,
 )
 
 
 @pytest.fixture(scope="function")
 def protocol_permissions():
+    csm_pause_manager = CIRCUIT_BREAKER
+    cs_ejector_address = CS_EJECTOR_V3_ADDRESS
+    cs_permissionless_gate_address = CS_PERMISSIONLESS_GATE_V3_ADDRESS
+    cs_verifier = interface.Verifier(CS_VERIFIER_V3_ADDRESS)
+    cs_verifier_address = cs_verifier.address
+    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CURATED_V2_ACCOUNTING]
+    burner_request_burn_shares_holders = [contracts.accounting]
+    csm_create_node_operator_holders = [
+        cs_permissionless_gate_address,
+        CS_VETTED_GATE_ADDRESS,
+        CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+    ]
+    cs_accounting_set_bond_curve_holders = [
+        CS_VETTED_GATE_ADDRESS,
+        CSM_COMMITTEE_MS,
+        CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
+    ]
+    twg_full_withdrawal_request_holders = [
+        VALIDATORS_EXIT_BUS_ORACLE,
+        cs_ejector_address,
+        CURATED_V2_EJECTOR,
+    ]
+    csm_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+        "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
+        "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [],
+        "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [],
+        "CREATE_NODE_OPERATOR_ROLE": csm_create_node_operator_holders,
+        "VERIFIER_ROLE": [cs_verifier_address],
+        "RESUME_ROLE": [RESEAL_MANAGER],
+        "RECOVERER_ROLE": [],
+        "MANAGE_TOP_UP_QUEUE_ROLE": [],
+        "REWIND_TOP_UP_QUEUE_ROLE": [],
+        "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CSM_COMMITTEE_MS],
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [cs_verifier_address],
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+    }
+    csm_role_preimages = {
+        "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE",
+        "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE",
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": "REPORT_GENERAL_DELAYED_PENALTY_ROLE",
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": "SETTLE_GENERAL_DELAYED_PENALTY_ROLE",
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE",
+    }
+    vetted_gate_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
+        "RESUME_ROLE": [RESEAL_MANAGER],
+        "RECOVERER_ROLE": [],
+        "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+    }
+    cs_parameters_registry_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CSM_COMMITTEE_MS],
+        "MANAGE_KEYS_LIMIT_ROLE": [],
+        "MANAGE_QUEUE_CONFIG_ROLE": [],
+        "MANAGE_PERFORMANCE_PARAMETERS_ROLE": [],
+        "MANAGE_REWARD_SHARE_ROLE": [],
+        "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
+        "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
+    cm_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+        "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "CREATE_NODE_OPERATOR_ROLE": CURATED_V2_MERKLE_GATE_ADDRESSES,
+        "VERIFIER_ROLE": [CURATED_V2_VERIFIER],
+        "RESUME_ROLE": [RESEAL_MANAGER],
+        "RECOVERER_ROLE": [],
+        "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [CURATED_V2_VERIFIER],
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+    }
+    cm_parameters_registry_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "MANAGE_GENERAL_PENALTIES_AND_CHARGES_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "MANAGE_KEYS_LIMIT_ROLE": [],
+        "MANAGE_QUEUE_CONFIG_ROLE": [],
+        "MANAGE_PERFORMANCE_PARAMETERS_ROLE": [],
+        "MANAGE_REWARD_SHARE_ROLE": [],
+        "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
+        "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
+    cm_gate_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "PAUSE_ROLE": [CURATED_V2_COMMITTEE_MS],
+        "RESUME_ROLE": [],
+        "RECOVERER_ROLE": [],
+        "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+    }
+
     return {
         LIDO_LOCATOR: {
             "contract_name": "LidoLocator",
@@ -95,8 +211,8 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "REQUEST_BURN_MY_STETH_ROLE": [],
-                "REQUEST_BURN_SHARES_ROLE": [contracts.accounting, contracts.csm.accounting()],
+                "REQUEST_BURN_MY_STETH_ROLE": burner_request_burn_my_steth_holders,
+                "REQUEST_BURN_SHARES_ROLE": burner_request_burn_shares_holders,
             },
         },
         STAKING_ROUTER: {
@@ -109,6 +225,7 @@ def protocol_permissions():
                 "MANAGE_WITHDRAWAL_CREDENTIALS_ROLE": [],
                 "STAKING_MODULE_UNVETTING_ROLE": [contracts.deposit_security_module],
                 "STAKING_MODULE_MANAGE_ROLE": [contracts.agent],
+                "STAKING_MODULE_SHARE_MANAGE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
                 "REPORT_EXITED_VALIDATORS_ROLE": [contracts.accounting_oracle],
                 "UNSAFE_SET_EXITED_VALIDATORS_ROLE": [],
                 "REPORT_REWARDS_MINTED_ROLE": [contracts.accounting],
@@ -198,17 +315,21 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALL_LIMITS_MANAGER_ROLE": [],
-                "EXITED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
-                "APPEARED_VALIDATORS_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "EXITED_ETH_AMOUNT_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "APPEARED_ETH_AMOUNT_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT_MANAGER_ROLE": [],
+                "EXITED_VALIDATOR_ETH_AMOUNT_LIMIT_MANAGER_ROLE": [],
+                "EXTERNAL_PENDING_BALANCE_CAP_MANAGER_ROLE": [],
+                "MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH_ROLE": [],
+                "MAX_CL_BALANCE_DECREASE_MANAGER_ROLE": [],
+                "MAX_EFFECTIVE_BALANCE_WEIGHTS_MANAGER_ROLE": [],
                 "ANNUAL_BALANCE_INCREASE_LIMIT_MANAGER_ROLE": [],
                 "SHARE_RATE_DEVIATION_LIMIT_MANAGER_ROLE": [],
-                "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_ROLE": [],
                 "MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION_ROLE": [],
                 "MAX_NODE_OPERATORS_PER_EXTRA_DATA_ITEM_ROLE": [],
                 "REQUEST_TIMESTAMP_MARGIN_MANAGER_ROLE": [],
                 "MAX_POSITIVE_TOKEN_REBASE_MANAGER_ROLE": [],
                 "SECOND_OPINION_MANAGER_ROLE": [],
-                "INITIAL_SLASHING_AND_PENALTIES_MANAGER_ROLE": [],
             },
         },
         DEPOSIT_SECURITY_MODULE: {
@@ -269,7 +390,7 @@ def protocol_permissions():
                 "STAKING_CONTROL_ROLE": [],
                 "RESUME_ROLE": [],
                 "STAKING_PAUSE_ROLE": [],
-                "UNSAFE_CHANGE_DEPOSITED_VALIDATORS_ROLE": [],
+                "BUFFER_RESERVE_MANAGER_ROLE": [contracts.agent],
             },
         },
         AGENT: {
@@ -343,34 +464,25 @@ def protocol_permissions():
             "contract": contracts.csm,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
-            "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
-                "REPORT_EL_REWARDS_STEALING_PENALTY_ROLE": [CSM_COMMITTEE_MS],
-                "SETTLE_EL_REWARDS_STEALING_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
-                "CREATE_NODE_OPERATOR_ROLE": [CS_PERMISSIONLESS_GATE_ADDRESS, CS_VETTED_GATE_ADDRESS],
-                "VERIFIER_ROLE": [CS_VERIFIER_V2_ADDRESS],
-                "RESUME_ROLE": [RESEAL_MANAGER],
-                "RECOVERER_ROLE": [],
-            },
+            "roles": csm_roles,
+            "role_preimages": csm_role_preimages,
         },
         CS_ACCOUNTING_ADDRESS: {
-            "contract_name": "CSAccounting",
+            "contract_name": "Accounting",
             "contract": contracts.cs_accounting,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "SET_BOND_CURVE_ROLE": [CS_VETTED_GATE_ADDRESS, CSM_COMMITTEE_MS],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "SET_BOND_CURVE_ROLE": cs_accounting_set_bond_curve_holders,
+                "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "MANAGE_BOND_CURVES_ROLE": [],
                 "RECOVERER_ROLE": [],
             },
         },
         CS_FEE_DISTRIBUTOR_ADDRESS: {
-            "contract_name": "CSFeeDistributor",
+            "contract_name": "FeeDistributor",
             "contract": contracts.cs_fee_distributor,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
@@ -380,7 +492,7 @@ def protocol_permissions():
             },
         },
         CS_FEE_ORACLE_ADDRESS: {
-            "contract_name": "CSFeeOracle",
+            "contract_name": "FeeOracle",
             "contract": contracts.cs_fee_oracle,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
@@ -388,7 +500,7 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
                 "MANAGE_CONSENSUS_VERSION_ROLE": [],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
                 "SUBMIT_DATA_ROLE": [],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
@@ -407,27 +519,25 @@ def protocol_permissions():
                 "MANAGE_REPORT_PROCESSOR_ROLE": [],
             },
         },
-        CS_VERIFIER_V2_ADDRESS: {
-            "contract_name": "CSVerifier",
-            "contract": contracts.cs_verifier,
+        cs_verifier_address: {
+            "contract_name": "Verifier",
+            "contract": cs_verifier,
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
-            }
+            },
         },
         CS_PARAMS_REGISTRY_ADDRESS: {
-            "contract_name": "CSParametersRegistry",
+            "contract_name": "ParametersRegistry",
             "contract": contracts.cs_parameters_registry,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
-            "roles": {
-                "DEFAULT_ADMIN_ROLE": [contracts.agent],
-            },
+            "roles": cs_parameters_registry_roles,
         },
         CS_STRIKES_ADDRESS: {
-            "contract_name": "CSStrikes",
+            "contract_name": "ValidatorStrikes",
             "contract": contracts.cs_strikes,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
@@ -435,40 +545,198 @@ def protocol_permissions():
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
             },
         },
-        CS_EJECTOR_ADDRESS: {
-            "contract_name": "CSEjector",
-            "contract": contracts.cs_ejector,
+        cs_ejector_address: {
+            "contract_name": "Ejector",
+            "contract": interface.Ejector(cs_ejector_address),
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
-            }
+            },
         },
         CS_VETTED_GATE_ADDRESS: {
             "contract_name": "VettedGate",
             "contract": contracts.cs_vetted_gate,
             "type": "CustomApp",
             "proxy_owner": contracts.agent,
+            "roles": vetted_gate_roles,
+        },
+        cs_permissionless_gate_address: {
+            "contract_name": "PermissionlessGate",
+            "contract": interface.PermissionlessGate(cs_permissionless_gate_address),
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_STAKING_MODULE_ADDRESS: {
+            "contract_name": "CuratedModule",
+            "contract": contracts.cm,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": cm_roles,
+        },
+        CURATED_V2_ACCOUNTING: {
+            "contract_name": "CuratedAccounting",
+            "contract": contracts.cm_accounting,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "SET_BOND_CURVE_ROLE": CURATED_V2_MERKLE_GATE_ADDRESSES[1:],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "MANAGE_BOND_CURVES_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_FEE_DISTRIBUTOR: {
+            "contract_name": "CuratedFeeDistributor",
+            "contract": contracts.cm_fee_distributor,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_FEE_ORACLE: {
+            "contract_name": "CuratedFeeOracle",
+            "contract": contracts.cm_fee_oracle,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "SUBMIT_DATA_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CURATED_V2_HASH_CONSENSUS: {
+            "contract_name": "CuratedHashConsensus",
+            "contract": contracts.cm_hash_consensus,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        CURATED_V2_VERIFIER: {
+            "contract_name": "CuratedVerifier",
+            "contract": contracts.cm_verifier,
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            },
+        },
+        CURATED_V2_PARAMETERS_REGISTRY: {
+            "contract_name": "CuratedParametersRegistry",
+            "contract": contracts.cm_parameters_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": cm_parameters_registry_roles,
+        },
+        CURATED_V2_STRIKES: {
+            "contract_name": "CuratedValidatorStrikes",
+            "contract": contracts.cm_strikes,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CURATED_V2_EJECTOR: {
+            "contract_name": "CuratedEjector",
+            "contract": contracts.cm_ejector,
+            "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
                 "RECOVERER_ROLE": [],
-                "SET_TREE_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
-                "START_REFERRAL_SEASON_ROLE": [contracts.agent],
-                "END_REFERRAL_SEASON_ROLE": [CSM_COMMITTEE_MS],
-            }
+            },
         },
-        CS_PERMISSIONLESS_GATE_ADDRESS: {
-            "contract_name": "PermissionlessGate",
-            "contract": contracts.cs_permissionless_gate,
+        CURATED_V2_META_REGISTRY_ADDRESS: {
+            "contract_name": "CuratedMetaRegistry",
+            "contract": contracts.cm_meta_registry,
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_OPERATOR_GROUPS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "SET_OPERATOR_INFO_ROLE": [CURATED_V2_COMMITTEE_MS, *CURATED_V2_MERKLE_GATE_ADDRESSES],
+                "SET_BOND_CURVE_WEIGHT_ROLE": [],
+            },
+        },
+        **{
+            gate_address: {
+                "contract_name": "CuratedGate",
+                "contract": interface.CuratedGate(gate_address),
+                "type": "CustomApp",
+                "proxy_owner": contracts.agent,
+                "roles": cm_gate_roles,
+            }
+            for gate_address in CURATED_V2_MERKLE_GATE_ADDRESSES
+        },
+        TOP_UP_GATEWAY: {
+            "contract_name": "TopUpGateway",
+            "contract": interface.TopUpGateway(TOP_UP_GATEWAY),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "TOP_UP_ROLE": [TOP_UP_GATEWAY_DEPOSITOR],
+                "MANAGE_LIMITS_ROLE": [],
+            },
+        },
+        CONSOLIDATION_GATEWAY: {
+            "contract_name": "ConsolidationGateway",
+            "contract": interface.ConsolidationGateway(CONSOLIDATION_GATEWAY),
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "RECOVERER_ROLE": [],
-            }
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "ADD_CONSOLIDATION_REQUEST_ROLE": [CONSOLIDATION_BUS],
+                "EXIT_LIMIT_MANAGER_ROLE": [],
+            },
+        },
+        CONSOLIDATION_BUS: {
+            "contract_name": "ConsolidationBus",
+            "contract": interface.ConsolidationBus(CONSOLIDATION_BUS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PUBLISH_ROLE": [CONSOLIDATION_MIGRATOR],
+                "REMOVE_ROLE": [CONSOLIDATION_COMMITTEE],
+                "MANAGE_ROLE": [],
+            },
+        },
+        CONSOLIDATION_MIGRATOR: {
+            "contract_name": "ConsolidationMigrator",
+            "contract": interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "ALLOW_PAIR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "DISALLOW_PAIR_ROLE": [CONSOLIDATION_COMMITTEE],
+            },
         },
         TRIGGERABLE_WITHDRAWALS_GATEWAY: {
             "contract_name": "TriggerableWithdrawalsGateway",
@@ -476,11 +744,11 @@ def protocol_permissions():
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "ADD_FULL_WITHDRAWAL_REQUEST_ROLE": [VALIDATORS_EXIT_BUS_ORACLE, CS_EJECTOR_ADDRESS],
-                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "ADD_FULL_WITHDRAWAL_REQUEST_ROLE": twg_full_withdrawal_request_holders,
+                "PAUSE_ROLE": [csm_pause_manager, RESEAL_MANAGER],
                 "RESUME_ROLE": [RESEAL_MANAGER],
-                "TW_EXIT_LIMIT_MANAGER_ROLE": [],
-            }
+                "TW_EXIT_LIMIT_MANAGER_ROLE": [contracts.agent],
+            },
         },
         INSURANCE_FUND: {
             "contract_name": "InsuranceFund",
@@ -604,21 +872,24 @@ def test_protocol_permissions(protocol_permissions):
         abi_roles_list = [
             method for method in permissions_config["contract"].signatures.keys() if method.endswith("_ROLE")
         ]
+        abi_roles = set(abi_roles_list)
+        configured_roles = set(permissions_config["roles"])
+        custom_role_preimages = set(permissions_config.get("role_preimages", {}))
 
         if contract_address in [NODE_OPERATORS_REGISTRY, SIMPLE_DVT]:
             abi_roles_list.append("MANAGE_SIGNING_KEYS")
+            abi_roles.add("MANAGE_SIGNING_KEYS")
 
         roles = permissions_config["roles"]
 
-        assert len(abi_roles_list) == len(
-            roles.keys()
-        ), "Contract {} . number of roles doesn't match. expected {} actual {}".format(
-            permissions_config["contract_name"], abi_roles_list, roles.keys()
+        assert abi_roles.issubset(configured_roles), "Contract {} has undescribed ABI roles {}".format(
+            permissions_config["contract_name"], abi_roles - configured_roles
         )
-        for role in set(permissions_config["roles"].keys()):
-            assert role in abi_roles_list, "no {} described for contract {}".format(
-                role, permissions_config["contract_name"]
-            )
+        assert configured_roles.issubset(
+            abi_roles | custom_role_preimages
+        ), "Contract {} has configured roles absent from ABI and role_preimages {}".format(
+            permissions_config["contract_name"], configured_roles - abi_roles - custom_role_preimages
+        )
 
         if permissions_config["type"] == "AragonApp":
             for role, holders in permissions_config["roles"].items():
@@ -651,19 +922,28 @@ def test_protocol_permissions(protocol_permissions):
                 if "role_preimages" in permissions_config and role in permissions_config["role_preimages"]:
                     role_preimage = permissions_config["role_preimages"][role]
 
-                role_keccak = web3.keccak(text=role_preimage).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
+                role_keccak = (
+                    web3.keccak(text=role_preimage).hex() if role != "DEFAULT_ADMIN_ROLE" else ZERO_BYTES32.hex()
+                )
 
-                role_signature = permissions_config["contract"].signatures[role]
-                assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
+                if role in permissions_config["contract"].signatures:
+                    role_signature = permissions_config["contract"].signatures[role]
+                    assert permissions_config["contract"].get_method_object(role_signature)() == role_keccak
 
                 try:
                     role_member_count = permissions_config["contract"].getRoleMemberCount(role_keccak)
                 except Exception as e:
-                    print("Unable to count role members for {0} at {1}: {2}".format(role, permissions_config["contract_name"], e))
+                    print(
+                        "Unable to count role members for {0} at {1}: {2}".format(
+                            role, permissions_config["contract_name"], e
+                        )
+                    )
                     role_member_count = None
                 finally:
                     if role_member_count is not None:
-                        assert role_member_count == len(holders), "number of {0} role holders in contract {1} mismatched".format(
+                        assert role_member_count == len(
+                            holders
+                        ), "number of {0} role holders in contract {1} mismatched".format(
                             role, permissions_config["contract_name"]
                         )
 
@@ -720,17 +1000,17 @@ def assert_curated_manage_signing_keys_permission(permissions_config, current_ho
     assert_expected_role_holders(role, expected_holders, current_holders, contract_name)
 
     for holder in current_holders:
-        assert not contracts.acl.hasPermission(holder, contract_address, role_hash), (
-            "Unexpected unparameterized {} holder {} at {}".format(role, holder, contract_name)
-        )
+        assert not contracts.acl.hasPermission(
+            holder, contract_address, role_hash
+        ), "Unexpected unparameterized {} holder {} at {}".format(role, holder, contract_name)
 
     for node_operator_id, holder in CURATED_MANAGE_SIGNING_KEYS_HOLDERS.items():
         expected_params = [Param(0, Op.EQ, ArgumentValue(node_operator_id))]
         actual_params = get_acl_permission_params(holder, contract_address, role_hash)
-        assert actual_params == expected_params, (
-            "Unexpected params for {} holder {} at {}. expected {}, actual {}".format(
-                role, holder, contract_name, expected_params, actual_params
-            )
+        assert (
+            actual_params == expected_params
+        ), "Unexpected params for {} holder {} at {}. expected {}, actual {}".format(
+            role, holder, contract_name, expected_params, actual_params
         )
 
 
@@ -770,7 +1050,7 @@ def get_http_w3_provider_url():
     if os.getenv("ETH_RPC_URL") is not None:
         return os.getenv("ETH_RPC_URL")
 
-    assert False, 'Web3 HTTP Provider token env var not found'
+    assert False, "Web3 HTTP Provider token env var not found"
 
 
 def get_http_provider_timeout():
@@ -810,18 +1090,22 @@ def active_aragon_roles(protocol_permissions):
             for batch_start in range(start_block, end_block, step):
                 batch_end = min(batch_start + step - 1, end_block)
 
-                batch_events = provider.eth.get_logs({
-                    "address": contracts.acl.address,
-                    "fromBlock": batch_start,
-                    "toBlock": batch_end,
-                    "topics": [event_signature_hash],
-                })
+                batch_events = provider.eth.get_logs(
+                    {
+                        "address": contracts.acl.address,
+                        "fromBlock": batch_start,
+                        "toBlock": batch_end,
+                        "topics": [event_signature_hash],
+                    }
+                )
 
                 events.extend(batch_events)
                 pbar.update(1)
         return events
 
-    events_before_voting = fetch_events_in_batches(ACL_DEPLOY_BLOCK_NUMBER, remote_rpc_provider.eth.block_number, remote_rpc_provider)
+    events_before_voting = fetch_events_in_batches(
+        ACL_DEPLOY_BLOCK_NUMBER, remote_rpc_provider.eth.block_number, remote_rpc_provider
+    )
 
     permission_events = _decode_logs(events_before_voting)["SetPermission"]._ordered
 

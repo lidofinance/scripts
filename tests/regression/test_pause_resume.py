@@ -8,6 +8,7 @@ from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.staking_module import calc_module_reward_shares
+from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 from utils.test.helpers import almostEqEth, almostEqWithDiff
 
@@ -26,10 +27,18 @@ def burner() -> Contract:
 
 @pytest.fixture(scope="module", autouse=True)
 def agent_permission():
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent})
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent})
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_PAUSE_ROLE"), {"from": contracts.agent})
-    contracts.acl.grantPermission(contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent})
+    contracts.acl.grantPermission(
+        contracts.agent, contracts.lido, web3.keccak(text="PAUSE_ROLE"), {"from": contracts.agent}
+    )
+    contracts.acl.grantPermission(
+        contracts.agent, contracts.lido, web3.keccak(text="RESUME_ROLE"), {"from": contracts.agent}
+    )
+    contracts.acl.grantPermission(
+        contracts.agent, contracts.lido, web3.keccak(text="STAKING_PAUSE_ROLE"), {"from": contracts.agent}
+    )
+    contracts.acl.grantPermission(
+        contracts.agent, contracts.lido, web3.keccak(text="STAKING_CONTROL_ROLE"), {"from": contracts.agent}
+    )
 
 
 class StakingModuleStatus(IntEnum):
@@ -209,15 +218,19 @@ def test_stopped_lido_cant_stake(stranger):
 
 
 @pytest.mark.usefixtures("stopped_lido")
-def test_stopped_lido_cant_deposit():
+def test_stopped_lido_cant_withdraw_depositable_ether(stranger):
+    # withdrawDepositableEther is callable only by the StakingRouter (_auth check),
+    # but require(canDeposit()) is the first statement in its body, so on a stopped
+    # Lido any caller hits CAN_NOT_DEPOSIT before the auth check
     with brownie.reverts("CAN_NOT_DEPOSIT"):
-        contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+        contracts.lido.withdrawDepositableEther(1, 0, {"from": stranger})
 
 
 def test_resumed_staking_can_stake(stranger):
     contracts.lido.pauseStaking({"from": contracts.agent})
     contracts.lido.resumeStaking({"from": contracts.agent})
     stranger.transfer(contracts.lido, DEPOSIT_AMOUNT)
+
 
 @pytest.mark.usefixtures("stopped_lido")
 def test_cant_resume_staking_on_stopped_lido():
@@ -234,7 +247,34 @@ def test_resumed_lido_can_stake(stranger):
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_lido_can_deposit(stranger):
     contracts.lido.resume({"from": contracts.agent})
-    contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+    fill_deposit_buffer(1)
+    # min-first allocation gives the buffer to the least filled module, so the
+    # deposit goes to whichever module actually got a non-zero allocation
+    deposit_amount = contracts.lido.getDepositableEther()
+    module_id = next(
+        id
+        for id in contracts.staking_router.getStakingModuleIds()
+        if contracts.staking_router.getStakingModuleMaxDepositsCount(id, deposit_amount) > 0
+    )
+    contracts.staking_router.deposit(module_id, "0x", {"from": contracts.deposit_security_module})
+
+
+def test_cant_deposit_to_module_with_zero_allocation():
+    deposit_amount = contracts.lido.getDepositableEther()
+    module_id = next(
+        (
+            id
+            for id in contracts.staking_router.getStakingModuleIds()
+            if contracts.staking_router.getStakingModuleStatus(id) == StakingModuleStatus.Active
+            and contracts.staking_router.getStakingModuleMaxDepositsCount(id, deposit_amount) == 0
+        ),
+        None,
+    )
+    if module_id is None:
+        pytest.skip("every active staking module has a non-zero allocation")
+
+    with brownie.reverts(encode_error("ZeroDeposits()")):
+        contracts.staking_router.deposit(module_id, "0x", {"from": contracts.deposit_security_module})
 
 
 def test_paused_staking_can_report():
@@ -247,24 +287,24 @@ def test_paused_staking_can_report():
 
 def test_paused_staking_module_cant_stake(stranger):
     contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
+        web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     with brownie.reverts(encode_error("StakingModuleNotActive()")):
-        contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+        contracts.staking_router.deposit(1, "0x", {"from": contracts.deposit_security_module})
 
 
 def test_paused_staking_module_can_reward(burner: Contract, stranger):
     _, module_address, *_ = contracts.staking_router.getStakingModule(1)
 
     contracts.staking_router.grantRole(
-            web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
-            stranger,
-            {"from": contracts.agent},
-        )
+        web3.keccak(text="STAKING_MODULE_MANAGE_ROLE"),
+        stranger,
+        {"from": contracts.agent},
+    )
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     (report_tx, _) = oracle_report()
@@ -275,7 +315,7 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     simple_dvt_index = 2
     csm_index = 3
 
-    if report_tx.events["TransferShares"][module_index-1]["to"] == burner.address:
+    if report_tx.events["TransferShares"][module_index - 1]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
         csm_index += 1
@@ -289,7 +329,6 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     assert report_tx.events["TransferShares"][csm_index]["from"] == contracts.accounting.address
     assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
     assert report_tx.events["TransferShares"][agent_index]["from"] == contracts.accounting.address
-
 
     # the staking modules ids starts from 1
     module_stats = contracts.staking_router.getStakingModule(1)
@@ -382,7 +421,7 @@ def test_stopped_staking_module_cant_stake(stranger):
 
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.Stopped, {"from": stranger})
     with brownie.reverts(encode_error("StakingModuleNotActive()")):
-        contracts.lido.deposit(1, 1, "0x", {"from": contracts.deposit_security_module}),
+        contracts.staking_router.deposit(1, "0x", {"from": contracts.deposit_security_module})
 
 
 def test_stopped_staking_module_cant_reward(stranger):
