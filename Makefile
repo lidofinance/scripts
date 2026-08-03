@@ -135,5 +135,10 @@ slots:
 ci-prepare-environment:
 	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
 
+# Core tests operate on vaults, and VaultHub rejects a vaults report older than 2 days, while
+# enacting the vote leaves the fork clock ~9 days past the last one.
+ci-refresh-vaults-report:
+	poetry run brownie run scripts/ci/refresh_vaults_report --network mfh-1
+
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1
