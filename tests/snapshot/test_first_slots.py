@@ -47,8 +47,14 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
-    """Slots that are not checked for equality"""
-    return []
+    """Slots intentionally modified by the NEST 2026-08-05 upgrade."""
+    return [
+        (
+            # EasyTrack factories array: the vote removes one factory and adds four.
+            contracts.easy_track.address,
+            0x05,
+        ),
+    ]
 
 
 @pytest.fixture(scope="module")

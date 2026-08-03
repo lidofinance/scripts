@@ -17,6 +17,9 @@ from typing import TypedDict, TypeVar, Any
 # Use as mock for L2 TokenRateOracle
 L2_TOKEN_RATE_ORACLE = WSTETH_TOKEN
 
+# TokenRateNotifier.ObserverKind
+OBSERVER_KIND_NO_ARGS = 0
+
 
 @pytest.fixture(scope="module")
 def accounting_oracle() -> Contract:
@@ -40,7 +43,7 @@ def withdrawal_queue() -> Contract:
 
 def test_oracle_report_revert():
     """Test oracle report reverts when messenger is empty"""
-    interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)  # load TokenRateNotifier contract ABI to catch correct error
+    interface.TokenRateNotifierV2(L1_TOKEN_RATE_NOTIFIER)
 
     web3.provider.make_request("hardhat_setCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
     web3.provider.make_request("evm_setAccountCode", [L1_OPTIMISM_CROSS_DOMAIN_MESSENGER, "0x"])
@@ -101,9 +104,11 @@ def test_oracle_report_success_when_observer_reverts(accounting_oracle: Contract
 
     opStackTokenRatePusher = OpStackTokenRatePusherWithSomeErrorStub.deploy({"from": get_deployer_account()})
 
-    tokenRateNotifier = interface.TokenRateNotifier(L1_TOKEN_RATE_NOTIFIER)
+    tokenRateNotifier = interface.TokenRateNotifierV2(L1_TOKEN_RATE_NOTIFIER)
     tokenRateNotifierOwner = tokenRateNotifier.owner()
-    tokenRateNotifier.addObserver(opStackTokenRatePusher, {"from": tokenRateNotifierOwner})
+    tokenRateNotifier.addObserver(
+        opStackTokenRatePusher, OBSERVER_KIND_NO_ARGS, {"from": tokenRateNotifierOwner}
+    )
 
     accounts[0].transfer(el_vault.address, 10**18)
     block_before_report = chain.height

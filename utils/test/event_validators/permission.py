@@ -115,10 +115,10 @@ def validate_permission_grantp_event(event: EventDict, p: Permission, params: Li
     ), "Wrong event emitter"
 
 
-def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None) -> None:
-    # this event chain is actual if grant role is forwarded through
+def validate_grant_role_event(events: EventDict, role: str, grant_to: str, sender: str, emitted_by: str = None, event_chain: List[str] = None) -> None:
+    # defaults to the Agent-forwarded chain; pass event_chain for a direct grant, e.g. ["LogScriptCall", "RoleGranted"]
 
-    _events_chain = ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
+    _events_chain = event_chain or ["LogScriptCall", "LogScriptCall", "RoleGranted", "ScriptResult", "Executed"]
 
     validate_events_chain([e.name for e in events], _events_chain)
 
