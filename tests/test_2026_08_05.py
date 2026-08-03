@@ -330,14 +330,19 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert buyback_executor.stonks() == ZERO_ADDRESS, "BuybackExecutor stonks already set"
         # vote item 4
         assert not buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR)
+        assert buyback_executor.getRoleMemberCount(ALLOCATOR_ROLE) == 0
         # vote item 5
         assert not buyback_executor.hasRole(MANAGER_ROLE, TMC)
+        assert buyback_executor.getRoleMemberCount(MANAGER_ROLE) == 0
         # vote item 6
         assert not buyback_executor.hasRole(EMERGENCY_ROLE, TMC)
         # vote item 7
         assert not buyback_executor.hasRole(EMERGENCY_ROLE, EMERGENCY_COMMITTEE)
+        # vote items 6-7 grant the same role, so its holders are counted once for both
+        assert buyback_executor.getRoleMemberCount(EMERGENCY_ROLE) == 0
         # vote item 8
         assert not buyback_allocator.hasRole(MANAGER_ROLE, TMC)
+        assert buyback_allocator.getRoleMemberCount(MANAGER_ROLE) == 0
         # vote item 9
         assert buyback_allocator.activationTS() == 0, "BuybackAllocator already activated"
         # vote items 10-11
@@ -402,14 +407,24 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert buyback_executor.stonks() == BUYBACK_STONKS_TREASURY, "BuybackExecutor stonks not set"
         # vote item 4
         assert buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR), "ALLOCATOR_ROLE not granted to allocator"
+        assert buyback_executor.getRoleMemberCount(ALLOCATOR_ROLE) == 1, "extra ALLOCATOR_ROLE holder on the executor"
         # vote item 5
         assert buyback_executor.hasRole(MANAGER_ROLE, TMC), "executor MANAGER_ROLE not granted to TMC"
+        assert buyback_executor.getRoleMemberCount(MANAGER_ROLE) == 1, "extra MANAGER_ROLE holder on the executor"
         # vote item 6
         assert buyback_executor.hasRole(EMERGENCY_ROLE, TMC), "executor EMERGENCY_ROLE not granted to TMC"
         # vote item 7
         assert buyback_executor.hasRole(EMERGENCY_ROLE, EMERGENCY_COMMITTEE), "executor EMERGENCY_ROLE not granted to EC"
+        # vote items 6-7 grant the same role, so TMC and the emergency committee are its only holders
+        assert buyback_executor.getRoleMemberCount(EMERGENCY_ROLE) == 2, "extra EMERGENCY_ROLE holder on the executor"
         # vote item 8
         assert buyback_allocator.hasRole(MANAGER_ROLE, TMC), "allocator MANAGER_ROLE not granted to TMC"
+        assert buyback_allocator.getRoleMemberCount(MANAGER_ROLE) == 1, "extra MANAGER_ROLE holder on the allocator"
+        # the role admin is untouched by the vote: still Voting alone on both contracts
+        assert buyback_executor.hasRole(DEFAULT_ADMIN_ROLE, VOTING)
+        assert buyback_executor.getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1
+        assert buyback_allocator.hasRole(DEFAULT_ADMIN_ROLE, VOTING)
+        assert buyback_allocator.getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1
         # vote item 9: activate() records activationTS as midnight UTC of the execution day
         assert buyback_allocator.activationTS() == vote_tx.timestamp - (vote_tx.timestamp % ONE_DAY), \
             "BuybackAllocator not activated at the vote-execution day's midnight UTC"
