@@ -1175,11 +1175,26 @@ def _encode_nor_external_operator_data(module_id, node_operator_id):
 
 
 def _find_active_source_operator():
+    """First active curated operator that no MetaRegistry group holds as an external operator.
+
+    CM keeps claiming them, and a claimed one reverts with `AlreadyUsedAsExternalOperator`.
+    """
     nor = contracts.node_operators_registry
-    for no_id in range(nor.getNodeOperatorsCount()):
-        if nor.getNodeOperatorIsActive(no_id):
-            return no_id
-    raise AssertionError("No active operator found in the curated (source) module")
+    meta_registry = contracts.cm_meta_registry
+
+    claimed_external_operators = set()
+    for group_id in range(meta_registry.getOperatorGroupsCount()):
+        for (external_operator_data,) in meta_registry.getOperatorGroup(group_id)["externalOperators"]:
+            claimed_external_operators.add(bytes(external_operator_data))
+
+    for node_operator_id in range(nor.getNodeOperatorsCount()):
+        if not nor.getNodeOperatorIsActive(node_operator_id):
+            continue
+        external_operator_data = _encode_nor_external_operator_data(CONSOLIDATION_SOURCE_MODULE_ID, node_operator_id)
+        if external_operator_data in claimed_external_operators:
+            continue
+        return node_operator_id
+    raise AssertionError("No unclaimed active operator found in the curated (source) module")
 
 
 def _split_operator_shares(count):
