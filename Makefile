@@ -104,8 +104,10 @@ STONKS_POSTVOTE_SUITES ?= staking-revenue-source buyback-happy-path
 test-stonks-integration-prevote:
 	cd $(STONKS_DIR) && \
 	{ [ -d node_modules ] || npm ci; } && \
-	POSTVOTE_PATTERN=$$(echo "$(STONKS_POSTVOTE_SUITES)" | tr ' ' '|') && \
-	RPC_URL=$(ETH_RPC_URL) npx hardhat test $$(ls test/integration/*.ts | grep -vE "$$POSTVOTE_PATTERN") --network localhost
+	POSTVOTE_PATTERN="^test/integration/($$(echo $(STONKS_POSTVOTE_SUITES) | tr ' ' '|'))\.ts$$" && \
+	PREVOTE_SUITES=$$(ls test/integration/*.ts | grep -vE "$$POSTVOTE_PATTERN" || true) && \
+	{ [ -n "$$PREVOTE_SUITES" ] || { echo "No pre-vote suites left after excluding: $(STONKS_POSTVOTE_SUITES)" >&2; exit 1; }; } && \
+	RPC_URL=$(ETH_RPC_URL) npx hardhat test $$PREVOTE_SUITES --network localhost
 
 test-stonks-integration-postvote: ci-prepare-environment
 	cd $(STONKS_DIR) && \
