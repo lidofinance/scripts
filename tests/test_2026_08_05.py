@@ -182,7 +182,7 @@ EXPECTED_DG_PROPOSAL_ID = 13
 EXPECTED_DG_EVENTS_FROM_AGENT = 6
 EXPECTED_DG_EVENTS_COUNT = 1
 
-IPFS_DESCRIPTION_HASH = "bafkreicltgxsuj5y7g5jv3iuknqsdpudc4vrnr2w3lqudr3fywvj6hrog4"
+IPFS_DESCRIPTION_HASH = "bafkreiey62spdcfej5pnvoz22czz3frmmagc2v2i5xwrzq6j4qhtdpwwoi"
 
 
 # ============================================================================
