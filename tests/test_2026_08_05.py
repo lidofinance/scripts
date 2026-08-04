@@ -126,6 +126,26 @@ OBSERVER_KIND_WITH_ARGS = 1
 
 ONE_DAY = 86400
 
+# --- NEST launch parameters the omnibus relies on but does not set itself ---
+# BuybackExecutor order bounds
+BUYBACK_MIN_ALLOWED_ORDER_AMOUNT = ETH(1)
+BUYBACK_MAX_ALLOWED_ORDER_AMOUNT = ETH(20)
+# BuybackAllocator spending caps
+BUYBACK_DAILY_CAP_USD = 50_000 * 10**18
+BUYBACK_YEARLY_CAP_USD = 10_000_000 * 10**18
+BUYBACK_MIN_SPEND_PER_CALL_USD = 1_000 * 10**18
+BUYBACK_MIN_STETH_PRICE_USD = 0  # no price floor
+BUYBACK_RESERVE_DAILY_RATE_USD = 109_589 * 10**18  # the LIP-36 operating baseline, ~$40M per year
+BUYBACK_SURPLUS_SHARE_BP = 5_000  # 50% of the surplus above the baseline
+
+# --- treasury-mode Stonks 0xb368586CB980895E51e1D82102E63b3F69d3F151 ---
+STONKS_ORDER_DURATION_SECONDS = 1_800  # 30 minutes
+STONKS_MARGIN_BP = 110
+STONKS_PRICE_TOLERANCE_BP = 550
+STONKS_MAX_IMPROVEMENT_BP = 1_000
+STONKS_ORDER_SAMPLE = "0x2569633AdB492ca9327cb7433277aa7c68D69e28"
+STONKS_AMOUNT_CONVERTER = "0x70dA04C5D0f325F5AF1426dE6672BF2424B4593d"
+
 # --- NEST buyback scenario params ---
 QUOTE_DENOMINATION_ETH = 1
 TOTAL_BASIS_POINTS = 10_000
@@ -162,7 +182,7 @@ EXPECTED_DG_PROPOSAL_ID = 13
 EXPECTED_DG_EVENTS_FROM_AGENT = 6
 EXPECTED_DG_EVENTS_COUNT = 1
 
-IPFS_DESCRIPTION_HASH = "bafkreiea5mkaprjkxfsxjv7vp6aireshqbvpy3iy5tcvwwhopujv6p25cy"
+IPFS_DESCRIPTION_HASH = "bafkreiefjrubwk5hhikhc3s7wkivju3xpwzfanr5enljzimvxgrrmp6m7a"
 
 
 # ============================================================================
@@ -184,10 +204,11 @@ def validate_manager_set_event(event: EventDict, manager: str, emitted_by: str) 
     _assert_emitted_by(e, emitted_by)
 
 
-def validate_stonks_set_event(event: EventDict, new_stonks: str, emitted_by: str) -> None:
+def validate_stonks_set_event(event: EventDict, new_stonks: str, lp_mode_enabled: bool, emitted_by: str) -> None:
     validate_events_chain([e.name for e in event], ["LogScriptCall", "StonksAndOperatingModeSet"])
     e = _single_event(event, "StonksAndOperatingModeSet")
     assert convert.to_address(e["newStonks"]) == convert.to_address(new_stonks), "Wrong stonks set"
+    assert e["newLpModeEnabled"] == lp_mode_enabled, "Wrong operating mode set"
     _assert_emitted_by(e, emitted_by)
 
 
@@ -272,6 +293,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     oracle_router = interface.OracleRouter(ORACLE_ROUTER)
     buyback_executor = interface.BuybackExecutor(BUYBACK_EXECUTOR)
     buyback_allocator = interface.BuybackAllocator(BUYBACK_ALLOCATOR)
+    buyback_stonks = interface.Stonks(BUYBACK_STONKS_TREASURY)
     new_token_rate_notifier = interface.TokenRateNotifierV2(NEW_TOKEN_RATE_NOTIFIER)
     old_token_rate_notifier = interface.TokenRateNotifier(OLD_TOKEN_RATE_NOTIFIER)
     lido_locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
@@ -327,6 +349,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert oracle_router.manager() != TMC, "OracleRouter manager already set to TMC"
         # vote item 3
         assert buyback_executor.stonks() == ZERO_ADDRESS, "BuybackExecutor stonks already set"
+        assert buyback_executor.stonksOrderDurationSeconds() == 0, "BuybackExecutor already cached an order duration"
         # vote item 4
         assert not buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR)
         assert buyback_executor.getRoleMemberCount(ALLOCATOR_ROLE) == 0
@@ -344,6 +367,39 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert buyback_allocator.getRoleMemberCount(MANAGER_ROLE) == 0
         # vote item 9
         assert buyback_allocator.activationTS() == 0, "BuybackAllocator already activated"
+        # vote items 3-9: the buyback caps and wiring the launch inherits from the deployment.
+        # LP-mode parameters are left out — this launch is treasury-only (see lpModeEnabled below).
+        assert buyback_executor.minAllowedOrderAmount() == BUYBACK_MIN_ALLOWED_ORDER_AMOUNT
+        assert buyback_executor.maxAllowedOrderAmount() == BUYBACK_MAX_ALLOWED_ORDER_AMOUNT
+        assert buyback_executor.STETH() == contracts.lido
+        assert buyback_executor.LDO() == contracts.ldo_token
+        assert buyback_executor.TREASURY() == AGENT
+        assert not buyback_executor.paused(), "BuybackExecutor is paused"
+        assert buyback_allocator.dailyCapUSD() == BUYBACK_DAILY_CAP_USD
+        assert buyback_allocator.yearlyCapUSD() == BUYBACK_YEARLY_CAP_USD
+        assert buyback_allocator.minSpendPerCallUSD() == BUYBACK_MIN_SPEND_PER_CALL_USD
+        assert buyback_allocator.minStEthPriceUSD() == BUYBACK_MIN_STETH_PRICE_USD
+        assert buyback_allocator.reserveDailyRateUSD() == BUYBACK_RESERVE_DAILY_RATE_USD
+        assert buyback_allocator.surplusShareBP() == BUYBACK_SURPLUS_SHARE_BP
+        assert buyback_allocator.executor() == BUYBACK_EXECUTOR
+        assert buyback_allocator.TREASURY() == AGENT
+        # vote item 3: the treasury-mode Stonks as deployed — trades stETH for LDO, sends the LDO
+        # and any recovered assets to the Treasury, and is driven by the executor
+        assert buyback_stonks.TOKEN_FROM() == contracts.lido
+        assert buyback_stonks.TOKEN_TO() == contracts.ldo_token
+        assert buyback_stonks.RECEIVER() == AGENT
+        assert buyback_stonks.AGENT() == AGENT
+        assert buyback_stonks.manager() == BUYBACK_EXECUTOR
+        assert buyback_stonks.ADMIN() == VOTING
+        assert buyback_stonks.ORDER_SAMPLE() == STONKS_ORDER_SAMPLE
+        assert buyback_stonks.AMOUNT_CONVERTER() == STONKS_AMOUNT_CONVERTER
+        assert buyback_stonks.ORDER_DURATION_IN_SECONDS() == STONKS_ORDER_DURATION_SECONDS
+        assert buyback_stonks.MARGIN_IN_BASIS_POINTS() == STONKS_MARGIN_BP
+        assert buyback_stonks.PRICE_TOLERANCE_IN_BASIS_POINTS() == STONKS_PRICE_TOLERANCE_BP
+        assert buyback_stonks.MAX_IMPROVEMENT_IN_BASIS_POINTS() == STONKS_MAX_IMPROVEMENT_BP
+        assert buyback_stonks.ALLOW_PARTIAL_FILL()
+        assert not buyback_stonks.isCreationPaused(), "treasury-mode Stonks order creation is paused"
+        assert not buyback_stonks.areSignaturesPaused(), "treasury-mode Stonks signatures are paused"
         # vote items 10-11
         initial_factories = easy_track.getEVMScriptFactories()
         assert OLD_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY in initial_factories
@@ -404,6 +460,12 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         assert oracle_router.manager() == TMC, "OracleRouter manager not set to TMC"
         # vote item 3
         assert buyback_executor.stonks() == BUYBACK_STONKS_TREASURY, "BuybackExecutor stonks not set"
+        # setStonks only accepts a Stonks whose RECEIVER is either the executor (LP mode) or the
+        # Treasury (treasury mode), so a false lpModeEnabled is what pins the LDO proceeds to the Treasury
+        assert not buyback_executor.lpModeEnabled(), "BuybackExecutor launched in LP mode"
+        assert (
+            buyback_executor.stonksOrderDurationSeconds() == STONKS_ORDER_DURATION_SECONDS
+        ), "BuybackExecutor did not cache the Stonks order duration"
         # vote item 4
         assert buyback_executor.hasRole(ALLOCATOR_ROLE, BUYBACK_ALLOCATOR), "ALLOCATOR_ROLE not granted to allocator"
         assert buyback_executor.getRoleMemberCount(ALLOCATOR_ROLE) == 1, "extra ALLOCATOR_ROLE holder on the executor"
@@ -481,7 +543,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
         # vote item 2
         validate_manager_set_event(vote_events[1], manager=TMC, emitted_by=ORACLE_ROUTER)
         # vote item 3
-        validate_stonks_set_event(vote_events[2], new_stonks=BUYBACK_STONKS_TREASURY, emitted_by=BUYBACK_EXECUTOR)
+        validate_stonks_set_event(
+            vote_events[2], new_stonks=BUYBACK_STONKS_TREASURY, lp_mode_enabled=False, emitted_by=BUYBACK_EXECUTOR
+        )
         # vote item 4
         validate_grant_role_event(
             vote_events[3], role=ALLOCATOR_ROLE, grant_to=BUYBACK_ALLOCATOR, sender=VOTING,
