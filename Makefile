@@ -95,10 +95,24 @@ test-core:
 	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
 	yarn test:integration
 
-test-stonks-integration: ci-prepare-environment
+# Two passes, because enacting the vote warps the fork clock ~9 days ahead of the Chainlink updatedAt:
+# suites pricing through the real FeedRegistry hit OracleStale after that, so they run on a clean fork.
+# The suites below need the opposite — the post-vote NEST TokenRateNotifier — and price through a stub
+# registry stamped with the current block timestamp, so the warp does not affect them.
+STONKS_POSTVOTE_SUITES ?= staking-revenue-source buyback-happy-path
+
+test-stonks-integration-prevote:
 	cd $(STONKS_DIR) && \
 	{ [ -d node_modules ] || npm ci; } && \
-	RPC_URL=$(ETH_RPC_URL) npm run test:integration
+	POSTVOTE_PATTERN="^test/integration/($$(echo $(STONKS_POSTVOTE_SUITES) | tr ' ' '|'))\.ts$$" && \
+	PREVOTE_SUITES=$$(ls test/integration/*.ts | grep -vE "$$POSTVOTE_PATTERN" || true) && \
+	{ [ -n "$$PREVOTE_SUITES" ] || { echo "No pre-vote suites left after excluding: $(STONKS_POSTVOTE_SUITES)" >&2; exit 1; }; } && \
+	RPC_URL=$(ETH_RPC_URL) npx hardhat test $$PREVOTE_SUITES --network localhost
+
+test-stonks-integration-postvote: ci-prepare-environment
+	cd $(STONKS_DIR) && \
+	{ [ -d node_modules ] || npm ci; } && \
+	RPC_URL=$(ETH_RPC_URL) npx hardhat test $(patsubst %,test/integration/%.ts,$(STONKS_POSTVOTE_SUITES)) --network localhost
 
 slots:
 	@echo "Input https://github.com/lidofinance/protocol-onchain-mon-bots/blob/main/bots/ethereum-steth-v2/src/utils/constants.mainnet.ts file content (end with Enter and Ctrl+D):"
@@ -122,6 +136,11 @@ slots:
 
 ci-prepare-environment:
 	poetry run brownie run scripts/ci/prepare_environment --network mfh-1
+
+# Core tests operate on vaults, and VaultHub rejects a vaults report older than 2 days, while
+# enacting the vote leaves the fork clock ~9 days past the last one.
+ci-refresh-vaults-report:
+	poetry run brownie run scripts/ci/refresh_vaults_report --network mfh-1
 
 enact-fork:
 	poetry run brownie run $(vote) start_and_execute_vote_on_fork_manual --network=mfh-1

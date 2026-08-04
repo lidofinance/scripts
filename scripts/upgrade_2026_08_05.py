@@ -84,25 +84,14 @@ EMERGENCY_ROLE = "0xc748c205190870b4e890036f373e30556929f7fbf3db8644c998a652c199
 OBSERVER_KIND_NO_ARGS = 0
 OBSERVER_KIND_WITH_ARGS = 1
 
-# TODO does not cover DG items 1.5-1.6 (LOL stablecoins registry role grants) yet — awaiting the final wording
-DG_PROPOSAL_METADATA = "Register the StakingRevenueSource on the TokenRateNotifier to enable NEST"
+DG_PROPOSAL_METADATA = "Activate NEST, add LOL stablecoins Easy Track payment factories (limit of $8M per 6 months), replace CSM Update Share Limits Easy Track factory"
 
 # ipfs description
-# TODO - add lol factories to description
 IPFS_DESCRIPTION = """
-# Launch NEST Automated Buybacks in treasury-only mode
-
-1. **Register the StakingRevenueSource on the TokenRateNotifier to enable NEST** through a Dual
-Governance proposal. Migrate the OpStack token rate pusher and register the StakingRevenueSource
-on the new TokenRateNotifier, upgrade the LidoLocator implementation to use the new notifier as
-the post-token-rebase receiver, and allow the BuybackAllocator on the Stonks stETH top-up Easy
-Track registry. Item 1.
-2. **Launch NEST Automated Buybacks in treasury-only mode** (LIP-36). Set the Treasury Management
-Committee as the OracleRouter manager, configure the treasury-mode Stonks on the BuybackExecutor,
-grant the manager, allocator, and emergency roles on the BuybackExecutor and BuybackAllocator,
-and activate the BuybackAllocator. Items 2-9.
-3. **Replace the incorrectly configured UpdateStakingModuleShareLimits Easy Track factory** with
-the corrected deployment. Items 10-11.
+# NEST Activation, LOL stablecoins ET Payment Factories Activation, CSM Update Share Limits ET Factory Replacement
+1. **Launch NEST (Automated LDO Buyback and Liquidity Provisioning)** in [treasury-only mode](https://research.lido.fi/t/liquid-buybacks-nest-execution-with-ldo-wsteth-liquidity/10894/109#p-25979-h-3-launch-mode-treasury-only-5), with all purchased LDO sent directly to the DAO Treasury. Under the [DAO-approved](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x022e901a6368573d18b150eecda563dd2ee17ad2aa6a0ef9772151cc7ba55187) cumulative surplus model described in [LIP-36](https://github.com/lidofinance/lido-improvement-proposals/blob/develop/LIPS/lip-36.md#surplus-mechanics), NEST converts a fixed portion of staking revenue above the operating baseline into LDO via CoW Swap. Audit & deployment verification: [Ack3](https://github.com/lidofinance/audits/blob/main/Ack3%20Lido%20NEST%20Audit%20Report%2007-2026.pdf). Items 1.1 - 1.4, 2 - 9.
+2. **Add LOL stablecoins Easy Track factories for payments and adding/removing allowed recipients**, with a limit of $8M per 6 months, [as per Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x863859d857c7429a0dcb85a4b324de803e2f66ddd8f50e4c2f04a31c35c6ae6f). Items 1.5, 1.6, 12 - 14.
+3. **Replace CSM Update Share Limits Easy Track factory** to correct the per-motion change cap to 0.5%, [as proposed on the forum](https://research.lido.fi/t/community-staking-module/5917/231). Items 10, 11.
 """
 
 
@@ -166,9 +155,7 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal containing a single Aragon Agent "
-            "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c forward call to Dual Governance "
-            "0xC1db28B3301331277e307FDCfF8DE28242A4486E",
+            "1. Submit a Dual Governance proposal to activate NEST, add LOL stablecoins Easy Track payment factories (limit of $8M per 6 months), replace CSM Update Share Limits Easy Track factory",
             dg_call_script[0],
         ),
         (
