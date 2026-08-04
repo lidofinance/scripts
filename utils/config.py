@@ -371,6 +371,10 @@ class ContractsLazyLoader:
         return interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE)
 
     @property
+    def vault_factory(self) -> interface.VaultFactory:
+        return interface.VaultFactory(VAULT_FACTORY)
+
+    @property
     def staking_vault_beacon(self) -> interface.UpgradeableBeacon:
         return interface.UpgradeableBeacon(STAKING_VAULT_BEACON)
 

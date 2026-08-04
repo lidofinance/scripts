@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  # Stonks branch carrying the NEST V2 integration tests.
-  # TODO: switch to `main/master` once the tests land there.
-  STONKS_REF: feature/dao-898-nest-v2-develop-the-protocol
+  # Stonks branch the NEST V2 integration tests are run from.
+  STONKS_REF: main
 
 jobs:
   run-tests:
