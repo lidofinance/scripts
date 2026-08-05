@@ -56,6 +56,8 @@ runs:
 
     - name: Show system info
       shell: bash
+      env:
+        VOTE_TYPE: ${{ inputs.vote }}
       run: |
         echo "Memory and swap:"
         free -h
@@ -67,12 +69,13 @@ runs:
         echo "CPU units"
         nproc --all
         echo "Vote type"
-        echo ${{ inputs.vote }}
+        echo "$VOTE_TYPE"
 
     - name: Run tests
       shell: bash
-      run: >
-        ${{ inputs.command }}
       env:
         ETHERSCAN_TOKEN: ${{ inputs.etherscan }}
         ETH_RPC_URL: ${{ inputs.rpc_url }}
+        COMMAND: ${{ inputs.command }}
+      run: |
+        bash -lc "$COMMAND"
