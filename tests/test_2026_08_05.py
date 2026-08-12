@@ -47,7 +47,7 @@ from utils.ipfs import get_lido_vote_cid_from_str
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_08_05 import (
+from archive.scripts.upgrade_2026_08_05 import (
     start_vote,
     get_vote_items,
     get_dg_items,
