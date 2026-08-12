@@ -28,7 +28,7 @@ III. ET factory for CSM share limit updates replacement
 10. Remove UpdateStakingModuleShareLimits EVM script factory 0x0C6703F1d8D9DdfB6c6e5F57b4f7432a6500D6D8 from EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 11. Add UpdateStakingModuleShareLimits EVM script factory 0xde3e46E3129fA4e4e3f66c9024B0A3Ad509b27a1 with validateParams permission on itself and updateModuleShares permission on Staking Router 0xFdDf38947aFB03C621C71b06C9C70bce73f12999 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #204 passed & executed on Aug-10-2026 01:01:23 PM UTC, block 25724759.
 """
 
 from brownie import interface
