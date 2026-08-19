@@ -66,6 +66,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
+      # The step above enacted the vote, which moved the fork clock past the vaults report.
+      - name: Refresh the vaults report
+        run: docker exec -e ETH_RPC_URL -e ETHERSCAN_TOKEN tests-runner bash -c 'make ci-refresh-vaults-report'
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+
       - name: Run core tests
         run: docker exec -e CORE_TESTS_TARGET_RPC_URL -e NODE_OPTIONS -e DG_PROPOSAL_IDS tests-runner bash -c 'make test-core'
         env:

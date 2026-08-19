@@ -32,6 +32,14 @@ def test_addresses(contract):
     assert contract.topUpGateway() == contracts.top_up_gateway
     assert contract.consolidationGateway() == contracts.consolidation_gateway
     assert contract.triggerableWithdrawalsGateway() == contracts.triggerable_withdrawals_gateway
+    assert contract.wstETH() == contracts.wsteth
+    assert contract.validatorExitDelayVerifier() == contracts.validator_exit_verifier
+    assert contract.accounting() == contracts.accounting
+    assert contract.vaultHub() == contracts.vault_hub
+    assert contract.vaultFactory() == contracts.vault_factory
+    assert contract.predepositGuarantee() == contracts.predeposit_guarantee
+    assert contract.operatorGrid() == contracts.operator_grid
+    assert contract.lazyOracle() == contracts.lazy_oracle
 
     assert contract.coreComponents() == (
         contracts.execution_layer_rewards_vault,
