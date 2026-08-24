@@ -1,12 +1,6 @@
 """
 Voting: EDF/DSM v5 upgrade on Hoodi.
 
-Based on the EDFUpgradeVoteScript contract from lidofinance/core (branch feat/edf,
-contracts/upgrade/EDFUpgradeVoteScript.sol), without the EDFUpgradeTemplate
-startUpgrade/finishUpgrade calls - that contract-based flow is used only for
-core e2e tests. All upgrade calls are packed into a single Agent.forward and
-submitted as one Dual Governance proposal.
-
 1. Submit the EDF/DSM v5 upgrade to Dual Governance
 # ===== Oracle committees: rotate members from EOA hot keys to EDF DelegationContracts =====
 # Committees (in order): HashConsensus for AccountingOracle, HashConsensus for
@@ -19,7 +13,8 @@ submitted as one Dual Governance proposal.
 1.81. Upgrade LidoLocator implementation (points to the new DepositSecurityModule v5)
 1.82. Revoke STAKING_MODULE_UNVETTING_ROLE on StakingRouter from the old DepositSecurityModule
 1.83. Grant STAKING_MODULE_UNVETTING_ROLE on StakingRouter to the new DepositSecurityModule v5
-1.84. Grant TOP_UP_ROLE on TopUpGateway to the depositor bot DelegationContract
+1.84. Revoke TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA
+1.85. Grant TOP_UP_ROLE on TopUpGateway to the depositor bot DelegationContract
 
 The new DSM v5 is deployed with the guardian set already moved to DelegationContracts:
 Stakely replaces Kiln, and the extra Lido dev team guardian is removed.
@@ -52,6 +47,7 @@ NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x546d76dd8D4BC0c6a26Cb71a39De5d78E222Cbf8"
 
 OLD_DEPOSIT_SECURITY_MODULE = "0xf738F86009Ec704880c9Aa175fc5869F020FEe4e"
 TOP_UP_GATEWAY = "0x10DBEb3367876826d00D21718D1d893e0fbD2956"
+DEPOSITOR_BOT_OLD_EOA = "0x9b186cE78Ddd6fF098b4a533Dd17a139e1FFeD76"
 DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
@@ -123,7 +119,7 @@ Upgrade the Lido protocol on Hoodi to the Execution Delegation Framework (EDF) a
 1. Rotate all members of the four oracle committees (HashConsensus contracts for AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle and Curated Module FeeOracle) from EOA hot keys to per-operator EDF DelegationContracts, keeping quorum 6. Items 1.1-1.80.
 2. Upgrade the LidoLocator implementation so it points to the new DepositSecurityModule v5. The new DSM is deployed with the guardian set already moved to DelegationContracts: Stakely replaces Kiln, and the extra Lido dev team guardian is removed. Item 1.81.
 3. Move STAKING_MODULE_UNVETTING_ROLE on StakingRouter from the old DepositSecurityModule to the new DepositSecurityModule v5. Items 1.82-1.83.
-4. Grant TOP_UP_ROLE on TopUpGateway to the depositor bot DelegationContract. Item 1.84.
+4. Move TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA to the depositor bot DelegationContract. Items 1.84-1.85.
 """
 
 
@@ -206,6 +202,14 @@ def _assert_state_before_vote() -> None:
         "LidoLocator already points to the new implementation"
     )
 
+    top_up_gateway = interface.TopUpGateway(TOP_UP_GATEWAY)
+    assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA), (
+        "Old depositor bot EOA does not hold TOP_UP_ROLE"
+    )
+    assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT), (
+        "Depositor bot DelegationContract already holds TOP_UP_ROLE"
+    )
+
     # The vote does not change DSM guardians, so verify the new DSM is deployed
     # with the expected guardian set, owner and protocol links before switching
     # the protocol to it
@@ -274,7 +278,15 @@ def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
         )
     )
 
-    # 1.84. Grant TOP_UP_ROLE to the depositor bot DelegationContract
+    # 1.84. Revoke TOP_UP_ROLE from the old depositor bot EOA
+    calls.append(
+        (
+            top_up_gateway.address,
+            top_up_gateway.revokeRole.encode_input(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA),
+        )
+    )
+
+    # 1.85. Grant TOP_UP_ROLE to the depositor bot DelegationContract
     calls.append(
         (
             top_up_gateway.address,
@@ -282,7 +294,7 @@ def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
         )
     )
 
-    expected_count = 2 * len(ORACLE_COMMITTEES) * len(ORACLE_MEMBER_MAPPINGS) + 4
+    expected_count = 2 * len(ORACLE_COMMITTEES) * len(ORACLE_MEMBER_MAPPINGS) + 5
     assert len(calls) == expected_count, f"Expected {expected_count} upgrade calls, got {len(calls)}"
 
     return calls

@@ -57,6 +57,7 @@ LIDO_LOCATOR = "0xe2EF9536DAAAEBFf5b1c130957AB3E80056b06D8"
 STAKING_ROUTER = "0xCc820558B39ee15C7C45B59390B503b83fb499A8"
 OLD_DEPOSIT_SECURITY_MODULE = "0xf738F86009Ec704880c9Aa175fc5869F020FEe4e"
 TOP_UP_GATEWAY = "0x10DBEb3367876826d00D21718D1d893e0fbD2956"
+DEPOSITOR_BOT_OLD_EOA = "0x9b186cE78Ddd6fF098b4a533Dd17a139e1FFeD76"
 DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
@@ -128,8 +129,8 @@ EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 1
 # 4 committees * 10 members * 2 (remove + add) + locator upgrade
-# + revoke role + grant role + top-up role grant
-EXPECTED_DG_EVENTS_COUNT = 84
+# + unvetting role revoke + grant + top-up role revoke + grant
+EXPECTED_DG_EVENTS_COUNT = 85
 IPFS_DESCRIPTION_HASH = None
 
 
@@ -418,6 +419,7 @@ def test_vote(
 
         assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
         assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
+        assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
         assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT)
 
         assert str(locator_proxy.proxy__getImplementation()).lower() != NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
@@ -518,7 +520,17 @@ def test_vote(
             )
             event_index += 1
 
-            # 1.84. Grant TOP_UP_ROLE to the depositor bot DelegationContract
+            # 1.84. Revoke TOP_UP_ROLE from the old depositor bot EOA
+            validate_role_revoke_event(
+                dg_events[event_index],
+                role_hash=TOP_UP_ROLE,
+                account=DEPOSITOR_BOT_OLD_EOA,
+                sender=AGENT,
+                emitted_by=TOP_UP_GATEWAY,
+            )
+            event_index += 1
+
+            # 1.85. Grant TOP_UP_ROLE to the depositor bot DelegationContract
             # (the last inner call group also carries the Agent.forward service events)
             validate_role_grant_event(
                 dg_events[event_index],
@@ -564,6 +576,7 @@ def test_vote(
 
     assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
     assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
+    assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
     assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT)
 
     assert new_dsm.VERSION() == NEW_DSM_VERSION
