@@ -41,13 +41,21 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 # ============================== Addresses ===================================
 # EDF contracts are deployed from lidofinance/core PR #1921 (branch feat/edf);
-# parameters source: core/scripts/upgrade/upgrade-params-hoodi.toml
-NEW_DEPOSIT_SECURITY_MODULE = "0x8E63F0aF403ffd3Cbd5dB18b4ee632314ab49B51"  # DSM v5
+
+# DSM v5, https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/deployed-hoodi.json#L510
+NEW_DEPOSIT_SECURITY_MODULE = "0x8E63F0aF403ffd3Cbd5dB18b4ee632314ab49B51"
+# https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/deployed-hoodi.json#L685
 NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x546d76dd8D4BC0c6a26Cb71a39De5d78E222Cbf8"
 
+# DSM v4, https://github.com/lidofinance/core/blob/26d59952672cbd5725dc5d1a7bd8948bd8762c2c/deployed-hoodi.json#L453
+# (replaced by DSM v5 in deployed-hoodi.json after the EDF deploy)
 OLD_DEPOSIT_SECURITY_MODULE = "0xf738F86009Ec704880c9Aa175fc5869F020FEe4e"
+# https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/scripts/upgrade/upgrade-params-hoodi.toml#L145
 TOP_UP_GATEWAY = "0x10DBEb3367876826d00D21718D1d893e0fbD2956"
+# Also the delegate of the depositor bot DelegationContract,
+# https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/deployed-hoodi.json#L496
 DEPOSITOR_BOT_OLD_EOA = "0x9b186cE78Ddd6fF098b4a533Dd17a139e1FFeD76"
+# https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/deployed-hoodi.json#L494
 DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
