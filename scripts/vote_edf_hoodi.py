@@ -31,6 +31,7 @@ from brownie import interface, web3
 
 from utils.agent import agent_forward
 from utils.config import (
+    AGENT,
     LIDO_LOCATOR,
     STAKING_ROUTER,
     get_deployer_account,
@@ -206,9 +207,17 @@ def _assert_state_before_vote() -> None:
     )
 
     # The vote does not change DSM guardians, so verify the new DSM is deployed
-    # with the expected guardian set before switching the protocol to it
+    # with the expected guardian set, owner and protocol links before switching
+    # the protocol to it
+    old_dsm = interface.DepositSecurityModule(OLD_DEPOSIT_SECURITY_MODULE)
     new_dsm = interface.DepositSecurityModule(NEW_DEPOSIT_SECURITY_MODULE)
     assert new_dsm.VERSION() == 5, "New DSM version is not 5"
+    assert str(new_dsm.getOwner()).lower() == AGENT.lower(), "New DSM owner is not the Agent"
+    assert str(new_dsm.STAKING_ROUTER()).lower() == STAKING_ROUTER.lower(), "New DSM staking router mismatch"
+    assert str(new_dsm.DEPOSIT_CONTRACT()).lower() == str(old_dsm.DEPOSIT_CONTRACT()).lower(), (
+        "New DSM deposit contract mismatch"
+    )
+    assert not new_dsm.isDepositsPaused(), "New DSM deposits are paused"
     assert new_dsm.getGuardianQuorum() == NEW_DSM_GUARDIAN_QUORUM, "New DSM guardian quorum mismatch"
     new_dsm_guardians = {str(g).lower() for g in new_dsm.getGuardians()}
     assert new_dsm_guardians == {g.lower() for g in NEW_DSM_GUARDIANS}, "New DSM guardian set mismatch"

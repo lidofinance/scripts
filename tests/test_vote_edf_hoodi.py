@@ -168,6 +168,22 @@ def _raw_event_values(raw_event: dict) -> dict:
     return {item["name"]: item["value"] for item in raw_event["data"]}
 
 
+def _locator_addresses(locator) -> dict:
+    """Snapshot every zero-arg address getter the current locator implementation responds to."""
+    addresses = {}
+    for entry in locator.abi:
+        if entry.get("type") != "function" or entry.get("inputs") or entry.get("stateMutability") != "view":
+            continue
+        outputs = entry.get("outputs") or []
+        if len(outputs) != 1 or outputs[0].get("type") != "address":
+            continue
+        try:
+            addresses[entry["name"]] = str(getattr(locator, entry["name"])())
+        except Exception:
+            continue
+    return addresses
+
+
 def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str) -> list[EventDict]:
     """Group DG proposal events by the Agent's inner call script items (single Agent.forward)."""
     events = tx_events_from_receipt(receipt)
@@ -386,6 +402,7 @@ def test_vote(
         expected_dg_proposal_id = timelock.getProposalsCount()
 
     details = timelock.getProposalDetails(expected_dg_proposal_id)
+    locator_addresses_before = None
     if details["status"] != PROPOSAL_STATUS["executed"]:
         # =======================================================================
         # ==================== Before DG enactment checks =======================
@@ -404,6 +421,11 @@ def test_vote(
         assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT)
 
         assert str(locator_proxy.proxy__getImplementation()).lower() != NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
+
+        # Snapshot the full locator address registry - the upgrade must change
+        # only the depositSecurityModule entry
+        locator_addresses_before = _locator_addresses(interface.LidoLocator(LIDO_LOCATOR))
+        assert locator_addresses_before["depositSecurityModule"].lower() == OLD_DEPOSIT_SECURITY_MODULE.lower()
 
         # Old DSM v4 holds the EOA guardian set (7 guardians: 6 mapped + 1 extra Lido dev team)
         old_dsm_guardians = {str(g).lower() for g in old_dsm.getGuardians()}
@@ -529,6 +551,16 @@ def test_vote(
         str(interface.LidoLocator(LIDO_LOCATOR).depositSecurityModule()).lower()
         == NEW_DEPOSIT_SECURITY_MODULE.lower()
     )
+
+    # Every locator entry except depositSecurityModule must stay unchanged
+    if locator_addresses_before is not None:
+        locator = interface.LidoLocator(LIDO_LOCATOR)
+        for name, before_value in locator_addresses_before.items():
+            after_value = str(getattr(locator, name)())
+            if name == "depositSecurityModule":
+                assert after_value.lower() == NEW_DEPOSIT_SECURITY_MODULE.lower()
+            else:
+                assert after_value == before_value, f"Locator entry {name} changed unexpectedly"
 
     assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
     assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
