@@ -238,9 +238,11 @@ def _assert_state_before_vote() -> None:
 # ================================ Main ======================================
 def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
     """Return the raw upgrade calls in the order of EDFUpgradeVoteScript._getVoteItems
-    (without the EDFUpgradeTemplate startUpgrade/finishUpgrade calls)."""
+    (without the EDFUpgradeTemplate startUpgrade/finishUpgrade calls).
+
+    Deterministic: does not depend on the live chain state, so the calls of an
+    already executed vote can still be rebuilt and inspected."""
     _require_configured_addresses()
-    _assert_state_before_vote()
 
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
@@ -323,6 +325,8 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
 
 def start_vote(tx_params: Dict[str, str], silent: bool = False):
+    _assert_state_before_vote()
+
     vote_desc_items, call_script_items = get_vote_items()
     vote_items = bake_vote_items(list(vote_desc_items), list(call_script_items))
 

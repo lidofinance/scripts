@@ -461,7 +461,7 @@ def test_vote(
                 agent=AGENT,
             )
 
-            # The whole upgrade is a single Agent.forward with 84 inner calls
+            # The whole upgrade is a single Agent.forward with 85 inner calls
             assert len(outer_dg_events) == 1
             assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
             assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
