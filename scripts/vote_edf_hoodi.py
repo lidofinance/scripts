@@ -15,6 +15,10 @@ Voting: EDF/DSM v5 upgrade on Hoodi.
 1.83. Grant STAKING_MODULE_UNVETTING_ROLE on StakingRouter to the new DepositSecurityModule v5
 1.84. Revoke TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA
 1.85. Grant TOP_UP_ROLE on TopUpGateway to the depositor bot DelegationContract
+# ===== Easy Track factory for deposit reserve target management by CMC =====
+1.86. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor
+2. Add SetDepositsReserveTarget factory to Easy Track with the permission to call
+   Lido.setDepositsReserveTarget(uint256)
 
 The new DSM v5 is deployed with the guardian set already moved to DelegationContracts:
 Stakely replaces Kiln, and the extra Lido dev team guardian is removed.
@@ -26,13 +30,19 @@ from brownie import interface, web3
 
 from utils.agent import agent_forward
 from utils.config import (
+    ACL,
     AGENT,
+    EASYTRACK,
+    EASYTRACK_EVMSCRIPT_EXECUTOR,
+    LIDO,
     LIDO_LOCATOR,
     STAKING_ROUTER,
     get_deployer_account,
     get_is_live,
     get_priority_fee,
 )
+from utils.easy_track import add_evmscript_factory, create_permissions
+from utils.permissions import encode_permission_grant
 from utils.dual_governance import submit_proposals
 from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
 from utils.mainnet_fork import pass_and_exec_dao_vote
@@ -58,8 +68,16 @@ DEPOSITOR_BOT_OLD_EOA = "0x9b186cE78Ddd6fF098b4a533Dd17a139e1FFeD76"
 # https://github.com/lidofinance/core/blob/3deade5e5f1320cb1869e5990a8372b3feab31ba/deployed-hoodi.json#L494
 DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 
+# Easy Track factory for deposit reserve target management by CMC,
+# https://research.lido.fi/t/proposal-add-easy-track-factory-for-deposit-reserve-target-management-by-cmc/11827
+SET_DEPOSITS_RESERVE_TARGET_FACTORY = "0x68009122a394504E8fD7fee58F92Cd73c6A60717"
+# Trusted caller baked into the factory: the Hoodi CMC Safe (5/9).
+# The forum post lists the mainnet CMC multisig instead, that address has no code on Hoodi.
+SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
+
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
 TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
+BUFFER_RESERVE_MANAGER_ROLE = "BUFFER_RESERVE_MANAGER_ROLE"
 
 ORACLE_COMMITTEE_QUORUM = 6
 
@@ -121,6 +139,10 @@ DG_PROPOSAL_METADATA = (
     "and switch to the new DepositSecurityModule v5"
 )
 DG_SUBMISSION_DESCRIPTION = "1. Submit the EDF/DSM v5 upgrade to Dual Governance"
+ET_FACTORY_DESCRIPTION = (
+    "2. Add SetDepositsReserveTarget factory 0x68009122a394504E8fD7fee58F92Cd73c6A60717 "
+    "to Easy Track with the permission to call Lido.setDepositsReserveTarget(uint256)"
+)
 IPFS_DESCRIPTION = """
 Upgrade the Lido protocol on Hoodi to the Execution Delegation Framework (EDF) and DepositSecurityModule v5 (LIP-37).
 
@@ -128,6 +150,7 @@ Upgrade the Lido protocol on Hoodi to the Execution Delegation Framework (EDF) a
 2. Upgrade the LidoLocator implementation so it points to the new DepositSecurityModule v5. The new DSM is deployed with the guardian set already moved to DelegationContracts: Stakely replaces Kiln, and the extra Lido dev team guardian is removed. Item 1.81.
 3. Move STAKING_MODULE_UNVETTING_ROLE on StakingRouter from the old DepositSecurityModule to the new DepositSecurityModule v5. Items 1.82-1.83.
 4. Move TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA to the depositor bot DelegationContract. Items 1.84-1.85.
+5. Enable deposit reserve target management by CMC via Easy Track: grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor and add the SetDepositsReserveTarget factory, limited to Lido.setDepositsReserveTarget(uint256). Item 1.86 and item 2.
 """
 
 
@@ -234,6 +257,28 @@ def _assert_state_before_vote() -> None:
     new_dsm_guardians = {str(g).lower() for g in new_dsm.getGuardians()}
     assert new_dsm_guardians == {g.lower() for g in NEW_DSM_GUARDIANS}, "New DSM guardian set mismatch"
 
+    # Easy Track factory for deposit reserve target management
+    acl = interface.ACL(ACL)
+    buffer_reserve_manager_role = web3.keccak(text=BUFFER_RESERVE_MANAGER_ROLE)
+    # the Agent grants the role from inside the DG proposal, so it must be its manager
+    assert str(acl.getPermissionManager(LIDO, buffer_reserve_manager_role)).lower() == AGENT.lower(), (
+        "Agent is not the manager of BUFFER_RESERVE_MANAGER_ROLE on Lido"
+    )
+    assert not acl.hasPermission(
+        EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, buffer_reserve_manager_role
+    ), "EVMScriptExecutor already holds BUFFER_RESERVE_MANAGER_ROLE"
+
+    easy_track = interface.EasyTrack(EASYTRACK)
+    registered_factories = {str(f).lower() for f in easy_track.getEVMScriptFactories()}
+    assert SET_DEPOSITS_RESERVE_TARGET_FACTORY.lower() not in registered_factories, (
+        "SetDepositsReserveTarget factory is already registered in Easy Track"
+    )
+
+    factory = interface.SetDepositsReserveTarget(SET_DEPOSITS_RESERVE_TARGET_FACTORY)
+    assert str(factory.trustedCaller()).lower() == SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER.lower(), (
+        "SetDepositsReserveTarget factory trusted caller mismatch"
+    )
+
 
 # ================================ Main ======================================
 def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
@@ -304,7 +349,16 @@ def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
         )
     )
 
-    expected_count = 2 * len(ORACLE_COMMITTEES) * len(ORACLE_MEMBER_MAPPINGS) + 5
+    # 1.86. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor
+    calls.append(
+        encode_permission_grant(
+            target_app=interface.Lido(LIDO),
+            permission_name=BUFFER_RESERVE_MANAGER_ROLE,
+            grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
+        )
+    )
+
+    expected_count = 2 * len(ORACLE_COMMITTEES) * len(ORACLE_MEMBER_MAPPINGS) + 6
     assert len(calls) == expected_count, f"Expected {expected_count} upgrade calls, got {len(calls)}"
 
     return calls
@@ -318,8 +372,19 @@ def get_dg_items() -> List[Tuple[str, str]]:
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
     dg_call_script = submit_proposals([(get_dg_items(), DG_PROPOSAL_METADATA)])
 
-    vote_desc_items = [DG_SUBMISSION_DESCRIPTION]
-    call_script_items = [dg_call_script[0]]
+    # Easy Track admin on Hoodi is Voting, so the factory is registered
+    # directly by the vote, not through the Agent
+    vote_desc_items = [
+        DG_SUBMISSION_DESCRIPTION,
+        ET_FACTORY_DESCRIPTION,
+    ]
+    call_script_items = [
+        dg_call_script[0],
+        add_evmscript_factory(
+            factory=SET_DEPOSITS_RESERVE_TARGET_FACTORY,
+            permissions=create_permissions(interface.Lido(LIDO), "setDepositsReserveTarget"),
+        ),
+    ]
 
     return vote_desc_items, call_script_items
 

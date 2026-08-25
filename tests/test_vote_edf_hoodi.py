@@ -2,7 +2,8 @@ import pytest
 
 from typing import NamedTuple
 
-from brownie import chain, convert, interface, web3
+from brownie import accounts, chain, convert, interface, reverts, web3
+from eth_abi import encode as encode_abi
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
@@ -20,6 +21,11 @@ from utils.evm_script import encode_call_script
 from utils.dual_governance import PROPOSAL_STATUS
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+from utils.test.event_validators.easy_track import (
+    EVMScriptFactoryAdded,
+    validate_evmscript_factory_added_event,
+)
+from utils.easy_track import create_permissions
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
 
@@ -60,8 +66,17 @@ TOP_UP_GATEWAY = "0x10DBEb3367876826d00D21718D1d893e0fbD2956"
 DEPOSITOR_BOT_OLD_EOA = "0x9b186cE78Ddd6fF098b4a533Dd17a139e1FFeD76"
 DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 
+ACL = "0x78780e70Eae33e2935814a327f7dB6c01136cc62"
+LIDO = "0x3508A952176b3c15387C97BE809eaffB1982176a"
+EASYTRACK = "0x284D91a7D47850d21A6DEaaC6E538AC7E5E6fc2a"
+EASYTRACK_EVMSCRIPT_EXECUTOR = "0x79a20FD0FA36453B2F45eAbab19bfef43575Ba9E"
+SET_DEPOSITS_RESERVE_TARGET_FACTORY = "0x68009122a394504E8fD7fee58F92Cd73c6A60717"
+SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
+SET_DEPOSITS_RESERVE_TARGET_MAX = 9600 * 10**18
+
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
 TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
+BUFFER_RESERVE_MANAGER_ROLE = web3.keccak(text="BUFFER_RESERVE_MANAGER_ROLE")
 
 ORACLE_COMMITTEE_QUORUM = 6
 NEW_DSM_VERSION = 5
@@ -127,10 +142,11 @@ NEW_DSM_GUARDIANS = [
 # ============================================================================
 EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = None
-EXPECTED_VOTE_EVENTS_COUNT = 1
+EXPECTED_VOTE_EVENTS_COUNT = 2
 # 4 committees * 10 members * 2 (remove + add) + locator upgrade
 # + unvetting role revoke + grant + top-up role revoke + grant
-EXPECTED_DG_EVENTS_COUNT = 85
+# + buffer reserve manager role grant
+EXPECTED_DG_EVENTS_COUNT = 86
 IPFS_DESCRIPTION_HASH = None
 
 
@@ -303,6 +319,11 @@ def runtime_upgrade_context():
     # Cross-check the deploy addresses against the vote script copies
     assert NEW_DEPOSIT_SECURITY_MODULE.lower() == vote_script.NEW_DEPOSIT_SECURITY_MODULE.lower()
     assert NEW_LIDO_LOCATOR_IMPLEMENTATION.lower() == vote_script.NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
+    assert SET_DEPOSITS_RESERVE_TARGET_FACTORY.lower() == vote_script.SET_DEPOSITS_RESERVE_TARGET_FACTORY.lower()
+    assert (
+        SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER.lower()
+        == vote_script.SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER.lower()
+    )
     for test_mapping, script_mapping in zip(ORACLE_MEMBER_MAPPINGS, vote_script.ORACLE_MEMBER_MAPPINGS):
         assert test_mapping.old_member.lower() == script_mapping.old_member.lower()
         assert test_mapping.delegation_contract.lower() == script_mapping.delegation_contract.lower()
@@ -369,6 +390,11 @@ def test_vote(
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
+        acl = interface.ACL(ACL)
+        easy_track = interface.EasyTrack(EASYTRACK)
+        assert not acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
+        assert SET_DEPOSITS_RESERVE_TARGET_FACTORY not in easy_track.getEVMScriptFactories()
+
         assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == expected_ipfs_description_hash
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
@@ -394,6 +420,16 @@ def test_vote(
             executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
+        )
+
+        # 2. Add SetDepositsReserveTarget factory to Easy Track
+        validate_evmscript_factory_added_event(
+            vote_events[1],
+            EVMScriptFactoryAdded(
+                factory_addr=SET_DEPOSITS_RESERVE_TARGET_FACTORY,
+                permissions=create_permissions(interface.Lido(LIDO), "setDepositsReserveTarget"),
+            ),
+            emitted_by=EASYTRACK,
         )
 
     # =========================================================================
@@ -531,15 +567,29 @@ def test_vote(
             event_index += 1
 
             # 1.85. Grant TOP_UP_ROLE to the depositor bot DelegationContract
-            # (the last inner call group also carries the Agent.forward service events)
             validate_role_grant_event(
                 dg_events[event_index],
                 role_hash=TOP_UP_ROLE,
                 account=DEPOSITOR_BOT_DELEGATION_CONTRACT,
                 sender=AGENT,
                 emitted_by=TOP_UP_GATEWAY,
-                events_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
             )
+            event_index += 1
+
+            # 1.86. Grant BUFFER_RESERVE_MANAGER_ROLE to the Easy Track EVMScriptExecutor
+            # (the last inner call group also carries the Agent.forward service events)
+            validate_events_chain(
+                [e.name for e in dg_events[event_index]],
+                ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"],
+            )
+            set_permission_event = _single_event(dg_events[event_index], "SetPermission")
+            assert convert.to_address(set_permission_event["entity"]) == convert.to_address(
+                EASYTRACK_EVMSCRIPT_EXECUTOR
+            )
+            assert convert.to_address(set_permission_event["app"]) == convert.to_address(LIDO)
+            assert _normalize_role(set_permission_event["role"]) == BUFFER_RESERVE_MANAGER_ROLE.hex().replace("0x", "")
+            assert set_permission_event["allowed"] is True
+            _assert_emitted_by(set_permission_event, ACL)
             event_index += 1
 
             assert event_index == EXPECTED_DG_EVENTS_COUNT
@@ -573,6 +623,54 @@ def test_vote(
                 assert after_value.lower() == NEW_DEPOSIT_SECURITY_MODULE.lower()
             else:
                 assert after_value == before_value, f"Locator entry {name} changed unexpectedly"
+
+    # Easy Track factory for deposit reserve target management
+    acl = interface.ACL(ACL)
+    easy_track = interface.EasyTrack(EASYTRACK)
+    factory = interface.SetDepositsReserveTarget(SET_DEPOSITS_RESERVE_TARGET_FACTORY)
+    lido = interface.Lido(LIDO)
+
+    assert acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
+    assert SET_DEPOSITS_RESERVE_TARGET_FACTORY in easy_track.getEVMScriptFactories()
+    assert easy_track.evmScriptFactoryPermissions(SET_DEPOSITS_RESERVE_TARGET_FACTORY) == create_permissions(
+        lido, "setDepositsReserveTarget"
+    )
+    assert convert.to_address(factory.trustedCaller()) == convert.to_address(
+        SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER
+    )
+    assert convert.to_address(factory.lido()) == convert.to_address(LIDO)
+    assert factory.MAX_DEPOSITS_RESERVE_TARGET() == SET_DEPOSITS_RESERVE_TARGET_MAX
+
+    # Happy path: the granted role lets the EVMScriptExecutor move the target,
+    # and the factory builds a script for exactly that call
+    chain.snapshot()
+    try:
+        new_target = lido.getDepositsReserveTarget() + 10**18
+        assert new_target <= SET_DEPOSITS_RESERVE_TARGET_MAX
+
+        # the factory builds a script for the new target and guards its limits
+        call_data = encode_abi(["uint256"], [new_target])
+        assert factory.decodeEVMScriptCallData(call_data) == new_target
+        factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+
+        with reverts("CALLER_IS_FORBIDDEN"):
+            factory.createEVMScript(stranger, call_data)
+
+        with reverts("DEPOSITS_RESERVE_TARGET_TOO_HIGH"):
+            factory.createEVMScript(
+                SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER,
+                encode_abi(["uint256"], [SET_DEPOSITS_RESERVE_TARGET_MAX + 1]),
+            )
+
+        # the granted role lets the EVMScriptExecutor apply the new target
+        executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+        lido.setDepositsReserveTarget(new_target, {"from": executor})
+        assert lido.getDepositsReserveTarget() == new_target
+
+        with reverts("SAME_DEPOSITS_RESERVE_TARGET"):
+            factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+    finally:
+        chain.revert()
 
     assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
     assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
