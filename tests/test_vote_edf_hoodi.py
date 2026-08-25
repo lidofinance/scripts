@@ -651,7 +651,11 @@ def test_vote(
         # the factory builds a script for the new target and guards its limits
         call_data = encode_abi(["uint256"], [new_target])
         assert factory.decodeEVMScriptCallData(call_data) == new_target
-        factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+
+        # the produced script must be exactly one call to Lido.setDepositsReserveTarget(new_target)
+        expected_script = encode_call_script([(LIDO, lido.setDepositsReserveTarget.encode_input(new_target))])
+        produced_script = factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+        assert str(produced_script).lower() == expected_script.lower()
 
         with reverts("CALLER_IS_FORBIDDEN"):
             factory.createEVMScript(stranger, call_data)

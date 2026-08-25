@@ -74,6 +74,8 @@ SET_DEPOSITS_RESERVE_TARGET_FACTORY = "0x68009122a394504E8fD7fee58F92Cd73c6A6071
 # Trusted caller baked into the factory: the Hoodi CMC Safe (5/9).
 # The forum post lists the mainnet CMC multisig instead, that address has no code on Hoodi.
 SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
+# immutable upper limit inside the factory, higher motions revert
+SET_DEPOSITS_RESERVE_TARGET_MAX = 9600 * 10**18
 
 STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
 TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
@@ -254,6 +256,10 @@ def _assert_state_before_vote() -> None:
     )
     assert not new_dsm.isDepositsPaused(), "New DSM deposits are paused"
     assert new_dsm.getGuardianQuorum() == NEW_DSM_GUARDIAN_QUORUM, "New DSM guardian quorum mismatch"
+    # the upgrade replaces the guardian set but must keep the same threshold
+    assert new_dsm.getGuardianQuorum() == old_dsm.getGuardianQuorum(), (
+        "Guardian quorum differs between the old and the new DSM"
+    )
     new_dsm_guardians = {str(g).lower() for g in new_dsm.getGuardians()}
     assert new_dsm_guardians == {g.lower() for g in NEW_DSM_GUARDIANS}, "New DSM guardian set mismatch"
 
@@ -277,6 +283,10 @@ def _assert_state_before_vote() -> None:
     factory = interface.SetDepositsReserveTarget(SET_DEPOSITS_RESERVE_TARGET_FACTORY)
     assert str(factory.trustedCaller()).lower() == SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER.lower(), (
         "SetDepositsReserveTarget factory trusted caller mismatch"
+    )
+    assert str(factory.lido()).lower() == LIDO.lower(), "SetDepositsReserveTarget factory targets another Lido"
+    assert factory.MAX_DEPOSITS_RESERVE_TARGET() == SET_DEPOSITS_RESERVE_TARGET_MAX, (
+        "SetDepositsReserveTarget factory cap mismatch"
     )
 
 
