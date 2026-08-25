@@ -101,7 +101,7 @@ ORACLE_COMMITTEES: List[OracleCommittee] = [
 # DelegationContract addresses source: the EDF migration tracker (confirmed by
 # each operator).
 ORACLE_MEMBER_MAPPINGS: List[OracleMemberMapping] = [
-    OracleMemberMapping("Instadapp",          "0x43C45C2455C49eed320F463fF4f1Ece3D2BF5aE2", "0xe768fF17be4799D64649E9B8a58ee66Eb628FA93"),
+    OracleMemberMapping("Instadapp",          "0x43C45C2455C49eed320F463fF4f1Ece3D2BF5aE2", "0x929de74c921f3e719Ad2bb026EDeF747d443dC8E"),
     OracleMemberMapping("Caliber",            "0x948A62cc0414979dc7aa9364BA5b96ECb29f8736", "0x9F81976E461B82cfe3CAec06De8eFA8aD5543408"),
     OracleMemberMapping("Chorus One",         "0x1932f53B1457a5987791a40Ba91f71c5Efd5788F", "0x9950477b8D8154ef44745612832464C3c2155F79"),
     OracleMemberMapping("Chainlayer",         "0xf7aE520e99ed3C41180B5E12681d31Aa7302E4e5", "0xC51fE2B136a24D6eC8368C858Ae5211dc2FE0e0B"),
