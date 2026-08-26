@@ -71,8 +71,7 @@ DEPOSITOR_BOT_DELEGATION_CONTRACT = "0x25636798f6E716b2e6b7dEA8ED52a45271768D7A"
 # Easy Track factory for deposit reserve target management by CMC,
 # https://research.lido.fi/t/proposal-add-easy-track-factory-for-deposit-reserve-target-management-by-cmc/11827
 SET_DEPOSITS_RESERVE_TARGET_FACTORY = "0x68009122a394504E8fD7fee58F92Cd73c6A60717"
-# Trusted caller baked into the factory: the Hoodi CMC Safe (5/9).
-# The forum post lists the mainnet CMC multisig instead, that address has no code on Hoodi.
+# Trusted caller baked into the factory: the Hoodi CMC Safe (5/9)
 SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
 # immutable upper limit inside the factory, higher motions revert
 SET_DEPOSITS_RESERVE_TARGET_MAX = 9600 * 10**18
