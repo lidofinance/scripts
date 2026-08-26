@@ -63,10 +63,10 @@ CSM0X02_MAX_DEPOSITS_PER_BLOCK = 30
 CSM0X02_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CSM0X02_WITHDRAWAL_CREDENTIALS_TYPE = 0x02
 
-# Starts on 2026-09-01 01:04:24 UTC, after the expected 2026-08-26 vote.
-# This places CSM 0x02 reports midway between Curated v2 reports and keeps them
-# shifted by more than six days from the existing CSM reports.
-CSM0X02_ORACLE_INITIAL_EPOCH = 119_821
+# Starts on 2026-09-09 13:33:12 UTC, after a full 14-day frame has passed since
+# the expected 2026-08-26 12:00-13:00 UTC vote, with an extra 33-minute buffer.
+# This keeps CSM, CSM 0x02, and Curated v2 reports on Monday, Wednesday, and Friday.
+CSM0X02_ORACLE_INITIAL_EPOCH = 121_738
 
 
 # ============================= Description ==================================
