@@ -17,6 +17,8 @@ Hoodi vote to activate the CSM deployment for 0x02 withdrawal credentials.
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
 4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
+
+Vote #84 passed & executed on Aug-26-2026 12:21:00 PM UTC, block 3497047.
 """
 
 from typing import Dict, List, Tuple

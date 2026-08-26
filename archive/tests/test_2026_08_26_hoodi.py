@@ -1,6 +1,6 @@
 from brownie import ZERO_ADDRESS, convert, interface, web3
 
-from scripts.vote_csm0x02_hoodi import start_vote
+from archive.scripts.vote_2026_08_26_hoodi import start_vote
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
