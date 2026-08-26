@@ -33,8 +33,8 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-import scripts.vote_edf_hoodi as vote_script
-from scripts.vote_edf_hoodi import (
+import archive.scripts.vote_2026_08_26_hoodi_edf as vote_script
+from archive.scripts.vote_2026_08_26_hoodi_edf import (
     DG_PROPOSAL_METADATA,
     IPFS_DESCRIPTION,
     get_dg_items,
@@ -54,7 +54,7 @@ EMERGENCY_PROTECTED_TIMELOCK = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
 DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
 
-# Fill these independently from scripts/vote_edf_hoodi.py (do not copy-paste from
+# Fill these independently from archive/scripts/vote_2026_08_26_hoodi_edf.py (do not copy-paste from
 # the script) - the fixture cross-checks both copies against each other
 NEW_DEPOSIT_SECURITY_MODULE = "0x8E63F0aF403ffd3Cbd5dB18b4ee632314ab49B51"  # DSM v5
 NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x546d76dd8D4BC0c6a26Cb71a39De5d78E222Cbf8"
@@ -140,8 +140,8 @@ NEW_DSM_GUARDIANS = [
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 83
+EXPECTED_DG_PROPOSAL_ID = 42
 EXPECTED_VOTE_EVENTS_COUNT = 2
 # 4 committees * 10 members * 2 (remove + add) + locator upgrade
 # + unvetting role revoke + grant + top-up role revoke + grant
@@ -312,8 +312,8 @@ def runtime_upgrade_context():
     ]
     if missing_addresses:
         pytest.skip(
-            "EDF deploy addresses are missing, fill the TODOs in scripts/vote_edf_hoodi.py "
-            f"and tests/test_vote_edf_hoodi.py first: {', '.join(missing_addresses)}"
+            "EDF deploy addresses are missing, fill the TODOs in archive/scripts/vote_2026_08_26_hoodi_edf.py "
+            f"and tests/test_vote_2026_08_26_hoodi_edf.py first: {', '.join(missing_addresses)}"
         )
 
     # Cross-check the deploy addresses against the vote script copies

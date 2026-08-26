@@ -22,6 +22,8 @@ Voting: EDF/DSM v5 upgrade on Hoodi.
 
 The new DSM v5 is deployed with the guardian set already moved to DelegationContracts:
 Stakely replaces Kiln, and the extra Lido dev team guardian is removed.
+
+Vote #83 passed & executed on Aug-26-2026 11:30:36 AM UTC, block 3496827.
 """
 
 from typing import Dict, List, NamedTuple, Tuple
@@ -177,7 +179,7 @@ def _require_configured_addresses() -> None:
     if missing:
         raise ValueError(
             "The following addresses are not configured yet, set them at the top of "
-            f"scripts/vote_edf_hoodi.py first: {', '.join(missing)}"
+            f"archive/scripts/vote_2026_08_26_hoodi_edf.py first: {', '.join(missing)}"
         )
 
 
