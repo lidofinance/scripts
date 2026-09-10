@@ -105,10 +105,11 @@ def test_dsm_no_changes_in_views_with_ops(
 
 
 def pause_deposits(dsm: Contract):
+    guardian = dsm.getGuardians()[0]
     dsm.pauseDeposits(
         chain.height,
-        [0, 0],  # skip signature
-        {"from": dsm.getGuardians()[0]},
+        (guardian, b""),
+        {"from": accounts.at(guardian, force=True)},
     )
 
 
@@ -133,7 +134,6 @@ def do_snapshot(guardian: Account, some_eoa: Account):
             return {
                 "chain_time": web3.eth.get_block(chain.height)["timestamp"],
                 "DEPOSIT_CONTRACT": dsm.DEPOSIT_CONTRACT(),
-                "LIDO": dsm.LIDO(),
                 "getOwner": dsm.getOwner(),
                 "getGuardianIndex(positive)": dsm.getGuardianIndex(guardian.address),
                 "getGuardianIndex(negative)": dsm.getGuardianIndex(accounts[0].address),
