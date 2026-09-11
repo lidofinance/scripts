@@ -33,8 +33,8 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-import scripts.vote_edf as vote_script
-from scripts.vote_edf import (
+import scripts.upgrade_edf as vote_script
+from scripts.upgrade_edf import (
     DG_PROPOSAL_METADATA,
     IPFS_DESCRIPTION,
     get_dg_items,
@@ -54,7 +54,7 @@ EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
-# Fill these independently from scripts/vote_edf.py (do not copy-paste from
+# Filled independently from scripts/upgrade_edf.py (do not copy-paste from
 # the script) - the fixture cross-checks both copies against each other
 # EDF core contracts, https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746/25
 # DSM v5, https://github.com/lidofinance/core/blob/e4d0404c85b043b1b9fb1dd42d85c2535a7f30d8/deployed-mainnet.json#L482
@@ -389,11 +389,6 @@ EXPECTED_DG_EVENTS_COUNT = 78
 IPFS_DESCRIPTION_HASH = None
 
 
-def _is_placeholder_address(value: str) -> bool:
-    normalized = str(value).strip().lower()
-    return normalized in ("", "0x0000000000000000000000000000000000000000") or normalized.startswith("todo")
-
-
 def _event_list(events: EventDict, name: str):
     return [event_item for event_item in events if event_item.name == name]
 
@@ -570,24 +565,6 @@ def validate_role_grant_event(
 def runtime_upgrade_context():
     if network_name() in ("hoodi", "hoodi-fork", "holesky", "holesky-fork"):
         pytest.skip("Run the EDF upgrade test on a mainnet fork (e.g. --network mfh-1).")
-
-    missing_addresses = [
-        name
-        for name, value in [
-            ("NEW_DEPOSIT_SECURITY_MODULE", NEW_DEPOSIT_SECURITY_MODULE),
-            ("NEW_LIDO_LOCATOR_IMPLEMENTATION", NEW_LIDO_LOCATOR_IMPLEMENTATION),
-            ("SET_DEPOSITS_RESERVE_TARGET_FACTORY", SET_DEPOSITS_RESERVE_TARGET_FACTORY),
-        ]
-        if _is_placeholder_address(value)
-    ]
-    missing_addresses += [
-        f"DelegationContract for {c.name}" for c in ALL_DELEGATION_CONTRACTS if _is_placeholder_address(c.address)
-    ]
-    if missing_addresses:
-        pytest.skip(
-            "EDF deploy addresses are missing, fill the TODOs in scripts/vote_edf.py "
-            f"and tests/test_vote_edf.py first: {', '.join(missing_addresses)}"
-        )
 
     # Cross-check the deploy data against the vote script copies
     assert NEW_DEPOSIT_SECURITY_MODULE.lower() == vote_script.NEW_DEPOSIT_SECURITY_MODULE.lower()

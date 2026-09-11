@@ -48,7 +48,23 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
-    return []
+    return [
+        (
+            # member addresses, rotated to EDF DelegationContracts by the vote
+            contracts.csm_hash_consensus.address,
+            0x01,
+        ),
+        (
+            # member states, rotated together with the member addresses
+            contracts.csm_hash_consensus.address,
+            0x02,
+        ),
+        (
+            # EVM script factories list, the SetDepositsReserveTarget factory is added by the vote
+            contracts.easy_track.address,
+            0x05,
+        ),
+    ]
 
 
 @pytest.fixture(scope="module")
