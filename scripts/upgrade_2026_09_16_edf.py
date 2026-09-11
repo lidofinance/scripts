@@ -1,5 +1,5 @@
 """
-Vote 2026_MM_DD
+Vote 2026_09_16
 
 1. Submit a Dual Governance proposal containing a single Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c forward call to Dual Governance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
 

@@ -31,8 +31,8 @@ from utils.ipfs import get_lido_vote_cid_from_str
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-import scripts.upgrade_edf as vote_script
-from scripts.upgrade_edf import (
+import scripts.upgrade_2026_09_16_edf as vote_script
+from scripts.upgrade_2026_09_16_edf import (
     start_vote,
     get_vote_items,
     get_dg_items,
@@ -50,7 +50,7 @@ EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
-# Filled independently from scripts/upgrade_edf.py (do not copy-paste from
+# Filled independently from scripts/upgrade_2026_09_16_edf.py (do not copy-paste from
 # the script) - the fixture cross-checks both copies against each other
 # EDF core contracts, https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746/25
 # DSM v5, https://github.com/lidofinance/core/blob/e4d0404c85b043b1b9fb1dd42d85c2535a7f30d8/deployed-mainnet.json#L482
