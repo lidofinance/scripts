@@ -310,23 +310,27 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     (report_tx, _) = oracle_report()
     # print(report_tx.events["TransferShares"])
 
-    # zero index - mint to accounting contract, 1 index - module, 2 index - simple dvt, 3 index - csm
+    # zero index - mint to accounting contract, 1 index - module, 2 index - simple dvt, 3 index - csm, 4 index - curated v2
     module_index = 1
     simple_dvt_index = 2
     csm_index = 3
+    curated_v2_index = 4
 
     if report_tx.events["TransferShares"][module_index - 1]["to"] == burner.address:
         module_index += 1
         simple_dvt_index += 1
         csm_index += 1
+        curated_v2_index += 1
 
-    agent_index = module_index + 3
+    agent_index = module_index + 4
     assert report_tx.events["TransferShares"][module_index]["to"] == module_address
     assert report_tx.events["TransferShares"][module_index]["from"] == contracts.accounting.address
     assert report_tx.events["TransferShares"][simple_dvt_index]["to"] == contracts.simple_dvt.address
     assert report_tx.events["TransferShares"][simple_dvt_index]["from"] == contracts.accounting.address
     assert report_tx.events["TransferShares"][csm_index]["to"] == contracts.csm.address
     assert report_tx.events["TransferShares"][csm_index]["from"] == contracts.accounting.address
+    assert report_tx.events["TransferShares"][curated_v2_index]["to"] == contracts.cm.address
+    assert report_tx.events["TransferShares"][curated_v2_index]["from"] == contracts.accounting.address
     assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
     assert report_tx.events["TransferShares"][agent_index]["from"] == contracts.accounting.address
 
@@ -356,15 +360,24 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
         * csm_stats["treasuryFee"]
         // 100_00
     )
+    curated_v2_stats = contracts.staking_router.getStakingModule(4)
+    curated_v2_treasury_fee = (
+        report_tx.events["TransferShares"][curated_v2_index]["sharesValue"]
+        * 100_00
+        // curated_v2_stats["stakingModuleFee"]
+        * curated_v2_stats["treasuryFee"]
+        // 100_00
+    )
 
     assert almostEqWithDiff(
-        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
+        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee + curated_v2_treasury_fee,
         report_tx.events["TransferShares"][agent_index]["sharesValue"],
         100,
     )
     assert report_tx.events["TransferShares"][module_index]["sharesValue"] > 0
     assert report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"] > 0
     assert report_tx.events["TransferShares"][csm_index]["sharesValue"] > 0
+    assert report_tx.events["TransferShares"][curated_v2_index]["sharesValue"] > 0
 
     # do the same checks for Transfer event -------------------------------------------------------
 
@@ -374,6 +387,8 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     assert report_tx.events["Transfer"][simple_dvt_index]["from"] == contracts.accounting.address
     assert report_tx.events["Transfer"][csm_index]["to"] == contracts.csm.address
     assert report_tx.events["Transfer"][csm_index]["from"] == contracts.accounting.address
+    assert report_tx.events["Transfer"][curated_v2_index]["to"] == contracts.cm.address
+    assert report_tx.events["Transfer"][curated_v2_index]["from"] == contracts.accounting.address
     assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
     assert report_tx.events["Transfer"][agent_index]["from"] == contracts.accounting.address
 
@@ -401,15 +416,24 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
         * csm_stats["treasuryFee"]
         // 100_00
     )
+    curated_v2_stats = contracts.staking_router.getStakingModule(4)
+    curated_v2_treasury_fee = (
+        report_tx.events["Transfer"][curated_v2_index]["value"]
+        * 100_00
+        // curated_v2_stats["stakingModuleFee"]
+        * curated_v2_stats["treasuryFee"]
+        // 100_00
+    )
 
     assert almostEqWithDiff(
-        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee,
+        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee + curated_v2_treasury_fee,
         report_tx.events["Transfer"][agent_index]["value"],
         100,
     )
     assert report_tx.events["Transfer"][module_index]["value"] > 0
     assert report_tx.events["Transfer"][simple_dvt_index]["value"] > 0
     assert report_tx.events["Transfer"][csm_index]["value"] > 0
+    assert report_tx.events["Transfer"][curated_v2_index]["value"] > 0
 
 
 def test_stopped_staking_module_cant_stake(stranger):

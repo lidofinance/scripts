@@ -22,7 +22,7 @@ def test_owner(dsm):
 
 
 def test_versioned(dsm):
-    assert dsm.VERSION() == 4
+    assert dsm.VERSION() == 5
 
 
 def test_deposit_paused(dsm):

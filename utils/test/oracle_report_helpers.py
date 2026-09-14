@@ -8,6 +8,7 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
+from utils.balance import set_balance_in_wei
 from utils.config import contracts, AO_CONSENSUS_VERSION
 from utils.test.exit_bus_data import encode_data, DATA_FORMAT_LIST_WITH_KEY_INDEX
 from utils.test.helpers import ETH, GWEI, eth_balance
@@ -242,7 +243,8 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10**19)
+    # the submitter can be an EDF DelegationContract without a payable fallback, so set the balance directly
+    set_balance_in_wei(submitter, 10**19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
     report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
     if not silent:
