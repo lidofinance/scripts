@@ -22,6 +22,12 @@ from utils.test.event_validators.easy_track import (
     EVMScriptFactoryAdded,
     validate_evmscript_factory_added_event,
 )
+from utils.test.event_validators.hash_consensus import (
+    validate_hash_consensus_member_added,
+    validate_hash_consensus_member_removed,
+)
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.easy_track import create_permissions
 
 from utils.voting import find_metadata_by_vote_id
@@ -547,62 +553,6 @@ def _assert_test_data_matches_script() -> None:
 # ============================================================================
 # =========================== Event validators ===============================
 # ============================================================================
-def validate_member_removed_event(
-    event: EventDict, member: str, new_total_members: int, new_quorum: int, emitted_by: str
-) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "MemberRemoved"])
-
-    member_removed_event = _single_event(event, "MemberRemoved")
-    assert convert.to_address(member_removed_event["addr"]) == convert.to_address(member), "Wrong removed member"
-    assert member_removed_event["newTotalMembers"] == new_total_members, "Wrong new total members count"
-    assert member_removed_event["newQuorum"] == new_quorum, "Wrong new quorum"
-    _assert_emitted_by(member_removed_event, emitted_by)
-
-
-def validate_member_added_event(
-    event: EventDict, member: str, new_total_members: int, new_quorum: int, emitted_by: str
-) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "MemberAdded"])
-
-    member_added_event = _single_event(event, "MemberAdded")
-    assert convert.to_address(member_added_event["addr"]) == convert.to_address(member), "Wrong added member"
-    assert member_added_event["newTotalMembers"] == new_total_members, "Wrong new total members count"
-    assert member_added_event["newQuorum"] == new_quorum, "Wrong new quorum"
-    _assert_emitted_by(member_added_event, emitted_by)
-
-
-def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "Upgraded"])
-
-    upgraded_event = _single_event(event, "Upgraded")
-    assert convert.to_address(upgraded_event["implementation"]) == convert.to_address(
-        implementation
-    ), "Wrong implementation address"
-    _assert_emitted_by(upgraded_event, emitted_by)
-
-
-def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, sender: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleRevoked"])
-
-    role_revoked_event = _single_event(event, "RoleRevoked")
-    assert _normalize_role(role_revoked_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
-    assert convert.to_address(role_revoked_event["account"]) == convert.to_address(account), "Wrong revoked account"
-    assert convert.to_address(role_revoked_event["sender"]) == convert.to_address(sender), "Wrong role revoke sender"
-    _assert_emitted_by(role_revoked_event, emitted_by)
-
-
-def validate_role_grant_event(
-    event: EventDict, role_hash: str, account: str, sender: str, emitted_by: str, events_chain: list = None
-) -> None:
-    validate_events_chain([e.name for e in event], events_chain or ["LogScriptCall", "RoleGranted"])
-
-    role_granted_event = _single_event(event, "RoleGranted")
-    assert _normalize_role(role_granted_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
-    assert convert.to_address(role_granted_event["account"]) == convert.to_address(account), "Wrong granted account"
-    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(sender), "Wrong role grant sender"
-    _assert_emitted_by(role_granted_event, emitted_by)
-
-
 # ============================================================================
 # =============================== Fixtures ===================================
 # ============================================================================
@@ -810,20 +760,20 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 1.1-1.72. Rotate oracle committee members
                 for committee in ORACLE_COMMITTEES:
                     for mapping in ORACLE_MEMBER_MAPPINGS:
-                        validate_member_removed_event(
+                        validate_hash_consensus_member_removed(
                             agent_events[event_index],
                             member=mapping.old_member,
-                            new_total_members=len(ORACLE_MEMBER_MAPPINGS) - 1,
                             new_quorum=ORACLE_COMMITTEE_QUORUM,
+                            new_total_members=len(ORACLE_MEMBER_MAPPINGS) - 1,
                             emitted_by=committee.consensus_contract,
                         )
                         event_index += 1
 
-                        validate_member_added_event(
+                        validate_hash_consensus_member_added(
                             agent_events[event_index],
                             member=mapping.delegation_contract.address,
-                            new_total_members=len(ORACLE_MEMBER_MAPPINGS),
                             new_quorum=ORACLE_COMMITTEE_QUORUM,
+                            new_total_members=len(ORACLE_MEMBER_MAPPINGS),
                             emitted_by=committee.consensus_contract,
                         )
                         event_index += 1
@@ -831,46 +781,46 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
                 # 1.73. Upgrade LidoLocator implementation
                 validate_proxy_upgrade_event(
                     agent_events[event_index],
-                    implementation=NEW_LIDO_LOCATOR_IMPLEMENTATION,
+                    NEW_LIDO_LOCATOR_IMPLEMENTATION,
                     emitted_by=LIDO_LOCATOR,
                 )
                 event_index += 1
 
                 # 1.74. Revoke STAKING_MODULE_UNVETTING_ROLE from the old DSM
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     agent_events[event_index],
-                    role_hash=STAKING_MODULE_UNVETTING_ROLE,
-                    account=OLD_DEPOSIT_SECURITY_MODULE,
+                    role=STAKING_MODULE_UNVETTING_ROLE,
+                    revoke_from=OLD_DEPOSIT_SECURITY_MODULE,
                     sender=AGENT,
                     emitted_by=STAKING_ROUTER,
                 )
                 event_index += 1
 
                 # 1.75. Grant STAKING_MODULE_UNVETTING_ROLE to the new DSM
-                validate_role_grant_event(
+                validate_grant_role_event(
                     agent_events[event_index],
-                    role_hash=STAKING_MODULE_UNVETTING_ROLE,
-                    account=NEW_DEPOSIT_SECURITY_MODULE,
+                    role=STAKING_MODULE_UNVETTING_ROLE,
+                    grant_to=NEW_DEPOSIT_SECURITY_MODULE,
                     sender=AGENT,
                     emitted_by=STAKING_ROUTER,
                 )
                 event_index += 1
 
                 # 1.76. Revoke TOP_UP_ROLE from the old depositor bot EOA
-                validate_role_revoke_event(
+                validate_revoke_role_event(
                     agent_events[event_index],
-                    role_hash=TOP_UP_ROLE,
-                    account=DEPOSITOR_BOT_OLD_EOA,
+                    role=TOP_UP_ROLE,
+                    revoke_from=DEPOSITOR_BOT_OLD_EOA,
                     sender=AGENT,
                     emitted_by=TOP_UP_GATEWAY,
                 )
                 event_index += 1
 
                 # 1.77. Grant TOP_UP_ROLE to the depositor bot DelegationContract
-                validate_role_grant_event(
+                validate_grant_role_event(
                     agent_events[event_index],
-                    role_hash=TOP_UP_ROLE,
-                    account=DEPOSITOR_BOT_DELEGATION_CONTRACT.address,
+                    role=TOP_UP_ROLE,
+                    grant_to=DEPOSITOR_BOT_DELEGATION_CONTRACT.address,
                     sender=AGENT,
                     emitted_by=TOP_UP_GATEWAY,
                 )
