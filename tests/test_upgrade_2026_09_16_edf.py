@@ -375,7 +375,7 @@ ALL_DELEGATION_CONTRACTS = (
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None  # TODO set after the vote is created
+EXPECTED_VOTE_ID = 205
 # The next DG proposal id, timelock.getProposalsCount() + 1 at the time of writing
 EXPECTED_DG_PROPOSAL_ID = 14
 EXPECTED_VOTE_EVENTS_COUNT = 2
