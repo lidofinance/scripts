@@ -10,6 +10,7 @@ from utils.config import (
 )
 from utils.test.exit_bus_data import encode_data
 from utils.evm_script import encode_error
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.oracle_report_helpers import (
     encode_data_from_abi,
     reach_consensus,
@@ -52,11 +53,11 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
             (contract_version, contract_version + 1),
         )
     ):
-        contract.submitReportData.call(report, contract_version + 1, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version + 1, call=True)
 
     with reverts(encode_error("UnexpectedRefSlot(uint256,uint256)", (ref_slot, ref_slot - 1))):
         wrong_report = (report[0], ref_slot - 1, report[2], report[3], report[4])
-        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, wrong_report, contract_version, call=True)
 
     with reverts(
         encode_error(
@@ -71,7 +72,7 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
             report[3],
             report[4],
         )
-        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, wrong_report, contract_version, call=True)
 
     with (reverts()):  # encode_error("UnexpectedDataHash(bytes32,bytes32)",(report_hash, report_hash))
         wrong_report = (
@@ -81,7 +82,7 @@ def test_submit_report_data_checks(contract, ref_slot, stranger):
             report[3],
             HexBytes(42).hex(),
         )
-        contract.submitReportData.call(wrong_report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, wrong_report, contract_version, call=True)
 
 
 def test_submit_report_data_processing(contract, ref_slot):
@@ -97,10 +98,10 @@ def test_submit_report_data_processing(contract, ref_slot):
         contracts.hash_consensus_for_validators_exit_bus_oracle,
     )
 
-    contract.submitReportData(report, contract_version, {"from": submitter})
+    send_as_edf_member(submitter, contract.submitReportData, report, contract_version)
 
     with reverts(encode_error("RefSlotAlreadyProcessing()")):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)
 
 
 def test_handle_consensus_report_data_wrong_format(contract, ref_slot):
@@ -131,7 +132,7 @@ def test_handle_consensus_report_data_wrong_format(contract, ref_slot):
     )
 
     with reverts(encode_error("UnsupportedRequestsDataFormat(uint256)", [data_format + 1])):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)
 
 
 def test_handle_consensus_report_data_wrong_data_length(contract, ref_slot):
@@ -162,7 +163,7 @@ def test_handle_consensus_report_data_wrong_data_length(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidRequestsDataLength()")):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)
 
 
 def test_handle_consensus_report_data_wrong_request_length(contract, ref_slot):
@@ -194,7 +195,7 @@ def test_handle_consensus_report_data_wrong_request_length(contract, ref_slot):
     )
 
     with reverts(encode_error("UnexpectedRequestsDataLength()")):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)
 
 
 def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
@@ -225,7 +226,7 @@ def test_handle_consensus_report_data_wrong_module_id(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidModuleId()")):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)
 
 
 def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
@@ -261,4 +262,4 @@ def test_handle_consensus_report_data_invalid_request_order(contract, ref_slot):
     )
 
     with reverts(encode_error("InvalidRequestsDataSortOrder()")):
-        contract.submitReportData.call(report, contract_version, {"from": submitter})
+        send_as_edf_member(submitter, contract.submitReportData, report, contract_version, call=True)

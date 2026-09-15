@@ -9,9 +9,8 @@ from pytest_check import almost_equal, check
 from typing_extensions import Protocol
 
 from tests.conftest import Helpers
-from utils.balance import set_balance_in_wei
 from utils.config import contracts, ORACLE_COMMITTEE
-from utils.test.helpers import ETH
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
@@ -108,13 +107,7 @@ def test_dsm_no_changes_in_views_with_ops(
 
 def pause_deposits(dsm: Contract):
     guardian = dsm.getGuardians()[0]
-    # the guardian is an EDF DelegationContract, the impersonated sender needs ETH for gas
-    set_balance_in_wei(guardian, ETH(1))
-    dsm.pauseDeposits(
-        chain.height,
-        (guardian, b""),
-        {"from": accounts.at(guardian, force=True)},
-    )
+    send_as_edf_member(guardian, dsm.pauseDeposits, chain.height, (guardian, b""))
 
 
 def resume_deposits(dsm: Contract):

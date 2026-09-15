@@ -9,6 +9,7 @@ from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.staking_module import calc_module_reward_shares
 from utils.test.deposits_helpers import fill_deposit_buffer
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
 from utils.test.helpers import almostEqEth, almostEqWithDiff
 
@@ -523,8 +524,8 @@ def prepare_report():
     items, hash = prepare_exit_bus_report([], ref_slot)
     fast_lane_members, _ = contracts.hash_consensus_for_validators_exit_bus_oracle.getFastLaneMembers()
     for m in fast_lane_members:
-        contracts.hash_consensus_for_validators_exit_bus_oracle.submitReport(
-            ref_slot, hash, consensus_version, {"from": m}
+        send_as_edf_member(
+            m, contracts.hash_consensus_for_validators_exit_bus_oracle.submitReport, ref_slot, hash, consensus_version
         )
     return items, m
 
@@ -549,7 +550,7 @@ def test_paused_validators_exit_bus_cant_submit_report(stranger):
 
     report, member = prepare_report()
     with brownie.reverts(encode_error("ResumedExpected()")):
-        contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
+        send_as_edf_member(member, contracts.validators_exit_bus_oracle.submitReportData, report, contract_version)
 
 
 def test_stopped_lido_can_exit_validators(stranger):
@@ -561,4 +562,4 @@ def test_stopped_lido_can_exit_validators(stranger):
     contracts.lido.stop({"from": contracts.agent})
 
     report, member = prepare_report()
-    contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": member})
+    send_as_edf_member(member, contracts.validators_exit_bus_oracle.submitReportData, report, contract_version)
