@@ -1,24 +1,92 @@
 """
-Voting: EDF/DSM v5 upgrade on mainnet (LIP-37).
+Vote 2026_09_16
 
-1. Submit the EDF/DSM v5 upgrade to Dual Governance
-# ===== Oracle committees: rotate members from EOA hot keys to EDF DelegationContracts =====
-# Committees (in order): HashConsensus for AccountingOracle, HashConsensus for
-# ValidatorsExitBusOracle, CSHashConsensus for CSFeeOracle, HashConsensus for
-# Curated Module FeeOracle. Members (in order): Instadapp, Caliber, Staking Facilities,
-# Chorus One, P2P, ChainLayer, bloXroute, MatrixedLink, Stakefish.
-1.1-1.72. For each committee, for each member: remove the old member EOA and add its
-          EDF DelegationContract, keeping quorum 5
-# ===== DSM v5 =====
-1.73. Upgrade LidoLocator implementation (points to the new DepositSecurityModule v5)
-1.74. Revoke STAKING_MODULE_UNVETTING_ROLE on StakingRouter from the old DepositSecurityModule
-1.75. Grant STAKING_MODULE_UNVETTING_ROLE on StakingRouter to the new DepositSecurityModule v5
-1.76. Revoke TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA
-1.77. Grant TOP_UP_ROLE on TopUpGateway to the depositor bot DelegationContract
-# ===== Easy Track factory for deposit reserve target management by CMC =====
-1.78. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor
-2. Add SetDepositsReserveTarget factory to Easy Track with the permission to call
-   Lido.setDepositsReserveTarget(uint256)
+1. Submit a Dual Governance proposal containing a single Aragon Agent 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c forward call to Dual Governance 0xC1db28B3301331277e307FDCfF8DE28242A4486E
+
+I. EDF: rotate the oracle committee members from EOA hot keys to DelegationContracts (LIP-37), keeping quorum 5
+1.1. Remove Instadapp oracle member 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.2. Add Instadapp DelegationContract 0xE75A431A98487DC69A14Bdd13d858E3238e9C1b3 to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.3. Remove Caliber oracle member 0x4118DAD7f348A4063bD15786c299De2f3B1333F3 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.4. Add Caliber DelegationContract 0xc77d0Bf3AA4778E36a89CDC8bbc9c34d8060637d to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.5. Remove Staking Facilities oracle member 0x404335BcE530400a5814375E7Ec1FB55fAff3eA2 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.6. Add Staking Facilities DelegationContract 0xc7442d4d8F3FfEa0fA4a18Ad3062c8137cE21749 to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.7. Remove Chorus One oracle member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.8. Add Chorus One DelegationContract 0x56B3eA8016Da18C6E8CD8135492d242F0dE0DBBC to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.9. Remove P2P oracle member 0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.10. Add P2P DelegationContract 0x4E3F2DEeb59eB9a205D82D17647b3e56422e0FEe to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.11. Remove ChainLayer oracle member 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.12. Add ChainLayer DelegationContract 0xd524101C3c40f71Fce7B9312D299603880a06Bdb to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.13. Remove bloXroute oracle member 0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.14. Add bloXroute DelegationContract 0x99Cd2EF33040879D40BBC77Df81863D97f13C64d to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.15. Remove MatrixedLink oracle member 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.16. Add MatrixedLink DelegationContract 0xC4f2704273598d51A0ec76A31C12553ec8f5A891 to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.17. Remove Stakefish oracle member 0x042a9e5acCfa17e28300F1b5967f20891E973922 from HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.18. Add Stakefish DelegationContract 0x5e8Ed9f10307eD6FA793A347e4D0f407D00B9C6f to HashConsensus for AccountingOracle 0xD624B08C83bAECF0807Dd2c6880C3154a5F0B288
+1.19. Remove Instadapp oracle member 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.20. Add Instadapp DelegationContract 0xE75A431A98487DC69A14Bdd13d858E3238e9C1b3 to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.21. Remove Caliber oracle member 0x4118DAD7f348A4063bD15786c299De2f3B1333F3 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.22. Add Caliber DelegationContract 0xc77d0Bf3AA4778E36a89CDC8bbc9c34d8060637d to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.23. Remove Staking Facilities oracle member 0x404335BcE530400a5814375E7Ec1FB55fAff3eA2 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.24. Add Staking Facilities DelegationContract 0xc7442d4d8F3FfEa0fA4a18Ad3062c8137cE21749 to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.25. Remove Chorus One oracle member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.26. Add Chorus One DelegationContract 0x56B3eA8016Da18C6E8CD8135492d242F0dE0DBBC to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.27. Remove P2P oracle member 0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.28. Add P2P DelegationContract 0x4E3F2DEeb59eB9a205D82D17647b3e56422e0FEe to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.29. Remove ChainLayer oracle member 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.30. Add ChainLayer DelegationContract 0xd524101C3c40f71Fce7B9312D299603880a06Bdb to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.31. Remove bloXroute oracle member 0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.32. Add bloXroute DelegationContract 0x99Cd2EF33040879D40BBC77Df81863D97f13C64d to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.33. Remove MatrixedLink oracle member 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.34. Add MatrixedLink DelegationContract 0xC4f2704273598d51A0ec76A31C12553ec8f5A891 to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.35. Remove Stakefish oracle member 0x042a9e5acCfa17e28300F1b5967f20891E973922 from HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.36. Add Stakefish DelegationContract 0x5e8Ed9f10307eD6FA793A347e4D0f407D00B9C6f to HashConsensus for ValidatorsExitBusOracle 0x7FaDB6358950c5fAA66Cb5EB8eE5147De3df355a
+1.37. Remove Instadapp oracle member 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.38. Add Instadapp DelegationContract 0xE75A431A98487DC69A14Bdd13d858E3238e9C1b3 to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.39. Remove Caliber oracle member 0x4118DAD7f348A4063bD15786c299De2f3B1333F3 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.40. Add Caliber DelegationContract 0xc77d0Bf3AA4778E36a89CDC8bbc9c34d8060637d to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.41. Remove Staking Facilities oracle member 0x404335BcE530400a5814375E7Ec1FB55fAff3eA2 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.42. Add Staking Facilities DelegationContract 0xc7442d4d8F3FfEa0fA4a18Ad3062c8137cE21749 to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.43. Remove Chorus One oracle member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.44. Add Chorus One DelegationContract 0x56B3eA8016Da18C6E8CD8135492d242F0dE0DBBC to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.45. Remove P2P oracle member 0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.46. Add P2P DelegationContract 0x4E3F2DEeb59eB9a205D82D17647b3e56422e0FEe to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.47. Remove ChainLayer oracle member 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.48. Add ChainLayer DelegationContract 0xd524101C3c40f71Fce7B9312D299603880a06Bdb to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.49. Remove bloXroute oracle member 0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.50. Add bloXroute DelegationContract 0x99Cd2EF33040879D40BBC77Df81863D97f13C64d to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.51. Remove MatrixedLink oracle member 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.52. Add MatrixedLink DelegationContract 0xC4f2704273598d51A0ec76A31C12553ec8f5A891 to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.53. Remove Stakefish oracle member 0x042a9e5acCfa17e28300F1b5967f20891E973922 from CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.54. Add Stakefish DelegationContract 0x5e8Ed9f10307eD6FA793A347e4D0f407D00B9C6f to CSHashConsensus for CSFeeOracle 0x71093efF8D8599b5fA340D665Ad60fA7C80688e4
+1.55. Remove Instadapp oracle member 0x73181107c8D9ED4ce0bbeF7A0b4ccf3320C41d12 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.56. Add Instadapp DelegationContract 0xE75A431A98487DC69A14Bdd13d858E3238e9C1b3 to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.57. Remove Caliber oracle member 0x4118DAD7f348A4063bD15786c299De2f3B1333F3 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.58. Add Caliber DelegationContract 0xc77d0Bf3AA4778E36a89CDC8bbc9c34d8060637d to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.59. Remove Staking Facilities oracle member 0x404335BcE530400a5814375E7Ec1FB55fAff3eA2 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.60. Add Staking Facilities DelegationContract 0xc7442d4d8F3FfEa0fA4a18Ad3062c8137cE21749 to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.61. Remove Chorus One oracle member 0x8dB977C13CAA938BC58464bFD622DF0570564b78 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.62. Add Chorus One DelegationContract 0x56B3eA8016Da18C6E8CD8135492d242F0dE0DBBC to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.63. Remove P2P oracle member 0x007DE4a5F7bc37E2F26c0cb2E8A95006EE9B89b5 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.64. Add P2P DelegationContract 0x4E3F2DEeb59eB9a205D82D17647b3e56422e0FEe to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.65. Remove ChainLayer oracle member 0xc79F702202E3A6B0B6310B537E786B9ACAA19BAf from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.66. Add ChainLayer DelegationContract 0xd524101C3c40f71Fce7B9312D299603880a06Bdb to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.67. Remove bloXroute oracle member 0x61c91ECd902EB56e314bB2D5c5C07785444Ea1c8 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.68. Add bloXroute DelegationContract 0x99Cd2EF33040879D40BBC77Df81863D97f13C64d to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.69. Remove MatrixedLink oracle member 0xe57B3792aDCc5da47EF4fF588883F0ee0c9835C9 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.70. Add MatrixedLink DelegationContract 0xC4f2704273598d51A0ec76A31C12553ec8f5A891 to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.71. Remove Stakefish oracle member 0x042a9e5acCfa17e28300F1b5967f20891E973922 from HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+1.72. Add Stakefish DelegationContract 0x5e8Ed9f10307eD6FA793A347e4D0f407D00B9C6f to HashConsensus for Curated Module FeeOracle 0x902D64c93F6595339aA46105627a085591051aFb
+
+II. DSM v5
+1.73. Upgrade Lido Locator 0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb to implementation 0x60E09F1791F1168d0450E4F100616B4a3F95119C
+1.74. Revoke STAKING_MODULE_UNVETTING_ROLE 0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57 from DepositSecurityModule v4 0xF573E9E3de1f86B085417ab294f56E7920B4e9Be on StakingRouter 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.75. Grant STAKING_MODULE_UNVETTING_ROLE 0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57 to DepositSecurityModule v5 0x39BB5d491e98A44D1bfe8047A737a81E296a63E0 on StakingRouter 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
+1.76. Revoke TOP_UP_ROLE 0x5e4bd437d29fad01c10cdcfff414f0d6b0e84b96d2dade88d780d45b5630696b from the depositor bot 0xF82aC5937A20dC862F9bc0668779031E06000f17 on TopUpGateway 0x3FC2C71579D80790Aaa3fc7Be8B66ac39dC57374
+1.77. Grant TOP_UP_ROLE 0x5e4bd437d29fad01c10cdcfff414f0d6b0e84b96d2dade88d780d45b5630696b to the depositor bot DelegationContract 0x6Aa249bA53A3abcaC52F91146583B3eE2Ee4C7F5 on TopUpGateway 0x3FC2C71579D80790Aaa3fc7Be8B66ac39dC57374
+
+III. Easy Track factory for deposit reserve target management by CMC
+1.78. Grant BUFFER_RESERVE_MANAGER_ROLE 0x33969636f1fbf3d7d062d4de4a08e7bd3c46606ec28b3a4398d2665be559b921 to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+2. Add SetDepositsReserveTarget EVM script factory 0x62E9Dc68BDCBC46362f40e0bb9c154C9a42E62b0 with setDepositsReserveTarget permission on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea
 
 The new DSM v5 is deployed with the guardian set already moved to DelegationContracts:
 Stakely replaces Kiln, the guardian quorum stays 4.
@@ -31,7 +99,8 @@ from typing import Dict, List, Tuple
 
 from brownie import interface, web3
 
-from utils.agent import agent_forward
+from utils.voting import bake_vote_items, confirm_vote_script, create_vote
+from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
     ACL,
     AGENT,
@@ -44,12 +113,12 @@ from utils.config import (
     get_is_live,
     get_priority_fee,
 )
+from utils.mainnet_fork import pass_and_exec_dao_vote
+from utils.dual_governance import submit_proposals
+
+from utils.agent import agent_forward
 from utils.easy_track import add_evmscript_factory, create_permissions
 from utils.permissions import encode_permission_grant
-from utils.dual_governance import submit_proposals
-from utils.ipfs import calculate_vote_ipfs_description, upload_vote_ipfs_description
-from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
 # ============================== Addresses ===================================
@@ -82,19 +151,6 @@ SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER = "0x2570e0b22AD904501dfB0d49575991AC
 # https://research.lido.fi/t/proposal-add-easy-track-factory-for-deposit-reserve-target-management-by-cmc/11827
 SET_DEPOSITS_RESERVE_TARGET_MAX = 9600 * 10**18
 
-STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
-TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
-BUFFER_RESERVE_MANAGER_ROLE = "BUFFER_RESERVE_MANAGER_ROLE"
-# IERC1271.isValidSignature.selector
-ERC1271_INTERFACE_ID = "0x1626ba7e"
-
-# The current on-chain quorum of every committee (ORACLE_QUORUM in configs/config_mainnet.py),
-# kept by the rotation
-ORACLE_COMMITTEE_QUORUM = 5
-
-# The current on-chain guardian quorum (DSM_GUARDIAN_QUORUM in configs/config_mainnet.py);
-# the new DSM is deployed with the same quorum, https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746/25
-DSM_GUARDIAN_QUORUM = 4
 
 DELEGATION_CONTRACT_COOLDOWN = 172800  # 2 days
 
@@ -377,17 +433,29 @@ ALL_DELEGATION_CONTRACTS: List[DelegationContract] = (
 )
 
 
-# ============================= Description ==================================
+# ============================== Constants ===================================
+STAKING_MODULE_UNVETTING_ROLE = web3.keccak(text="STAKING_MODULE_UNVETTING_ROLE").hex()
+TOP_UP_ROLE = web3.keccak(text="TOP_UP_ROLE").hex()
+BUFFER_RESERVE_MANAGER_ROLE = "BUFFER_RESERVE_MANAGER_ROLE"
+# IERC1271.isValidSignature.selector
+ERC1271_INTERFACE_ID = "0x1626ba7e"
+
+# The current on-chain quorum of every committee (ORACLE_QUORUM in configs/config_mainnet.py),
+# kept by the rotation
+ORACLE_COMMITTEE_QUORUM = 5
+
+# The current on-chain guardian quorum (DSM_GUARDIAN_QUORUM in configs/config_mainnet.py);
+# the new DSM is deployed with the same quorum, https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746/25
+DSM_GUARDIAN_QUORUM = 4
+
 DG_PROPOSAL_METADATA = (
     "Upgrade the protocol to EDF/DSM v5 (LIP-37): rotate oracle committee members to "
     "Execution Delegation Framework delegation contracts, upgrade LidoLocator "
     "and switch to the new DepositSecurityModule v5"
 )
-DG_SUBMISSION_DESCRIPTION = "1. Submit the EDF/DSM v5 upgrade to Dual Governance"
-ET_FACTORY_DESCRIPTION = (
-    "2. Add SetDepositsReserveTarget factory 0x62E9Dc68BDCBC46362f40e0bb9c154C9a42E62b0 "
-    "to Easy Track with the permission to call Lido.setDepositsReserveTarget(uint256)"
-)
+
+
+# ============================= IPFS Description ==================================
 IPFS_DESCRIPTION = """
 Upgrade the Lido protocol to the Execution Delegation Framework (EDF) and DepositSecurityModule v5 (LIP-37).
 
@@ -400,32 +468,6 @@ Upgrade the Lido protocol to the Execution Delegation Framework (EDF) and Deposi
 
 
 # ============================ Pre-flight checks =============================
-def _is_placeholder_address(value: str) -> bool:
-    normalized = str(value).strip().lower()
-    return normalized in ("", "0x0000000000000000000000000000000000000000") or normalized.startswith("todo")
-
-
-def _require_configured_addresses() -> None:
-    missing = []
-    for name, value in [
-        ("NEW_DEPOSIT_SECURITY_MODULE", NEW_DEPOSIT_SECURITY_MODULE),
-        ("NEW_LIDO_LOCATOR_IMPLEMENTATION", NEW_LIDO_LOCATOR_IMPLEMENTATION),
-        ("SET_DEPOSITS_RESERVE_TARGET_FACTORY", SET_DEPOSITS_RESERVE_TARGET_FACTORY),
-    ]:
-        if _is_placeholder_address(value):
-            missing.append(name)
-
-    for contract in ALL_DELEGATION_CONTRACTS:
-        if _is_placeholder_address(contract.address):
-            missing.append(f"DelegationContract for {contract.name}")
-
-    if missing:
-        raise ValueError(
-            "The following addresses are not configured yet, set them at the top of "
-            f"scripts/vote_edf.py first: {', '.join(missing)}"
-        )
-
-
 def _assert_no_duplicates() -> None:
     old_members = [m.old_member.lower() for m in ORACLE_MEMBER_MAPPINGS]
     new_members = [m.delegation_contract.address.lower() for m in ORACLE_MEMBER_MAPPINGS]
@@ -628,111 +670,97 @@ def _assert_state_before_vote() -> None:
 
 
 # ================================ Main ======================================
-def get_edf_upgrade_calls() -> List[Tuple[str, str]]:
-    """Return the raw upgrade calls in the order of EDFUpgradeVoteScript._getVoteItems
-    from lidofinance/core (without the EDFUpgradeTemplate startUpgrade/finishUpgrade
-    calls), plus the TOP_UP_ROLE revoke and the BUFFER_RESERVE_MANAGER_ROLE grant.
-
-    Deterministic: does not depend on the live chain state, so the calls of an
-    already executed vote can still be rebuilt and inspected."""
-    _require_configured_addresses()
-
-    staking_router = interface.StakingRouter(STAKING_ROUTER)
+def get_dg_items() -> List[Tuple[str, str]]:
     locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
     top_up_gateway = interface.TopUpGateway(TOP_UP_GATEWAY)
+    lido = interface.Lido(LIDO)
 
-    calls: List[Tuple[str, str]] = []
-
-    # 1.1-1.72. Rotate oracle committee members
+    # 1.1 - 1.72. For each committee, for each member: remove the old member EOA and add
+    # its DelegationContract, keeping the quorum (same order as EDFUpgradeVoteScript in core)
+    oracle_rotation_calls: List[Tuple[str, str]] = []
     for committee in ORACLE_COMMITTEES:
         consensus = interface.HashConsensus(committee.consensus_contract)
         for mapping in ORACLE_MEMBER_MAPPINGS:
-            calls.append(
+            oracle_rotation_calls.append(
                 (
                     consensus.address,
                     consensus.removeMember.encode_input(mapping.old_member, ORACLE_COMMITTEE_QUORUM),
                 )
             )
-            calls.append(
+            oracle_rotation_calls.append(
                 (
                     consensus.address,
                     consensus.addMember.encode_input(mapping.delegation_contract.address, ORACLE_COMMITTEE_QUORUM),
                 )
             )
 
-    # 1.73. Upgrade LidoLocator implementation
-    calls.append(
-        (locator_proxy.address, locator_proxy.proxy__upgradeTo.encode_input(NEW_LIDO_LOCATOR_IMPLEMENTATION))
-    )
-
-    # 1.74. Revoke STAKING_MODULE_UNVETTING_ROLE from the old DSM
-    calls.append(
+    calls: List[Tuple[str, str]] = [
+        *oracle_rotation_calls,
+        # 1.73. Upgrade Lido Locator 0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb to implementation 0x60E09F1791F1168d0450E4F100616B4a3F95119C
+        (
+            locator_proxy.address,
+            locator_proxy.proxy__upgradeTo.encode_input(NEW_LIDO_LOCATOR_IMPLEMENTATION),
+        ),
+        # 1.74. Revoke STAKING_MODULE_UNVETTING_ROLE 0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57 from DepositSecurityModule v4 0xF573E9E3de1f86B085417ab294f56E7920B4e9Be on StakingRouter 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         (
             staking_router.address,
             staking_router.revokeRole.encode_input(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE),
-        )
-    )
-
-    # 1.75. Grant STAKING_MODULE_UNVETTING_ROLE to the new DSM
-    calls.append(
+        ),
+        # 1.75. Grant STAKING_MODULE_UNVETTING_ROLE 0x240525496a9dc32284b17ce03b43e539e4bd81414634ee54395030d793463b57 to DepositSecurityModule v5 0x39BB5d491e98A44D1bfe8047A737a81E296a63E0 on StakingRouter 0xFdDf38947aFB03C621C71b06C9C70bce73f12999
         (
             staking_router.address,
             staking_router.grantRole.encode_input(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE),
-        )
-    )
-
-    # 1.76. Revoke TOP_UP_ROLE from the old depositor bot EOA
-    calls.append(
+        ),
+        # 1.76. Revoke TOP_UP_ROLE 0x5e4bd437d29fad01c10cdcfff414f0d6b0e84b96d2dade88d780d45b5630696b from the depositor bot 0xF82aC5937A20dC862F9bc0668779031E06000f17 on TopUpGateway 0x3FC2C71579D80790Aaa3fc7Be8B66ac39dC57374
         (
             top_up_gateway.address,
             top_up_gateway.revokeRole.encode_input(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA),
-        )
-    )
-
-    # 1.77. Grant TOP_UP_ROLE to the depositor bot DelegationContract
-    calls.append(
+        ),
+        # 1.77. Grant TOP_UP_ROLE 0x5e4bd437d29fad01c10cdcfff414f0d6b0e84b96d2dade88d780d45b5630696b to the depositor bot DelegationContract 0x6Aa249bA53A3abcaC52F91146583B3eE2Ee4C7F5 on TopUpGateway 0x3FC2C71579D80790Aaa3fc7Be8B66ac39dC57374
         (
             top_up_gateway.address,
             top_up_gateway.grantRole.encode_input(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT.address),
-        )
-    )
-
-    # 1.78. Grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor
-    calls.append(
+        ),
+        # 1.78. Grant BUFFER_RESERVE_MANAGER_ROLE 0x33969636f1fbf3d7d062d4de4a08e7bd3c46606ec28b3a4398d2665be559b921 to EVMScriptExecutor 0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977 on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
         encode_permission_grant(
-            target_app=interface.Lido(LIDO),
+            target_app=lido,
             permission_name=BUFFER_RESERVE_MANAGER_ROLE,
             grant_to=EASYTRACK_EVMSCRIPT_EXECUTOR,
-        )
-    )
+        ),
+    ]
 
     expected_count = 2 * len(ORACLE_COMMITTEES) * len(ORACLE_MEMBER_MAPPINGS) + 6
     assert len(calls) == expected_count, f"Expected {expected_count} upgrade calls, got {len(calls)}"
 
-    return calls
-
-
-def get_dg_items() -> List[Tuple[str, str]]:
-    # The whole upgrade is forwarded by the Agent in a single call
-    return [agent_forward(get_edf_upgrade_calls())]
+    # The whole upgrade is applied atomically in a single Agent.forward
+    return [agent_forward(calls)]
 
 
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
-    dg_call_script = submit_proposals([(get_dg_items(), DG_PROPOSAL_METADATA)])
+    lido = interface.Lido(LIDO)
 
-    # Easy Track admin is Voting, so the factory is registered directly by the
-    # vote, not through the Agent
-    vote_desc_items = [
-        DG_SUBMISSION_DESCRIPTION,
-        ET_FACTORY_DESCRIPTION,
-    ]
-    call_script_items = [
-        dg_call_script[0],
-        add_evmscript_factory(
-            factory=SET_DEPOSITS_RESERVE_TARGET_FACTORY,
-            permissions=create_permissions(interface.Lido(LIDO), "setDepositsReserveTarget"),
+    dg_items = get_dg_items()
+    dg_call_script = submit_proposals([(dg_items, DG_PROPOSAL_METADATA)])
+
+    vote_desc_items, call_script_items = zip(
+        (
+            "1. Submit a Dual Governance proposal to upgrade the protocol to EDF/DSM v5 (LIP-37): "
+            "rotate the oracle committee members to DelegationContracts, upgrade Lido Locator "
+            "to the implementation with DepositSecurityModule v5 and move the DSM and depositor bot roles",
+            dg_call_script[0],
         ),
-    ]
+        (
+            # Easy Track admin is Voting, so the factory is registered by the vote directly
+            "2. Add SetDepositsReserveTarget EVM script factory 0x62E9Dc68BDCBC46362f40e0bb9c154C9a42E62b0 "
+            "with setDepositsReserveTarget permission on Lido 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84 "
+            "to EasyTrack 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea",
+            add_evmscript_factory(
+                factory=SET_DEPOSITS_RESERVE_TARGET_FACTORY,
+                permissions=create_permissions(lido, "setDepositsReserveTarget"),
+            ),
+        ),
+    )
 
     return vote_desc_items, call_script_items
 

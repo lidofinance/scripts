@@ -1,20 +1,17 @@
-import pytest
-
-from dataclasses import dataclass
-
-from brownie import accounts, chain, convert, interface, reverts, web3
-from eth_abi import encode as encode_abi
+from brownie import chain, interface, web3, accounts, convert, reverts
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
+from dataclasses import dataclass
+from eth_abi import encode as encode_abi
+import pytest
 
-from utils.config import network_name
 from utils.test.tx_tracing_helpers import (
     add_event_emitter,
-    count_vote_items_by_events,
-    display_dg_events,
-    display_voting_events,
-    group_dg_events_from_receipt,
     group_voting_events_from_receipt,
+    group_dg_events_from_receipt,
+    count_vote_items_by_events,
+    display_voting_events,
+    display_dg_events,
 )
 from utils.tx_tracing import tx_events_from_receipt
 from utils.evm_script import encode_call_script
@@ -25,21 +22,26 @@ from utils.test.event_validators.easy_track import (
     EVMScriptFactoryAdded,
     validate_evmscript_factory_added_event,
 )
+from utils.test.event_validators.hash_consensus import (
+    validate_hash_consensus_member_added,
+    validate_hash_consensus_member_removed,
+)
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.proxy import validate_proxy_upgrade_event
 from utils.easy_track import create_permissions
+
 from utils.voting import find_metadata_by_vote_id
-from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
+from utils.ipfs import get_lido_vote_cid_from_str
 
 
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-import scripts.vote_edf as vote_script
-from scripts.vote_edf import (
-    DG_PROPOSAL_METADATA,
-    IPFS_DESCRIPTION,
-    get_dg_items,
-    get_vote_items,
+import scripts.upgrade_2026_09_16_edf as vote_script
+from scripts.upgrade_2026_09_16_edf import (
     start_vote,
+    get_vote_items,
+    get_dg_items,
 )
 
 
@@ -54,7 +56,7 @@ EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 
-# Fill these independently from scripts/vote_edf.py (do not copy-paste from
+# Filled independently from scripts/upgrade_2026_09_16_edf.py (do not copy-paste from
 # the script) - the fixture cross-checks both copies against each other
 # EDF core contracts, https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746/25
 # DSM v5, https://github.com/lidofinance/core/blob/e4d0404c85b043b1b9fb1dd42d85c2535a7f30d8/deployed-mainnet.json#L482
@@ -379,21 +381,26 @@ ALL_DELEGATION_CONTRACTS = (
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 205
+# The next DG proposal id, timelock.getProposalsCount() + 1 at the time of writing
+EXPECTED_DG_PROPOSAL_ID = 14
 EXPECTED_VOTE_EVENTS_COUNT = 2
 # 4 committees * 9 members * 2 (remove + add) + locator upgrade
 # + unvetting role revoke + grant + top-up role revoke + grant
-# + buffer reserve manager role grant
-EXPECTED_DG_EVENTS_COUNT = 78
-IPFS_DESCRIPTION_HASH = None
+# + buffer reserve manager role grant, all inside a single Agent.forward
+EXPECTED_DG_EVENTS_FROM_AGENT = 78
+EXPECTED_DG_EVENTS_COUNT = 1
+IPFS_DESCRIPTION_HASH = "bafkreiabv7lg3dlx27zt6ilovlx46nv2wtzbjtxeatlxsebfrxtfxqunca"
+DG_PROPOSAL_METADATA = (
+    "Upgrade the protocol to EDF/DSM v5 (LIP-37): rotate oracle committee members to "
+    "Execution Delegation Framework delegation contracts, upgrade LidoLocator "
+    "and switch to the new DepositSecurityModule v5"
+)
 
 
-def _is_placeholder_address(value: str) -> bool:
-    normalized = str(value).strip().lower()
-    return normalized in ("", "0x0000000000000000000000000000000000000000") or normalized.startswith("todo")
-
-
+# ============================================================================
+# ================================ Helpers ===================================
+# ============================================================================
 def _event_list(events: EventDict, name: str):
     return [event_item for event_item in events if event_item.name == name]
 
@@ -504,91 +511,8 @@ def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: s
     return [EventDict(group) for group in groups]
 
 
-# ============================================================================
-# =========================== Event validators ===============================
-# ============================================================================
-def validate_member_removed_event(
-    event: EventDict, member: str, new_total_members: int, new_quorum: int, emitted_by: str
-) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "MemberRemoved"])
-
-    member_removed_event = _single_event(event, "MemberRemoved")
-    assert convert.to_address(member_removed_event["addr"]) == convert.to_address(member), "Wrong removed member"
-    assert member_removed_event["newTotalMembers"] == new_total_members, "Wrong new total members count"
-    assert member_removed_event["newQuorum"] == new_quorum, "Wrong new quorum"
-    _assert_emitted_by(member_removed_event, emitted_by)
-
-
-def validate_member_added_event(
-    event: EventDict, member: str, new_total_members: int, new_quorum: int, emitted_by: str
-) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "MemberAdded"])
-
-    member_added_event = _single_event(event, "MemberAdded")
-    assert convert.to_address(member_added_event["addr"]) == convert.to_address(member), "Wrong added member"
-    assert member_added_event["newTotalMembers"] == new_total_members, "Wrong new total members count"
-    assert member_added_event["newQuorum"] == new_quorum, "Wrong new quorum"
-    _assert_emitted_by(member_added_event, emitted_by)
-
-
-def validate_proxy_upgrade_event(event: EventDict, implementation: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "Upgraded"])
-
-    upgraded_event = _single_event(event, "Upgraded")
-    assert convert.to_address(upgraded_event["implementation"]) == convert.to_address(
-        implementation
-    ), "Wrong implementation address"
-    _assert_emitted_by(upgraded_event, emitted_by)
-
-
-def validate_role_revoke_event(event: EventDict, role_hash: str, account: str, sender: str, emitted_by: str) -> None:
-    validate_events_chain([e.name for e in event], ["LogScriptCall", "RoleRevoked"])
-
-    role_revoked_event = _single_event(event, "RoleRevoked")
-    assert _normalize_role(role_revoked_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
-    assert convert.to_address(role_revoked_event["account"]) == convert.to_address(account), "Wrong revoked account"
-    assert convert.to_address(role_revoked_event["sender"]) == convert.to_address(sender), "Wrong role revoke sender"
-    _assert_emitted_by(role_revoked_event, emitted_by)
-
-
-def validate_role_grant_event(
-    event: EventDict, role_hash: str, account: str, sender: str, emitted_by: str, events_chain: list = None
-) -> None:
-    validate_events_chain([e.name for e in event], events_chain or ["LogScriptCall", "RoleGranted"])
-
-    role_granted_event = _single_event(event, "RoleGranted")
-    assert _normalize_role(role_granted_event["role"]) == role_hash.replace("0x", ""), "Wrong role hash"
-    assert convert.to_address(role_granted_event["account"]) == convert.to_address(account), "Wrong granted account"
-    assert convert.to_address(role_granted_event["sender"]) == convert.to_address(sender), "Wrong role grant sender"
-    _assert_emitted_by(role_granted_event, emitted_by)
-
-
-# ============================================================================
-# =============================== Fixtures ===================================
-# ============================================================================
-@pytest.fixture(scope="module")
-def runtime_upgrade_context():
-    if network_name() in ("hoodi", "hoodi-fork", "holesky", "holesky-fork"):
-        pytest.skip("Run the EDF upgrade test on a mainnet fork (e.g. --network mfh-1).")
-
-    missing_addresses = [
-        name
-        for name, value in [
-            ("NEW_DEPOSIT_SECURITY_MODULE", NEW_DEPOSIT_SECURITY_MODULE),
-            ("NEW_LIDO_LOCATOR_IMPLEMENTATION", NEW_LIDO_LOCATOR_IMPLEMENTATION),
-            ("SET_DEPOSITS_RESERVE_TARGET_FACTORY", SET_DEPOSITS_RESERVE_TARGET_FACTORY),
-        ]
-        if _is_placeholder_address(value)
-    ]
-    missing_addresses += [
-        f"DelegationContract for {c.name}" for c in ALL_DELEGATION_CONTRACTS if _is_placeholder_address(c.address)
-    ]
-    if missing_addresses:
-        pytest.skip(
-            "EDF deploy addresses are missing, fill the TODOs in scripts/vote_edf.py "
-            f"and tests/test_vote_edf.py first: {', '.join(missing_addresses)}"
-        )
-
+def _assert_test_data_matches_script() -> None:
+    """The test constants are an independent copy of the vote data, both copies must agree."""
     # Cross-check the deploy data against the vote script copies
     assert NEW_DEPOSIT_SECURITY_MODULE.lower() == vote_script.NEW_DEPOSIT_SECURITY_MODULE.lower()
     assert NEW_LIDO_LOCATOR_IMPLEMENTATION.lower() == vote_script.NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
@@ -625,44 +549,56 @@ def runtime_upgrade_context():
         assert test_contract.cooldown == script_contract.cooldown
         assert _strip_hex_prefix(test_contract.runtime_code_hash) == _strip_hex_prefix(script_contract.runtime_code_hash)
 
-    return {
-        "new_dsm": interface.DepositSecurityModule(NEW_DEPOSIT_SECURITY_MODULE),
-        "old_dsm": interface.DepositSecurityModule(OLD_DEPOSIT_SECURITY_MODULE),
-        "locator_proxy": interface.OssifiableProxy(LIDO_LOCATOR),
-        "staking_router": interface.StakingRouter(STAKING_ROUTER),
-        "top_up_gateway": interface.TopUpGateway(TOP_UP_GATEWAY),
-    }
 
-
+# ============================================================================
+# =========================== Event validators ===============================
+# ============================================================================
+# ============================================================================
+# =============================== Fixtures ===================================
+# ============================================================================
 @pytest.fixture(scope="module")
-def dual_governance_proposal_calls(runtime_upgrade_context):
-    return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
+def dual_governance_proposal_calls():
+    dg_items = get_dg_items()
+
+    # Convert each dg_item to the expected format
+    proposal_calls = []
+    for dg_item in dg_items:
+        target, data = dg_item  # agent_forward returns (target, data)
+        proposal_calls.append({
+            "target": target,
+            "value": 0,
+            "data": data
+        })
+
+    return proposal_calls
 
 
 # ============================================================================
 # ================================= Test =====================================
 # ============================================================================
-def test_vote(
-    helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls, runtime_upgrade_context
-):
-    ctx = runtime_upgrade_context
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
 
+    # =======================================================================
+    # ========================= Arrange variables ===========================
+    # =======================================================================
     voting = interface.Voting(VOTING)
     agent = interface.Agent(AGENT)
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
 
-    new_dsm = ctx["new_dsm"]
-    old_dsm = ctx["old_dsm"]
-    locator_proxy = ctx["locator_proxy"]
-    staking_router = ctx["staking_router"]
-    top_up_gateway = ctx["top_up_gateway"]
+    new_dsm = interface.DepositSecurityModule(NEW_DEPOSIT_SECURITY_MODULE)
+    old_dsm = interface.DepositSecurityModule(OLD_DEPOSIT_SECURITY_MODULE)
+    locator_proxy = interface.OssifiableProxy(LIDO_LOCATOR)
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    top_up_gateway = interface.TopUpGateway(TOP_UP_GATEWAY)
+    acl = interface.ACL(ACL)
+    easy_track = interface.EasyTrack(EASYTRACK)
 
-    expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(IPFS_DESCRIPTION)["cid"]
-
+    _assert_test_data_matches_script()
     # Every DelegationContract the vote relies on must be the factory deployment
     # from the manifest, before and after the upgrade
     _assert_all_delegation_contracts()
+
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -680,8 +616,6 @@ def test_vote(
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
 
-    expected_dg_proposal_id = EXPECTED_DG_PROPOSAL_ID
-    dg_proposals_count_before_vote_execution = timelock.getProposalsCount()
 
     # =========================================================================
     # ============================= Execute Vote ==============================
@@ -691,39 +625,44 @@ def test_vote(
         # =======================================================================
         # ========================= Before voting checks ========================
         # =======================================================================
-        acl = interface.ACL(ACL)
-        easy_track = interface.EasyTrack(EASYTRACK)
+
+        # Acceptance tests (before voting state)
         assert not acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
         assert SET_DEPOSITS_RESERVE_TARGET_FACTORY not in easy_track.getEVMScriptFactories()
 
-        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == expected_ipfs_description_hash
+
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
         vote_events = group_voting_events_from_receipt(vote_tx)
 
+
         # =======================================================================
         # ========================= After voting checks =========================
         # =======================================================================
+
+        # Acceptance tests (after voting state)
+        assert SET_DEPOSITS_RESERVE_TARGET_FACTORY in easy_track.getEVMScriptFactories()
+
+
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
-        if expected_dg_proposal_id is None:
-            expected_dg_proposal_id = dg_proposals_count_before_vote_execution + 1
+        if EXPECTED_DG_PROPOSAL_ID is not None:
+            assert EXPECTED_DG_PROPOSAL_ID == timelock.getProposalsCount()
 
-        assert expected_dg_proposal_id == timelock.getProposalsCount()
+            # 1. Submit a Dual Governance proposal to upgrade the protocol to EDF/DSM v5
+            validate_dual_governance_submit_event(
+                vote_events[0],
+                proposal_id=EXPECTED_DG_PROPOSAL_ID,
+                proposer=VOTING,
+                executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+                metadata=DG_PROPOSAL_METADATA,
+                proposal_calls=dual_governance_proposal_calls,
+            )
 
-        # 1. Submit the EDF/DSM v5 upgrade to Dual Governance
-        validate_dual_governance_submit_event(
-            vote_events[0],
-            proposal_id=expected_dg_proposal_id,
-            proposer=VOTING,
-            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-            metadata=DG_PROPOSAL_METADATA,
-            proposal_calls=dual_governance_proposal_calls,
-        )
-
-        # 2. Add SetDepositsReserveTarget factory to Easy Track
+        # 2. Add SetDepositsReserveTarget EVM script factory to EasyTrack
         validate_evmscript_factory_added_event(
             vote_events[1],
             EVMScriptFactoryAdded(
@@ -733,272 +672,274 @@ def test_vote(
             emitted_by=EASYTRACK,
         )
 
+
     # =========================================================================
     # ======================= Execute DG Proposal =============================
     # =========================================================================
-    if expected_dg_proposal_id is None:
-        expected_dg_proposal_id = timelock.getProposalsCount()
+    if EXPECTED_DG_PROPOSAL_ID is not None:
+        details = timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)
+        locator_addresses_before = None
+        if details["status"] != PROPOSAL_STATUS["executed"]:
+            # =========================================================================
+            # ================== DG before proposal executed checks ===================
+            # =========================================================================
 
-    details = timelock.getProposalDetails(expected_dg_proposal_id)
-    locator_addresses_before = None
-    if details["status"] != PROPOSAL_STATUS["executed"]:
-        # =======================================================================
-        # ==================== Before DG enactment checks =======================
-        # =======================================================================
+            # Acceptance tests (before DG state)
+            for committee in ORACLE_COMMITTEES:
+                consensus = interface.HashConsensus(committee.consensus_contract)
+                assert consensus.getQuorum() == ORACLE_COMMITTEE_QUORUM
+                members = [str(m).lower() for m in consensus.getMembers()[0]]
+                assert len(members) == len(ORACLE_MEMBER_MAPPINGS)
+                for mapping in ORACLE_MEMBER_MAPPINGS:
+                    assert mapping.old_member.lower() in members
+                    assert mapping.delegation_contract.address.lower() not in members
+
+            # The roles are moved from their only holders
+            assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
+            assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
+            assert staking_router.getRoleMemberCount(STAKING_MODULE_UNVETTING_ROLE) == 1
+            assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
+            assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT.address)
+            assert top_up_gateway.getRoleMemberCount(TOP_UP_ROLE) == 1
+
+            assert str(locator_proxy.proxy__getImplementation()).lower() != NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
+
+            # Snapshot the full locator address registry - the upgrade must change
+            # only the depositSecurityModule entry
+            locator_addresses_before = _locator_addresses(interface.LidoLocator(LIDO_LOCATOR))
+            assert locator_addresses_before["depositSecurityModule"].lower() == OLD_DEPOSIT_SECURITY_MODULE.lower()
+
+            # Old DSM v4 holds the EOA guardian set
+            assert old_dsm.VERSION() == OLD_DSM_VERSION
+            assert old_dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
+            old_dsm_guardians = {str(g).lower() for g in old_dsm.getGuardians()}
+            assert old_dsm_guardians == {m.old_guardian.lower() for m in DSM_GUARDIAN_MAPPINGS}
+
+            # New DSM v5 is deployed with the DelegationContract guardian set
+            assert new_dsm.VERSION() == NEW_DSM_VERSION
+            assert convert.to_address(new_dsm.getOwner()) == convert.to_address(AGENT)
+            assert convert.to_address(new_dsm.STAKING_ROUTER()) == convert.to_address(STAKING_ROUTER)
+            assert convert.to_address(new_dsm.DEPOSIT_CONTRACT()) == convert.to_address(old_dsm.DEPOSIT_CONTRACT())
+            assert not new_dsm.isDepositsPaused()
+            assert new_dsm.getPauseIntentValidityPeriodBlocks() == old_dsm.getPauseIntentValidityPeriodBlocks()
+            assert new_dsm.getMaxOperatorsPerUnvetting() == old_dsm.getMaxOperatorsPerUnvetting()
+            assert new_dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
+            new_dsm_guardians = {str(g).lower() for g in new_dsm.getGuardians()}
+            assert new_dsm_guardians == {m.delegation_contract.address.lower() for m in DSM_GUARDIAN_MAPPINGS}
+
+
+
+            if details["status"] == PROPOSAL_STATUS["submitted"]:
+                chain.sleep(timelock.getAfterSubmitDelay() + 1)
+                dual_governance.scheduleProposal(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+
+            if timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["scheduled"]:
+                chain.sleep(timelock.getAfterScheduleDelay() + 1)
+
+                dg_tx: TransactionReceipt = timelock.execute(EXPECTED_DG_PROPOSAL_ID, {"from": stranger})
+                display_dg_events(dg_tx)
+                dg_events = group_dg_events_from_receipt(
+                    dg_tx,
+                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                    admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+                )
+                assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
+                assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+
+                # The whole upgrade is a single Agent.forward, validate its inner calls one by one
+                agent_events = _group_agent_dg_events_from_receipt(
+                    dg_tx,
+                    timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                    agent=AGENT,
+                )
+                assert len(agent_events) == EXPECTED_DG_EVENTS_FROM_AGENT
+
+                event_index = 0
+
+                # 1.1-1.72. Rotate oracle committee members
+                for committee in ORACLE_COMMITTEES:
+                    for mapping in ORACLE_MEMBER_MAPPINGS:
+                        validate_hash_consensus_member_removed(
+                            agent_events[event_index],
+                            member=mapping.old_member,
+                            new_quorum=ORACLE_COMMITTEE_QUORUM,
+                            new_total_members=len(ORACLE_MEMBER_MAPPINGS) - 1,
+                            emitted_by=committee.consensus_contract,
+                        )
+                        event_index += 1
+
+                        validate_hash_consensus_member_added(
+                            agent_events[event_index],
+                            member=mapping.delegation_contract.address,
+                            new_quorum=ORACLE_COMMITTEE_QUORUM,
+                            new_total_members=len(ORACLE_MEMBER_MAPPINGS),
+                            emitted_by=committee.consensus_contract,
+                        )
+                        event_index += 1
+
+                # 1.73. Upgrade LidoLocator implementation
+                validate_proxy_upgrade_event(
+                    agent_events[event_index],
+                    NEW_LIDO_LOCATOR_IMPLEMENTATION,
+                    emitted_by=LIDO_LOCATOR,
+                )
+                event_index += 1
+
+                # 1.74. Revoke STAKING_MODULE_UNVETTING_ROLE from the old DSM
+                validate_revoke_role_event(
+                    agent_events[event_index],
+                    role=STAKING_MODULE_UNVETTING_ROLE,
+                    revoke_from=OLD_DEPOSIT_SECURITY_MODULE,
+                    sender=AGENT,
+                    emitted_by=STAKING_ROUTER,
+                )
+                event_index += 1
+
+                # 1.75. Grant STAKING_MODULE_UNVETTING_ROLE to the new DSM
+                validate_grant_role_event(
+                    agent_events[event_index],
+                    role=STAKING_MODULE_UNVETTING_ROLE,
+                    grant_to=NEW_DEPOSIT_SECURITY_MODULE,
+                    sender=AGENT,
+                    emitted_by=STAKING_ROUTER,
+                )
+                event_index += 1
+
+                # 1.76. Revoke TOP_UP_ROLE from the old depositor bot EOA
+                validate_revoke_role_event(
+                    agent_events[event_index],
+                    role=TOP_UP_ROLE,
+                    revoke_from=DEPOSITOR_BOT_OLD_EOA,
+                    sender=AGENT,
+                    emitted_by=TOP_UP_GATEWAY,
+                )
+                event_index += 1
+
+                # 1.77. Grant TOP_UP_ROLE to the depositor bot DelegationContract
+                validate_grant_role_event(
+                    agent_events[event_index],
+                    role=TOP_UP_ROLE,
+                    grant_to=DEPOSITOR_BOT_DELEGATION_CONTRACT.address,
+                    sender=AGENT,
+                    emitted_by=TOP_UP_GATEWAY,
+                )
+                event_index += 1
+
+                # 1.78. Grant BUFFER_RESERVE_MANAGER_ROLE to the Easy Track EVMScriptExecutor
+                # (the last inner call group also carries the Agent.forward service events)
+                validate_events_chain(
+                    [e.name for e in agent_events[event_index]],
+                    ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"],
+                )
+                set_permission_event = _single_event(agent_events[event_index], "SetPermission")
+                assert convert.to_address(set_permission_event["entity"]) == convert.to_address(
+                    EASYTRACK_EVMSCRIPT_EXECUTOR
+                )
+                assert convert.to_address(set_permission_event["app"]) == convert.to_address(LIDO)
+                assert _normalize_role(set_permission_event["role"]) == BUFFER_RESERVE_MANAGER_ROLE.hex().replace("0x", "")
+                assert set_permission_event["allowed"] is True
+                _assert_emitted_by(set_permission_event, ACL)
+                event_index += 1
+                assert event_index == EXPECTED_DG_EVENTS_FROM_AGENT
+
+
+        # =========================================================================
+        # ==================== After DG proposal executed checks ==================
+        # =========================================================================
+        assert timelock.getProposalDetails(EXPECTED_DG_PROPOSAL_ID)["status"] == PROPOSAL_STATUS["executed"]
+
+        # Acceptance tests (after DG state)
         for committee in ORACLE_COMMITTEES:
             consensus = interface.HashConsensus(committee.consensus_contract)
             assert consensus.getQuorum() == ORACLE_COMMITTEE_QUORUM
             members = [str(m).lower() for m in consensus.getMembers()[0]]
             assert len(members) == len(ORACLE_MEMBER_MAPPINGS)
             for mapping in ORACLE_MEMBER_MAPPINGS:
-                assert mapping.old_member.lower() in members
-                assert mapping.delegation_contract.address.lower() not in members
+                assert mapping.old_member.lower() not in members
+                assert mapping.delegation_contract.address.lower() in members
 
-        # The roles are moved from their only holders
-        assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
-        assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
+        assert str(locator_proxy.proxy__getImplementation()).lower() == NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
+        assert (
+            str(interface.LidoLocator(LIDO_LOCATOR).depositSecurityModule()).lower()
+            == NEW_DEPOSIT_SECURITY_MODULE.lower()
+        )
+
+        # Every locator entry except depositSecurityModule must stay unchanged
+        if locator_addresses_before is not None:
+            locator = interface.LidoLocator(LIDO_LOCATOR)
+            for name, before_value in locator_addresses_before.items():
+                after_value = str(getattr(locator, name)())
+                if name == "depositSecurityModule":
+                    assert after_value.lower() == NEW_DEPOSIT_SECURITY_MODULE.lower()
+                else:
+                    assert after_value == before_value, f"Locator entry {name} changed unexpectedly"
+
+        # The new holders are the only holders
+        assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
+        assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
         assert staking_router.getRoleMemberCount(STAKING_MODULE_UNVETTING_ROLE) == 1
-        assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
-        assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT.address)
+        assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
+        assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT.address)
         assert top_up_gateway.getRoleMemberCount(TOP_UP_ROLE) == 1
 
-        assert str(locator_proxy.proxy__getImplementation()).lower() != NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
-
-        # Snapshot the full locator address registry - the upgrade must change
-        # only the depositSecurityModule entry
-        locator_addresses_before = _locator_addresses(interface.LidoLocator(LIDO_LOCATOR))
-        assert locator_addresses_before["depositSecurityModule"].lower() == OLD_DEPOSIT_SECURITY_MODULE.lower()
-
-        # Old DSM v4 holds the EOA guardian set
-        assert old_dsm.VERSION() == OLD_DSM_VERSION
-        assert old_dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
-        old_dsm_guardians = {str(g).lower() for g in old_dsm.getGuardians()}
-        assert old_dsm_guardians == {m.old_guardian.lower() for m in DSM_GUARDIAN_MAPPINGS}
-
-        # New DSM v5 is deployed with the DelegationContract guardian set
         assert new_dsm.VERSION() == NEW_DSM_VERSION
         assert convert.to_address(new_dsm.getOwner()) == convert.to_address(AGENT)
-        assert convert.to_address(new_dsm.STAKING_ROUTER()) == convert.to_address(STAKING_ROUTER)
-        assert convert.to_address(new_dsm.DEPOSIT_CONTRACT()) == convert.to_address(old_dsm.DEPOSIT_CONTRACT())
-        assert not new_dsm.isDepositsPaused()
-        assert new_dsm.getPauseIntentValidityPeriodBlocks() == old_dsm.getPauseIntentValidityPeriodBlocks()
-        assert new_dsm.getMaxOperatorsPerUnvetting() == old_dsm.getMaxOperatorsPerUnvetting()
         assert new_dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
-        new_dsm_guardians = {str(g).lower() for g in new_dsm.getGuardians()}
-        assert new_dsm_guardians == {m.delegation_contract.address.lower() for m in DSM_GUARDIAN_MAPPINGS}
+        assert {str(g).lower() for g in new_dsm.getGuardians()} == {m.delegation_contract.address.lower() for m in DSM_GUARDIAN_MAPPINGS}
 
-        if details["status"] == PROPOSAL_STATUS["submitted"]:
-            chain.sleep(timelock.getAfterSubmitDelay() + 1)
-            dual_governance.scheduleProposal(expected_dg_proposal_id, {"from": stranger})
+        # The DelegationContracts are untouched by the upgrade
+        _assert_all_delegation_contracts()
 
-        if timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["scheduled"]:
-            chain.sleep(timelock.getAfterScheduleDelay() + 1)
+        # Scenario tests (after DG state)
+        # Easy Track factory for deposit reserve target management
+        acl = interface.ACL(ACL)
+        easy_track = interface.EasyTrack(EASYTRACK)
+        factory = interface.SetDepositsReserveTarget(SET_DEPOSITS_RESERVE_TARGET_FACTORY)
+        lido = interface.Lido(LIDO)
 
-            dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
-            display_dg_events(dg_tx)
+        assert acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
+        assert SET_DEPOSITS_RESERVE_TARGET_FACTORY in easy_track.getEVMScriptFactories()
+        assert easy_track.evmScriptFactoryPermissions(SET_DEPOSITS_RESERVE_TARGET_FACTORY) == create_permissions(
+            lido, "setDepositsReserveTarget"
+        )
+        assert convert.to_address(factory.trustedCaller()) == convert.to_address(
+            SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER
+        )
+        assert convert.to_address(factory.lido()) == convert.to_address(LIDO)
+        assert factory.MAX_DEPOSITS_RESERVE_TARGET() == SET_DEPOSITS_RESERVE_TARGET_MAX
 
-            outer_dg_events = group_dg_events_from_receipt(
-                dg_tx,
-                timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
-            )
-            dg_events = _group_agent_dg_events_from_receipt(
-                dg_tx,
-                timelock=EMERGENCY_PROTECTED_TIMELOCK,
-                agent=AGENT,
-            )
+        # Happy path: the granted role lets the EVMScriptExecutor move the target,
+        # and the factory builds a script for exactly that call
+        chain.snapshot()
+        try:
+            new_target = lido.getDepositsReserveTarget() + 10**18
+            assert new_target <= SET_DEPOSITS_RESERVE_TARGET_MAX
 
-            # The whole upgrade is a single Agent.forward with 78 inner calls
-            assert len(outer_dg_events) == 1
-            assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_COUNT
-            assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+            # the factory builds a script for the new target and guards its limits
+            call_data = encode_abi(["uint256"], [new_target])
+            assert factory.decodeEVMScriptCallData(call_data) == new_target
 
-            # =======================================================================
-            # ============================ DG events checks =========================
-            # =======================================================================
-            event_index = 0
+            # the produced script must be exactly one call to Lido.setDepositsReserveTarget(new_target)
+            expected_script = encode_call_script([(LIDO, lido.setDepositsReserveTarget.encode_input(new_target))])
+            produced_script = factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+            assert str(produced_script).lower() == expected_script.lower()
 
-            # 1.1-1.72. Rotate oracle committee members
-            for committee in ORACLE_COMMITTEES:
-                for mapping in ORACLE_MEMBER_MAPPINGS:
-                    validate_member_removed_event(
-                        dg_events[event_index],
-                        member=mapping.old_member,
-                        new_total_members=len(ORACLE_MEMBER_MAPPINGS) - 1,
-                        new_quorum=ORACLE_COMMITTEE_QUORUM,
-                        emitted_by=committee.consensus_contract,
-                    )
-                    event_index += 1
+            with reverts("CALLER_IS_FORBIDDEN"):
+                factory.createEVMScript(stranger, call_data)
 
-                    validate_member_added_event(
-                        dg_events[event_index],
-                        member=mapping.delegation_contract.address,
-                        new_total_members=len(ORACLE_MEMBER_MAPPINGS),
-                        new_quorum=ORACLE_COMMITTEE_QUORUM,
-                        emitted_by=committee.consensus_contract,
-                    )
-                    event_index += 1
+            with reverts("DEPOSITS_RESERVE_TARGET_TOO_HIGH"):
+                factory.createEVMScript(
+                    SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER,
+                    encode_abi(["uint256"], [SET_DEPOSITS_RESERVE_TARGET_MAX + 1]),
+                )
 
-            # 1.73. Upgrade LidoLocator implementation
-            validate_proxy_upgrade_event(
-                dg_events[event_index],
-                implementation=NEW_LIDO_LOCATOR_IMPLEMENTATION,
-                emitted_by=LIDO_LOCATOR,
-            )
-            event_index += 1
+            # the granted role lets the EVMScriptExecutor apply the new target
+            executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
+            lido.setDepositsReserveTarget(new_target, {"from": executor})
+            assert lido.getDepositsReserveTarget() == new_target
 
-            # 1.74. Revoke STAKING_MODULE_UNVETTING_ROLE from the old DSM
-            validate_role_revoke_event(
-                dg_events[event_index],
-                role_hash=STAKING_MODULE_UNVETTING_ROLE,
-                account=OLD_DEPOSIT_SECURITY_MODULE,
-                sender=AGENT,
-                emitted_by=STAKING_ROUTER,
-            )
-            event_index += 1
-
-            # 1.75. Grant STAKING_MODULE_UNVETTING_ROLE to the new DSM
-            validate_role_grant_event(
-                dg_events[event_index],
-                role_hash=STAKING_MODULE_UNVETTING_ROLE,
-                account=NEW_DEPOSIT_SECURITY_MODULE,
-                sender=AGENT,
-                emitted_by=STAKING_ROUTER,
-            )
-            event_index += 1
-
-            # 1.76. Revoke TOP_UP_ROLE from the old depositor bot EOA
-            validate_role_revoke_event(
-                dg_events[event_index],
-                role_hash=TOP_UP_ROLE,
-                account=DEPOSITOR_BOT_OLD_EOA,
-                sender=AGENT,
-                emitted_by=TOP_UP_GATEWAY,
-            )
-            event_index += 1
-
-            # 1.77. Grant TOP_UP_ROLE to the depositor bot DelegationContract
-            validate_role_grant_event(
-                dg_events[event_index],
-                role_hash=TOP_UP_ROLE,
-                account=DEPOSITOR_BOT_DELEGATION_CONTRACT.address,
-                sender=AGENT,
-                emitted_by=TOP_UP_GATEWAY,
-            )
-            event_index += 1
-
-            # 1.78. Grant BUFFER_RESERVE_MANAGER_ROLE to the Easy Track EVMScriptExecutor
-            # (the last inner call group also carries the Agent.forward service events)
-            validate_events_chain(
-                [e.name for e in dg_events[event_index]],
-                ["LogScriptCall", "SetPermission", "ScriptResult", "Executed"],
-            )
-            set_permission_event = _single_event(dg_events[event_index], "SetPermission")
-            assert convert.to_address(set_permission_event["entity"]) == convert.to_address(
-                EASYTRACK_EVMSCRIPT_EXECUTOR
-            )
-            assert convert.to_address(set_permission_event["app"]) == convert.to_address(LIDO)
-            assert _normalize_role(set_permission_event["role"]) == BUFFER_RESERVE_MANAGER_ROLE.hex().replace("0x", "")
-            assert set_permission_event["allowed"] is True
-            _assert_emitted_by(set_permission_event, ACL)
-            event_index += 1
-
-            assert event_index == EXPECTED_DG_EVENTS_COUNT
-
-    # =========================================================================
-    # ==================== After DG proposal executed checks ==================
-    # =========================================================================
-    assert timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["executed"]
-
-    for committee in ORACLE_COMMITTEES:
-        consensus = interface.HashConsensus(committee.consensus_contract)
-        assert consensus.getQuorum() == ORACLE_COMMITTEE_QUORUM
-        members = [str(m).lower() for m in consensus.getMembers()[0]]
-        assert len(members) == len(ORACLE_MEMBER_MAPPINGS)
-        for mapping in ORACLE_MEMBER_MAPPINGS:
-            assert mapping.old_member.lower() not in members
-            assert mapping.delegation_contract.address.lower() in members
-
-    assert str(locator_proxy.proxy__getImplementation()).lower() == NEW_LIDO_LOCATOR_IMPLEMENTATION.lower()
-    assert (
-        str(interface.LidoLocator(LIDO_LOCATOR).depositSecurityModule()).lower()
-        == NEW_DEPOSIT_SECURITY_MODULE.lower()
-    )
-
-    # Every locator entry except depositSecurityModule must stay unchanged
-    if locator_addresses_before is not None:
-        locator = interface.LidoLocator(LIDO_LOCATOR)
-        for name, before_value in locator_addresses_before.items():
-            after_value = str(getattr(locator, name)())
-            if name == "depositSecurityModule":
-                assert after_value.lower() == NEW_DEPOSIT_SECURITY_MODULE.lower()
-            else:
-                assert after_value == before_value, f"Locator entry {name} changed unexpectedly"
-
-    # Easy Track factory for deposit reserve target management
-    acl = interface.ACL(ACL)
-    easy_track = interface.EasyTrack(EASYTRACK)
-    factory = interface.SetDepositsReserveTarget(SET_DEPOSITS_RESERVE_TARGET_FACTORY)
-    lido = interface.Lido(LIDO)
-
-    assert acl.hasPermission(EASYTRACK_EVMSCRIPT_EXECUTOR, LIDO, BUFFER_RESERVE_MANAGER_ROLE)
-    assert SET_DEPOSITS_RESERVE_TARGET_FACTORY in easy_track.getEVMScriptFactories()
-    assert easy_track.evmScriptFactoryPermissions(SET_DEPOSITS_RESERVE_TARGET_FACTORY) == create_permissions(
-        lido, "setDepositsReserveTarget"
-    )
-    assert convert.to_address(factory.trustedCaller()) == convert.to_address(
-        SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER
-    )
-    assert convert.to_address(factory.lido()) == convert.to_address(LIDO)
-    assert factory.MAX_DEPOSITS_RESERVE_TARGET() == SET_DEPOSITS_RESERVE_TARGET_MAX
-
-    # Happy path: the granted role lets the EVMScriptExecutor move the target,
-    # and the factory builds a script for exactly that call
-    chain.snapshot()
-    try:
-        new_target = lido.getDepositsReserveTarget() + 10**18
-        assert new_target <= SET_DEPOSITS_RESERVE_TARGET_MAX
-
-        # the factory builds a script for the new target and guards its limits
-        call_data = encode_abi(["uint256"], [new_target])
-        assert factory.decodeEVMScriptCallData(call_data) == new_target
-
-        # the produced script must be exactly one call to Lido.setDepositsReserveTarget(new_target)
-        expected_script = encode_call_script([(LIDO, lido.setDepositsReserveTarget.encode_input(new_target))])
-        produced_script = factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
-        assert str(produced_script).lower() == expected_script.lower()
-
-        with reverts("CALLER_IS_FORBIDDEN"):
-            factory.createEVMScript(stranger, call_data)
-
-        with reverts("DEPOSITS_RESERVE_TARGET_TOO_HIGH"):
-            factory.createEVMScript(
-                SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER,
-                encode_abi(["uint256"], [SET_DEPOSITS_RESERVE_TARGET_MAX + 1]),
-            )
-
-        # the granted role lets the EVMScriptExecutor apply the new target
-        executor = accounts.at(EASYTRACK_EVMSCRIPT_EXECUTOR, force=True)
-        lido.setDepositsReserveTarget(new_target, {"from": executor})
-        assert lido.getDepositsReserveTarget() == new_target
-
-        with reverts("SAME_DEPOSITS_RESERVE_TARGET"):
-            factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
-    finally:
-        chain.revert()
-
-    # The new holders are the only holders
-    assert not staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, OLD_DEPOSIT_SECURITY_MODULE)
-    assert staking_router.hasRole(STAKING_MODULE_UNVETTING_ROLE, NEW_DEPOSIT_SECURITY_MODULE)
-    assert staking_router.getRoleMemberCount(STAKING_MODULE_UNVETTING_ROLE) == 1
-    assert not top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_OLD_EOA)
-    assert top_up_gateway.hasRole(TOP_UP_ROLE, DEPOSITOR_BOT_DELEGATION_CONTRACT.address)
-    assert top_up_gateway.getRoleMemberCount(TOP_UP_ROLE) == 1
-
-    assert new_dsm.VERSION() == NEW_DSM_VERSION
-    assert convert.to_address(new_dsm.getOwner()) == convert.to_address(AGENT)
-    assert new_dsm.getGuardianQuorum() == DSM_GUARDIAN_QUORUM
-    assert {str(g).lower() for g in new_dsm.getGuardians()} == {m.delegation_contract.address.lower() for m in DSM_GUARDIAN_MAPPINGS}
-
-    # The DelegationContracts are untouched by the upgrade
-    _assert_all_delegation_contracts()
+            with reverts("SAME_DEPOSITS_RESERVE_TARGET"):
+                factory.createEVMScript(SET_DEPOSITS_RESERVE_TARGET_TRUSTED_CALLER, call_data)
+        finally:
+            chain.revert()
