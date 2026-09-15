@@ -23,8 +23,9 @@ else
 endif
 endif
 
-# Must be different from 8545 because core tests by default run its own fork on 8545
+# Prepared external fork used by Core integration tests.
 CORE_TESTS_TARGET_RPC_URL ?= http://127.0.0.1:8547
+CORE_TESTS_NETWORK ?= mainnet
 CORE_DIR ?= lido-core
 CORE_BRANCH ?= master
 NODE_PORT ?= 8545
@@ -90,6 +91,10 @@ test-core:
 	LATEST_BLOCK_NUMBER=$$($(MAKE) --no-print-directory __get_rpc_latest_block_number) && \
 	echo "LATEST_BLOCK_NUMBER: $$LATEST_BLOCK_NUMBER" && \
 	cd $(CORE_DIR) && \
+	NETWORK=$(CORE_TESTS_NETWORK) \
+	RUN_NETWORK=local \
+	MODE=forking \
+	UPGRADE=false \
 	RPC_URL=$(CORE_TESTS_TARGET_RPC_URL) \
 	NETWORK_STATE_FILE=$(NETWORK_STATE_FILE) \
 	FORKING_BLOCK_NUMBER=$$LATEST_BLOCK_NUMBER \
