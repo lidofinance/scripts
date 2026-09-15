@@ -449,21 +449,24 @@ ORACLE_COMMITTEE_QUORUM = 5
 DSM_GUARDIAN_QUORUM = 4
 
 DG_PROPOSAL_METADATA = (
-    "Upgrade the protocol to EDF/DSM v5 (LIP-37): rotate oracle committee members to "
-    "Execution Delegation Framework delegation contracts, upgrade LidoLocator "
-    "and switch to the new DepositSecurityModule v5"
+    "Adopt the Execution Delegation Framework (LIP-37): reassign the Oracle committee member addresses, "
+    "the DSM guardian seats, and the depositor bot to DelegationContracts, switch to the redeployed "
+    "DepositSecurityModule, and update the related protocol permissions, including the buffer-reserve "
+    "manager role used to adjust the Deposit Reserve Target via Easy Track."
 )
 
 
 # ============================= IPFS Description ==================================
 IPFS_DESCRIPTION = """
-Upgrade the Lido protocol to the Execution Delegation Framework (EDF) and DepositSecurityModule v5 (LIP-37).
+# EDF (LIP-37), Kiln → Stakely DSM rotation, Deposit Reserve Target ET
 
-1. Rotate all members of the four oracle committees (HashConsensus contracts for AccountingOracle, ValidatorsExitBusOracle, CSFeeOracle and Curated Module FeeOracle) from EOA hot keys to per-operator EDF DelegationContracts, keeping quorum 5. Items 1.1-1.72.
-2. Upgrade the LidoLocator implementation so it points to the new DepositSecurityModule v5. The new DSM is deployed with the guardian set already moved to DelegationContracts: Stakely replaces Kiln, the guardian quorum stays 4. Item 1.73.
-3. Move STAKING_MODULE_UNVETTING_ROLE on StakingRouter from the old DepositSecurityModule to the new DepositSecurityModule v5. Items 1.74-1.75.
-4. Move TOP_UP_ROLE on TopUpGateway from the old depositor bot EOA to the depositor bot DelegationContract. Items 1.76-1.77.
-5. Enable deposit reserve target management by CMC via Easy Track: grant BUFFER_RESERVE_MANAGER_ROLE on Lido to the Easy Track EVMScriptExecutor and add the SetDepositsReserveTarget factory, limited to Lido.setDepositsReserveTarget(uint256). Item 1.78 and item 2.
+1. **Adopt LIP-37: Execution Delegation Framework (EDF)** | [Full proposal on IPFS](https://bafybeigbjuddcjouak3y3fwxwppo6cy4dxw7fli2idvvvcpulkes2gab6m.ipfs.inbrowser.link/) | [Forum discussion](https://research.lido.fi/t/lip-37-execution-delegation-framework-edf/11746) | Audits & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20EDF%20On-chain%20Audit%20Report%2009-2026.pdf), Composable Security - [EDF On-chain Audit Report](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20EDF%20On-chain%20Audit%20Report%2008-2026.pdf), [Lido Oracle Audit Report](https://github.com/lidofinance/audits/blob/main/Composable%20Security%20Lido%20Oracle%20V8_1%20Audit%20Report.pdf) | On-chain items:
+    - Rotate Oracle committee member addresses to their respective EDF DelegationContracts across four HashConsensus contracts. Items 1.1.1 – 1.1.72.
+    - Upgrade Lido Locator to the implementation supporting the new DSM. Item 1.1.73.
+    - Revoke STAKING_MODULE_UNVETTING_ROLE from the old DSM and grant it to the new DSM. Items 1.1.74 - 1.1.75.
+    - Revoke TOP_UP_ROLE from the old depositor bot address and grant it to the new EDF DelegationContract. Items 1.1.76 - 1.1.77.
+2. **Rotate Kiln → Stakely in DSM** | [Forum discussion](https://research.lido.fi/t/kiln-requesting-to-exit-the-lido-deposit-security-committee/11813) | The rotation is reflected in the configuration of the new DSM activated through on-chain items 1.1.73 - 1.1.75.
+3. **Authorize the CMC to adjust Deposit Reserve Target via Easy Track** | [Full proposal on IPFS](https://bafybeialiq3jyuvryld5tddtgt25mljaymyj74t5iwf47qzolqe6dekgg4.ipfs.inbrowser.link/) | [Forum discussion](https://research.lido.fi/t/proposal-add-easy-track-factory-for-deposit-reserve-target-management-by-cmc/11827) | Audits & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Easy%20Track%20for%20Deposit%20Reserve%20Target%20management%20Audit%20Report%2009-2026.pdf) | On-chain items 1.1.78, 2.
 """
 
 
@@ -745,9 +748,11 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     vote_desc_items, call_script_items = zip(
         (
-            "1. Submit a Dual Governance proposal to upgrade the protocol to EDF/DSM v5 (LIP-37): "
-            "rotate the oracle committee members to DelegationContracts, upgrade Lido Locator "
-            "to the implementation with DepositSecurityModule v5 and move the DSM and depositor bot roles",
+            "1. Submit a Dual Governance proposal to adopt the Execution Delegation Framework (LIP-37): "
+            "reassign the Oracle committee member addresses, the DSM guardian seats, and the depositor bot "
+            "to DelegationContracts, switch to the redeployed DepositSecurityModule, and update the related "
+            "protocol permissions, including the buffer-reserve manager role used to adjust "
+            "the Deposit Reserve Target via Easy Track.",
             dg_call_script[0],
         ),
         (
