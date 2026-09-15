@@ -192,6 +192,9 @@ def reach_consensus(slot, report, version, oracle_contract, silent=False):
     for member in members:
         if not silent:
             print(f"Member ${member} submitting report to hashConsensus")
+        # a member can be an EDF DelegationContract that holds no ETH, so set the balance directly
+        if web3.eth.get_balance(member) < ETH(1):
+            set_balance_in_wei(member, ETH(10))
         oracle_contract.submitReport(slot, report, version, {"from": member})
     (_, hash_, _) = oracle_contract.getConsensusState()
     assert hash_ == report.hex(), "HashConsensus points to unexpected report"
