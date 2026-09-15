@@ -8,7 +8,9 @@ from brownie.typing import TransactionReceipt  # type: ignore
 from eth_abi.abi import encode
 from hexbytes import HexBytes
 
+from utils.balance import set_balance_in_wei
 from utils.config import contracts, AO_CONSENSUS_VERSION
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.exit_bus_data import encode_data, DATA_FORMAT_LIST_WITH_KEY_INDEX
 from utils.test.helpers import ETH, GWEI, eth_balance
 from utils.test.merkle_tree import RewardsTree
@@ -191,7 +193,7 @@ def reach_consensus(slot, report, version, oracle_contract, silent=False):
     for member in members:
         if not silent:
             print(f"Member ${member} submitting report to hashConsensus")
-        oracle_contract.submitReport(slot, report, version, {"from": member})
+        send_as_edf_member(member, oracle_contract.submitReport, slot, report, version)
     (_, hash_, _) = oracle_contract.getConsensusState()
     assert hash_ == report.hex(), "HashConsensus points to unexpected report"
     return members[0]
@@ -242,19 +244,19 @@ def push_oracle_report(
         extraDataItemsCount=extraDataItemsCount,
     )
     submitter = reach_consensus(refSlot, hash, consensusVersion, contracts.hash_consensus_for_accounting_oracle, silent)
-    accounts[0].transfer(submitter, 10**19)
     # print(contracts.oracle_report_sanity_checker.getOracleReportLimits())
-    report_tx = contracts.accounting_oracle.submitReportData(items, oracleVersion, {"from": submitter})
+    report_tx = send_as_edf_member(submitter, contracts.accounting_oracle.submitReportData, items, oracleVersion)
     if not silent:
         print("Submitted report data")
         print(f"extraDataList {extraDataList}")
     if extraDataFormat == 0:
-        extra_report_tx_list = [contracts.accounting_oracle.submitReportExtraDataEmpty({"from": submitter})]
+        extra_report_tx_list = [send_as_edf_member(submitter, contracts.accounting_oracle.submitReportExtraDataEmpty)]
         if not silent:
             print("Submitted empty extra data report")
     else:
         extra_report_tx_list = [
-            contracts.accounting_oracle.submitReportExtraDataList(data, {"from": submitter}) for data in extraDataList
+            send_as_edf_member(submitter, contracts.accounting_oracle.submitReportExtraDataList, data)
+            for data in extraDataList
         ]
         if not silent:
             print("Submitted NOT empty extra data report")

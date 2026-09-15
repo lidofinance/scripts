@@ -95,8 +95,9 @@ class Helpers:
         return list(filter(lambda evt: evt.address == addr, events))
 
     @staticmethod
-    def assert_single_event_named(evt_name, tx, evt_keys_dict):
-        receiver_events = Helpers.filter_events_from(tx.receiver, tx.events[evt_name])
+    def assert_single_event_named(evt_name, tx, evt_keys_dict, emitter=None):
+        # `emitter` is for calls that go through another contract, e.g. an EDF DelegationContract
+        receiver_events = Helpers.filter_events_from(emitter or tx.receiver, tx.events[evt_name])
         assert len(receiver_events) == 1
         assert dict(receiver_events[0]) == evt_keys_dict
 

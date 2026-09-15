@@ -390,7 +390,7 @@ def protocol_permissions():
                 "STAKING_CONTROL_ROLE": [],
                 "RESUME_ROLE": [],
                 "STAKING_PAUSE_ROLE": [],
-                "BUFFER_RESERVE_MANAGER_ROLE": [contracts.agent],
+                "BUFFER_RESERVE_MANAGER_ROLE": [contracts.agent, EASYTRACK_EVMSCRIPT_EXECUTOR],
             },
         },
         AGENT: {
