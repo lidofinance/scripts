@@ -91,7 +91,7 @@ III. Easy Track factory for deposit reserve target management by CMC
 The new DSM v5 is deployed with the guardian set already moved to DelegationContracts:
 Stakely replaces Kiln, the guardian quorum stays 4.
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #205 passed & executed on Sep-21-2026 11:45:59 AM UTC, block 26025675.
 """
 
 from dataclasses import dataclass
