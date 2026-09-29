@@ -12,7 +12,7 @@ Vote impact:
   "Register CircuitBreaker pauser for TopUpGateway").
 """
 import pytest
-from brownie import interface, reverts, web3  # type: ignore
+from brownie import chain, interface, reverts, web3  # type: ignore
 from brownie.convert.datatypes import HexString
 
 from utils.config import (
@@ -108,9 +108,8 @@ def test_limits(contract):
 
 def test_initial_state(contract):
     assert not contract.isPaused()
-    # no top-ups have happened yet
-    assert contract.getLastTopUpTimestamp() == 0
-    assert contract.isBlockDistancePassed()
+    # top-ups already happen on mainnet, so only check the timestamp is not in the future
+    assert contract.getLastTopUpTimestamp() <= chain.time()
 
 
 def test_roles(contract):
