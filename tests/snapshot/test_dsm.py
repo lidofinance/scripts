@@ -9,7 +9,8 @@ from pytest_check import almost_equal, check
 from typing_extensions import Protocol
 
 from tests.conftest import Helpers
-from utils.config import contracts
+from utils.config import contracts, ORACLE_COMMITTEE
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.governance_helpers import execute_vote_and_process_dg_proposals
 from utils.test.snapshot_helpers import _chain_snapshot
 
@@ -52,8 +53,8 @@ def guardian(dsm: Contract, accounts) -> Account:
 def test_dsm_no_changes_in_views_with_ops(
     sandwich_upgrade: SandwichFn,
     new_owner: Account,
-    some_contract: Account,
-    some_eoa: Account,
+    new_guardian_2: Account,
+    new_guardian_1: Account,
     guardian: Account,
 ):
     """Test that no views change during the upgrade process"""
@@ -68,25 +69,25 @@ def test_dsm_no_changes_in_views_with_ops(
                 {"from": new_owner.address},
             ),
             "addGuardian(new)": lambda dsm: dsm.addGuardian(
-                some_eoa.address,
+                new_guardian_1.address,
                 4,
                 {"from": new_owner.address},
             ),
             "removeGuardian(new)": lambda dsm: dsm.removeGuardian(
-                some_eoa.address,
+                new_guardian_1.address,
                 3,
                 {"from": new_owner.address},
             ),
             "addGuardians": lambda dsm: dsm.addGuardians(
                 [
-                    some_contract.address,
-                    some_eoa.address,
+                    new_guardian_2.address,
+                    new_guardian_1.address,
                 ],
                 4,
                 {"from": new_owner.address},
             ),
-            "removeGuardian(contract)": lambda dsm: dsm.removeGuardian(
-                some_contract.address,
+            "removeGuardian(second new)": lambda dsm: dsm.removeGuardian(
+                new_guardian_2.address,
                 4,
                 {"from": new_owner.address},
             ),
@@ -105,11 +106,8 @@ def test_dsm_no_changes_in_views_with_ops(
 
 
 def pause_deposits(dsm: Contract):
-    dsm.pauseDeposits(
-        chain.height,
-        [0, 0],  # skip signature
-        {"from": dsm.getGuardians()[0]},
-    )
+    guardian = dsm.getGuardians()[0]
+    send_as_edf_member(guardian, dsm.pauseDeposits, chain.height, (guardian, b""))
 
 
 def resume_deposits(dsm: Contract):
@@ -124,7 +122,7 @@ def dsm():
 
 
 @pytest.fixture(scope="module")
-def do_snapshot(guardian: Account, some_eoa: Account):
+def do_snapshot(guardian: Account, new_guardian_1: Account):
     """Snapshot function for the Deposit Security Module"""
 
     def _snap(dsm):
@@ -133,16 +131,15 @@ def do_snapshot(guardian: Account, some_eoa: Account):
             return {
                 "chain_time": web3.eth.get_block(chain.height)["timestamp"],
                 "DEPOSIT_CONTRACT": dsm.DEPOSIT_CONTRACT(),
-                "LIDO": dsm.LIDO(),
                 "getOwner": dsm.getOwner(),
                 "getGuardianIndex(positive)": dsm.getGuardianIndex(guardian.address),
                 "getGuardianIndex(negative)": dsm.getGuardianIndex(accounts[0].address),
-                "getGuardianIndex(changes)": dsm.getGuardianIndex(some_eoa.address),
+                "getGuardianIndex(changes)": dsm.getGuardianIndex(new_guardian_1.address),
                 "getGuardianQuorum": dsm.getGuardianQuorum(),
                 "getGuardians": dsm.getGuardians(),
                 "isGuardian(positive)": dsm.isGuardian(guardian.address),
                 "isGuardian(negative)": dsm.isGuardian(accounts[0].address),
-                "isGuardian(changes)": dsm.isGuardian(some_eoa.address),
+                "isGuardian(changes)": dsm.isGuardian(new_guardian_1.address),
                 "getPauseIntentValidityPeriodBlocks": dsm.getPauseIntentValidityPeriodBlocks(),
                 "getMaxOperatorsPerUnvetting": dsm.getMaxOperatorsPerUnvetting(),
                 "getLastDepositBlock": dsm.getLastDepositBlock(),
@@ -163,15 +160,16 @@ def new_owner(accounts) -> Account:
 
 
 @pytest.fixture(scope="module")
-def some_eoa(accounts) -> Account:
-    """Some EOA account"""
-    return accounts[8]
+def new_guardian_1(accounts) -> Account:
+    """A candidate guardian: DSM v5 accepts only ERC-1271 signers, so an EDF DelegationContract
+    that is not a guardian yet (an oracle member one) is used"""
+    return accounts.at(ORACLE_COMMITTEE[0], force=True)
 
 
 @pytest.fixture(scope="module")
-def some_contract(accounts) -> Account:
-    # Multicall3 contract deployed almost on the every network on the same address
-    return accounts.at("0xcA11bde05977b3631167028862bE2a173976CA11", force=True)
+def new_guardian_2(accounts) -> Account:
+    """Another candidate guardian, see new_guardian_1"""
+    return accounts.at(ORACLE_COMMITTEE[1], force=True)
 
 
 @pytest.fixture(scope="module")

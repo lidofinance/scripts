@@ -18,6 +18,7 @@ from configs.config_mainnet import MAX_ITEMS_PER_EXTRA_DATA_TRANSACTION
 from utils.config import contracts, ACCOUNTING_ORACLE, AO_CONSENSUS_VERSION
 from utils.evm_script import encode_error
 from utils.test.extra_data import ExtraDataService, ItemType, ExtraDataLengths
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.oracle_report_helpers import (
     ZERO_HASH,
     ZERO_BYTES32,
@@ -462,7 +463,7 @@ class TestSubmitReportExtraDataList:
 
         self.report(extra_data.extra_data_list[0], extra_data.items_count)
         with reverts(encode_error("ExtraDataAlreadyProcessed()")):
-            accounting_oracle.submitReportExtraDataList(b"", {"from": consensus_member})
+            send_as_edf_member(consensus_member, accounting_oracle.submitReportExtraDataList, b"")
 
     @pytest.fixture(scope="function")
     def extra_data_service(self):
@@ -500,10 +501,11 @@ class TestSubmitReportData:
                 [accounting_oracle.getContractVersion(), 42],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 42,
-                {"from": consensus_member},
             )
 
         broken_report = report.copy()
@@ -518,10 +520,11 @@ class TestSubmitReportData:
                 ],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 broken_report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         broken_report = report.copy()
@@ -536,10 +539,11 @@ class TestSubmitReportData:
                 ],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 broken_report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         broken_report = report.copy()
@@ -554,24 +558,27 @@ class TestSubmitReportData:
                 ],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 broken_report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         # NOTE: NoConsensusReportToProcess skipped
 
         with reverts(encode_error("RefSlotAlreadyProcessing()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         chain.sleep(deadline - chain.time() + 42)
@@ -583,10 +590,11 @@ class TestSubmitReportData:
                 [deadline],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
     def test_extra_data_broken(
@@ -607,10 +615,11 @@ class TestSubmitReportData:
                 [HexBytes(ZERO_HASH), HexBytes(NON_ZERO_HASH)],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -625,10 +634,11 @@ class TestSubmitReportData:
                 [0, 42],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -643,10 +653,11 @@ class TestSubmitReportData:
                 [66],
             )
         ):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -656,10 +667,11 @@ class TestSubmitReportData:
         push_report(report)
 
         with reverts(encode_error("ExtraDataItemsCountCannotBeZeroForNonEmptyData()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -671,10 +683,11 @@ class TestSubmitReportData:
         push_report(report)
 
         with reverts(encode_error("ExtraDataHashCannotBeZeroForNonEmptyData()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
     def test_processStakingRouterExitedValidatorsByModule(
@@ -691,10 +704,11 @@ class TestSubmitReportData:
         push_report(report)
 
         with reverts(encode_error("InvalidExitedValidatorsData()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -705,10 +719,11 @@ class TestSubmitReportData:
         push_report(report)
 
         with reverts(encode_error("InvalidExitedValidatorsData()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
         report = oracle_report(
@@ -719,10 +734,11 @@ class TestSubmitReportData:
         push_report(report)
 
         with reverts(encode_error("InvalidExitedValidatorsData()")):
-            accounting_oracle.submitReportData(
+            send_as_edf_member(
+                consensus_member,
+                accounting_oracle.submitReportData,
                 report.items,
                 accounting_oracle.getContractVersion(),
-                {"from": consensus_member},
             )
 
 
@@ -773,10 +789,11 @@ def push_report(accounting_oracle: Contract, hash_consensus: Contract) -> Callab
 @pytest.fixture(scope="module")
 def submit_main_data(accounting_oracle: Contract, consensus_member: Account) -> Callable[[AccountingReport], None]:
     def wrapped(report: AccountingReport) -> None:
-        accounting_oracle.submitReportData(
+        send_as_edf_member(
+            consensus_member,
+            accounting_oracle.submitReportData,
             report.items,
             accounting_oracle.getContractVersion(),
-            {"from": consensus_member},
         )
 
     return wrapped

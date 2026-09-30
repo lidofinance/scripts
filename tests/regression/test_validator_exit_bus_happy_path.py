@@ -9,6 +9,7 @@ from utils.test.oracle_report_helpers import (
     reach_consensus,
     prepare_exit_bus_report,
 )
+from utils.test.edf_helpers import send_as_edf_member
 from utils.test.simple_dvt_helpers import simple_dvt_add_node_operators, simple_dvt_add_keys, simple_dvt_vet_keys
 
 
@@ -37,7 +38,7 @@ def send_report_with_consensus(ref_slot, report, report_hash):
         ref_slot, report_hash, consensus_version, contracts.hash_consensus_for_validators_exit_bus_oracle
     )
 
-    return contracts.validators_exit_bus_oracle.submitReportData(report, contract_version, {"from": submitter})
+    return send_as_edf_member(submitter, contracts.validators_exit_bus_oracle.submitReportData, report, contract_version)
 
 
 def test_send_zero_validators_to_exit(helpers):
@@ -58,7 +59,9 @@ def test_send_zero_validators_to_exit(helpers):
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
 
     # Asserts
-    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
+    helpers.assert_single_event_named(
+        "ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex}, emitter=contracts.validators_exit_bus_oracle.address
+    )
     helpers.assert_event_not_emitted("ValidatorExitRequest", tx)
 
     assert total_requests_after == total_requests_before
@@ -98,7 +101,9 @@ def test_send_validator_to_exit(helpers, web3):
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
 
     # Asserts
-    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
+    helpers.assert_single_event_named(
+        "ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex}, emitter=contracts.validators_exit_bus_oracle.address
+    )
     helpers.assert_single_event_named(
         "ValidatorExitRequest",
         tx,
@@ -109,6 +114,7 @@ def test_send_validator_to_exit(helpers, web3):
             "validatorPubkey": validator_key,
             "timestamp": web3.eth.get_block(tx.block_number).timestamp,
         },
+        emitter=contracts.validators_exit_bus_oracle.address,
     )
 
     assert total_requests_after == total_requests_before + 1
@@ -183,8 +189,10 @@ def test_send_multiple_validators_to_exit(helpers, web3, stranger):
     processing_state_after = ProcessingState(*contracts.validators_exit_bus_oracle.getProcessingState())
 
     # Asserts
-    helpers.assert_single_event_named("ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex})
-    events = helpers.filter_events_from(tx.receiver, tx.events["ValidatorExitRequest"])
+    helpers.assert_single_event_named(
+        "ProcessingStarted", tx, {"refSlot": ref_slot, "hash": report_hash_hex}, emitter=contracts.validators_exit_bus_oracle.address
+    )
+    events = helpers.filter_events_from(contracts.validators_exit_bus_oracle.address, tx.events["ValidatorExitRequest"])
     timestamp = web3.eth.get_block(tx.block_number).timestamp
     assert len(events) == 3
     assert dict(events[0]) == {

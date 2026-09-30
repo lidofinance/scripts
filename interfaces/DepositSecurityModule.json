@@ -3,11 +3,6 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_lido",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
         "name": "_depositContract",
         "type": "address"
       },
@@ -29,11 +24,6 @@
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
-  },
-  {
-    "inputs": [],
-    "name": "DepositInactiveModule",
-    "type": "error"
   },
   {
     "inputs": [],
@@ -74,6 +64,11 @@
       }
     ],
     "name": "DuplicateAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "GuardianDoesNotSupportERC1271",
     "type": "error"
   },
   {
@@ -288,19 +283,6 @@
   },
   {
     "inputs": [],
-    "name": "LIDO",
-    "outputs": [
-      {
-        "internalType": "contract ILido",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "PAUSE_MESSAGE_PREFIX",
     "outputs": [
       {
@@ -391,25 +373,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "stakingModuleId",
-        "type": "uint256"
-      }
-    ],
-    "name": "canDeposit",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "blockNumber",
         "type": "uint256"
       },
@@ -434,24 +397,19 @@
         "type": "uint256"
       },
       {
-        "internalType": "bytes",
-        "name": "depositCalldata",
-        "type": "bytes"
-      },
-      {
         "components": [
           {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
+            "internalType": "address",
+            "name": "guardian",
+            "type": "address"
           },
           {
-            "internalType": "bytes32",
-            "name": "vs",
-            "type": "bytes32"
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
           }
         ],
-        "internalType": "struct DepositSecurityModule.Signature[]",
+        "internalType": "struct DepositSecurityModule.GuardianSignature[]",
         "name": "sortedGuardianSignatures",
         "type": "tuple[]"
       }
@@ -619,17 +577,17 @@
       {
         "components": [
           {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
+            "internalType": "address",
+            "name": "guardian",
+            "type": "address"
           },
           {
-            "internalType": "bytes32",
-            "name": "vs",
-            "type": "bytes32"
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
           }
         ],
-        "internalType": "struct DepositSecurityModule.Signature",
+        "internalType": "struct DepositSecurityModule.GuardianSignature",
         "name": "sig",
         "type": "tuple"
       }
@@ -751,17 +709,17 @@
       {
         "components": [
           {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
+            "internalType": "address",
+            "name": "guardian",
+            "type": "address"
           },
           {
-            "internalType": "bytes32",
-            "name": "vs",
-            "type": "bytes32"
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
           }
         ],
-        "internalType": "struct DepositSecurityModule.Signature",
+        "internalType": "struct DepositSecurityModule.GuardianSignature",
         "name": "sig",
         "type": "tuple"
       }
