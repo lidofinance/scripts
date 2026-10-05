@@ -1,7 +1,7 @@
 """
 Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 
-1. Submit a Dual Governance proposal to activate CSM 0x02
+1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits
 1.1. Add CSM 0x02 to the Staking Router
 1.2. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
 1.3. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE on Triggerable Withdrawals Gateway to CSM 0x02 Ejector
@@ -14,6 +14,9 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 1.10. Register CSM 0x02 FeeOracle on CircuitBreaker
 1.11. Register CSM 0x02 Verifier on CircuitBreaker
 1.12. Register CSM 0x02 Ejector on CircuitBreaker
+1.13. Set the CMv1 stake share limit to 0
+1.14. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
+1.15. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
 4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
@@ -43,16 +46,16 @@ CSM_COMMITTEE = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
 
 TODO_ADDRESS = "TODO"
 
-CSM0X02 = TODO_ADDRESS
-CSM0X02_ACCOUNTING = TODO_ADDRESS
-CSM0X02_FEE_ORACLE = TODO_ADDRESS
-CSM0X02_HASH_CONSENSUS = TODO_ADDRESS
-CSM0X02_VERIFIER = TODO_ADDRESS
-CSM0X02_EJECTOR = TODO_ADDRESS
+CSM0X02 = "0x792Cd25e4aE3578375031FB55e048E163A804F7B"
+CSM0X02_ACCOUNTING = "0x3696dDd942A9e156F5D4728505D1b9a32dCef900"
+CSM0X02_FEE_ORACLE = "0x0fB5EC09Cc975d8E1aF43063e51882798814f311"
+CSM0X02_HASH_CONSENSUS = "0xd5a965FAab2d02D3cC2286A9da42d09F0F2aE210"
+CSM0X02_VERIFIER = "0x69b4C32a43565e768794D41b4A265F86dE61b861"
+CSM0X02_EJECTOR = "0x2EE500885870b020e84E86a09A5d26D1EEec3E5E"
 
-EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY = TODO_ADDRESS
-EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY = TODO_ADDRESS
-EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = TODO_ADDRESS
+EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY = "0x8D74020d8EACCdFf0366dAAFfb96e6c98CDFc112"
+EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY = "0x0B676AdEABcf4A696187cfAb90290Aa3ac51aFA2"
+EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x5b0De22E65C068430f6e769754D51133775408cc"
 
 DEPLOYMENT_ADDRESSES = {
     "CSM0X02": CSM0X02,
@@ -72,14 +75,35 @@ DEPLOYMENT_ADDRESSES = {
 # ============================== Parameters ==================================
 CSM0X02_NAME = "Community Staking 0x02"
 
-# Mirrors the current mainnet CSM module configuration.
-CSM0X02_TARGET_SHARE_BP = 900
-CSM0X02_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 1_080
-CSM0X02_MODULE_FEE_BP = 600
-CSM0X02_TREASURY_FEE_BP = 400
+# Initial share: 2%.
+CSM0X02_TARGET_SHARE_BP = 200
+# Match the current CSM 0x01 priority-exit multiplier: 1080 / 900 = 1.2.
+# https://etherscan.io/tx/0x2d418e0fc5f9276ad33cf4e525285f4d480f2beb9b71ea1fe3cc5b4ca4d7876f#eventlog
+CSM0X02_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 240
+# 2% NO / 8% DAO with the deployment's defaultRewardShareBP = 10000.
+# https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xed2a3b1f796cefdd531abe14ba01363b2da7887434cefdd54ba71ffb6dff59a7
+CSM0X02_MODULE_FEE_BP = 200
+CSM0X02_TREASURY_FEE_BP = 800
+# Keep the current CSM 0x01 deposit limits.
 CSM0X02_MAX_DEPOSITS_PER_BLOCK = 30
 CSM0X02_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 CSM0X02_WITHDRAWAL_CREDENTIALS_TYPE = 0x02
+
+CURATED_V1_MODULE_ID = 1
+CURATED_V2_MODULE_ID = 4
+CONSENSYS_V1_NODE_OPERATOR_ID = 21
+CONSENSYS_V2_NODE_OPERATOR_ID = 6
+NO_TARGET_LIMIT_SOFT_MODE = 1
+
+# Period 2: stop new deposits into CMv1 while consolidations continue.
+# https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/45
+# Keep the other current mainnet CMv1 router parameters unchanged.
+CURATED_V1_TARGET_SHARE_BP = 0
+CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 10_000
+CURATED_V1_MODULE_FEE_BP = 350
+CURATED_V1_TREASURY_FEE_BP = 650
+CURATED_V1_MAX_DEPOSITS_PER_BLOCK = 150
+CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 # TODO: Calculate for the expected mainnet vote date after a complete oracle frame.
 CSM0X02_ORACLE_INITIAL_EPOCH = 0
@@ -87,12 +111,14 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 0
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = """
-1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration. Items 1.1-1.12.
+1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; and set the Consensys operator target limits to 0 in both curated modules (soft mode). Items 1.1-1.15.
 2. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
 """
 
-DG_PROPOSAL_METADATA = "Activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet"
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate CSM 0x02"
+DG_PROPOSAL_METADATA = (
+    "Activate CSM 0x02, set CMv1 stake share limit to 0, and set Consensys target limits to 0 in CMv1 and CMv2"
+)
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits"
 
 
 def validate_configuration() -> None:
@@ -220,6 +246,42 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
+        agent_forward(
+            [
+                (
+                    staking_router.address,
+                    staking_router.updateStakingModule.encode_input(
+                        CURATED_V1_MODULE_ID,
+                        CURATED_V1_TARGET_SHARE_BP,
+                        CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP,
+                        CURATED_V1_MODULE_FEE_BP,
+                        CURATED_V1_TREASURY_FEE_BP,
+                        CURATED_V1_MAX_DEPOSITS_PER_BLOCK,
+                        CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE,
+                    ),
+                )
+            ]
+        ),
+        agent_forward(
+            [
+                (
+                    staking_router.address,
+                    staking_router.updateTargetValidatorsLimits.encode_input(
+                        CURATED_V1_MODULE_ID, CONSENSYS_V1_NODE_OPERATOR_ID, NO_TARGET_LIMIT_SOFT_MODE, 0
+                    ),
+                )
+            ]
+        ),
+        agent_forward(
+            [
+                (
+                    staking_router.address,
+                    staking_router.updateTargetValidatorsLimits.encode_input(
+                        CURATED_V2_MODULE_ID, CONSENSYS_V2_NODE_OPERATOR_ID, NO_TARGET_LIMIT_SOFT_MODE, 0
+                    ),
+                )
+            ]
+        ),
     ]
 
 
@@ -228,6 +290,9 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
 
     csm = interface.CSModule(CSM0X02)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
+    update_staking_module_share_limits_factory = interface.UpdateStakingModuleShareLimits(
+        EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY
+    )
 
     dg_call_script = submit_proposals([(get_dg_items(), DG_PROPOSAL_METADATA)])
 
@@ -254,7 +319,10 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             "4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
-                permissions=create_permissions(staking_router, "updateStakingModule"),
+                permissions=(
+                    create_permissions(update_staking_module_share_limits_factory, "validateParams")
+                    + create_permissions(staking_router, "updateModuleShares")[2:]
+                ),
             ),
         ),
     )

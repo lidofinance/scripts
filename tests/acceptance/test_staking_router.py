@@ -51,6 +51,16 @@ from utils.config import (
     CURATED_V2_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
     CURATED_V2_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK,
     CURATED_V2_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE,
+    CSM0X02_MODULE_ID,
+    CSM0X02_MODULE_NAME,
+    CSM0X02_MODULE_TARGET_SHARE_BP,
+    CSM0X02_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD,
+    CSM0X02_MODULE_MODULE_FEE_BP,
+    CSM0X02_MODULE_TREASURY_FEE_BP,
+    CSM0X02_MODULE_MAX_DEPOSITS_PER_BLOCK,
+    CSM0X02_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE,
+    CSM0X02_MODULE_WITHDRAWAL_CREDENTIALS_TYPE,
+    CSM0X02_ADDRESS,
 )
 from utils.evm_script import encode_error
 
@@ -119,14 +129,16 @@ def test_constants(contract):
 
 
 def test_staking_modules(contract):
-    assert contract.getStakingModulesCount() == 4
-
-    assert contract.getStakingModuleIds() == [
+    expected_module_ids = [
         CURATED_STAKING_MODULE_ID,
         SIMPLE_DVT_MODULE_ID,
         CS_MODULE_ID,
         CURATED_V2_STAKING_MODULE_ID,
+        CSM0X02_MODULE_ID,
     ]
+
+    assert contract.getStakingModulesCount() == len(expected_module_ids)
+    assert contract.getStakingModuleIds() == expected_module_ids
     assert contract.getStakingModuleIsActive(CURATED_STAKING_MODULE_ID) == True
     assert contract.getStakingModuleIsStopped(CURATED_STAKING_MODULE_ID) == False
     assert contract.getStakingModuleIsDepositsPaused(CURATED_STAKING_MODULE_ID) == False
@@ -208,10 +220,34 @@ def test_staking_modules(contract):
     # which sets lastDepositAt/lastDepositBlock to the enact block.timestamp/block.number; exited = 0.
     assert curated_module_v2["lastDepositAt"] > 0
     assert curated_module_v2["lastDepositBlock"] > 0
-    assert curated_module_v2["exitedValidatorsCount"] == 0
+    assert curated_module_v2["exitedValidatorsCount"] >= 125
     assert curated_module_v2["priorityExitShareThreshold"] == CURATED_V2_STAKING_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
     assert curated_module_v2["maxDepositsPerBlock"] == CURATED_V2_STAKING_MODULE_MAX_DEPOSITS_PER_BLOCK
     assert curated_module_v2["minDepositBlockDistance"] == CURATED_V2_STAKING_MODULE_MIN_DEPOSITS_BLOCK_DISTANCE
+
+    assert contract.getStakingModuleIsActive(CSM0X02_MODULE_ID) == True
+    assert contract.getStakingModuleIsStopped(CSM0X02_MODULE_ID) == False
+    assert contract.getStakingModuleIsDepositsPaused(CSM0X02_MODULE_ID) == False
+    assert contract.getStakingModuleNonce(CSM0X02_MODULE_ID) >= 0
+    assert contract.getStakingModuleStatus(CSM0X02_MODULE_ID) == 0
+
+    csm0x02 = contract.getStakingModule(CSM0X02_MODULE_ID)
+    assert csm0x02["id"] == CSM0X02_MODULE_ID
+    assert csm0x02["stakingModuleAddress"] == CSM0X02_ADDRESS
+    assert csm0x02["stakingModuleFee"] == CSM0X02_MODULE_MODULE_FEE_BP
+    assert csm0x02["treasuryFee"] == CSM0X02_MODULE_TREASURY_FEE_BP
+    assert csm0x02["stakeShareLimit"] == CSM0X02_MODULE_TARGET_SHARE_BP
+    assert csm0x02["status"] == 0
+    assert csm0x02["name"] == CSM0X02_MODULE_NAME
+    assert csm0x02["lastDepositAt"] > 0
+    assert csm0x02["lastDepositBlock"] > 0
+    assert csm0x02["exitedValidatorsCount"] == 0
+    assert csm0x02["priorityExitShareThreshold"] == CSM0X02_MODULE_PRIORITY_EXIT_SHARE_THRESHOLD
+    assert csm0x02["maxDepositsPerBlock"] == CSM0X02_MODULE_MAX_DEPOSITS_PER_BLOCK
+    assert csm0x02["minDepositBlockDistance"] == CSM0X02_MODULE_MIN_DEPOSIT_BLOCK_DISTANCE
+
+    csm0x02_config = contract.getStakingModuleStateConfig(CSM0X02_MODULE_ID)
+    assert csm0x02_config["withdrawalCredentialsType"] == CSM0X02_MODULE_WITHDRAWAL_CREDENTIALS_TYPE
 
     fee_aggregate_distribution = contract.getStakingFeeAggregateDistribution()
     assert fee_aggregate_distribution["modulesFee"] <= SR_MODULES_FEE_E20

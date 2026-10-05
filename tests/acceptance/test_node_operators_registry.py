@@ -154,6 +154,7 @@ def test_nor_state(contract):
         soft_limit_0_node_operators = [
             32,
             3,
+            21,  # Consensys: CSM 0x02 mainnet vote
         ]  # NO id 32 was added on vote 25-12-15, NO id 3 was added on vote 26-04-08
         assert node_operator_summary["targetLimitMode"] == (
             1 if id in exited_node_operators or id in soft_limit_0_node_operators else 0
