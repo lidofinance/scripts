@@ -1,13 +1,31 @@
+import json
+
 import pytest
+from avotes_parser.core import parse_script
 from brownie import ZERO_ADDRESS, convert, interface, web3
+from brownie.network.event import _decode_logs
 
 from scripts.vote_csm0x02 import start_vote
+from tests.vote_csm0x02_adi import (
+    ADI_BNB_MESSAGE_ARTIFACT,
+    ADI_BNB_MESSAGE_SESSION,
+    BNB_BRIDGE_ADAPTERS_AFTER,
+    BNB_BRIDGE_ADAPTERS_BEFORE,
+    BNB_CHAIN_ID,
+    BNB_CROSS_CHAIN_EXECUTOR,
+    BNB_MESSAGE_GAS_LIMIT,
+    ETHEREUM_CROSS_CHAIN_CONTROLLER,
+    bnb_actions_set_message,
+    encode_adi_envelope,
+    encode_adi_transaction,
+)
 from utils.mainnet_fork import pass_and_exec_dao_vote
 
 
 # Mainnet governance
 AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
+EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 
 # Vote targets
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
@@ -72,6 +90,48 @@ def _permission(contract_address: str, signature: str) -> str:
     return convert.to_address(contract_address).lower() + _selector(signature).removeprefix("0x")
 
 
+def _forwarder_bridge_adapters(ccc, chain_id: int) -> set:
+    return {
+        (convert.to_address(destination_adapter), convert.to_address(current_chain_adapter))
+        for destination_adapter, current_chain_adapter in ccc.getForwarderBridgeAdaptersByChain(chain_id)
+    }
+
+
+def _forward_message_args(proposal_calls) -> list:
+    """Decode the single forwardMessage call packed into the Agent.forward call scripts of a DG proposal."""
+    agent = interface.Agent(AGENT)
+    ethereum_ccc = interface.CrossChainController(ETHEREUM_CROSS_CHAIN_CONTROLLER)
+    forward_message_calls = [
+        call
+        for target, _, payload in proposal_calls
+        if target == AGENT
+        for call in parse_script("0x" + bytes(agent.forward.decode_input(payload)[0]).hex()).calls
+        if convert.to_address(call.address) == ETHEREUM_CROSS_CHAIN_CONTROLLER
+        and call.method_id == _selector("forwardMessage(uint256,address,uint256,bytes)")
+    ]
+    assert len(forward_message_calls) == 1
+
+    call = forward_message_calls[0]
+    return ethereum_ccc.forwardMessage.decode_input(call.method_id + call.encoded_call_data.removeprefix("0x"))
+
+
+def _forwarding_attempts(from_block: int, envelope_id: bytes) -> list:
+    logs = web3.eth.get_logs(
+        {
+            "address": ETHEREUM_CROSS_CHAIN_CONTROLLER,
+            "fromBlock": from_block,
+            "topics": [
+                web3.keccak(
+                    text="TransactionForwardingAttempted(bytes32,bytes32,bytes,uint256,address,address,bool,bytes)"
+                ).hex(),
+                envelope_id.hex(),
+            ],
+        }
+    )
+    assert logs, "No TransactionForwardingAttempted events for the a.DI envelope"
+    return _decode_logs(logs)["TransactionForwardingAttempted"]._ordered
+
+
 def _assert_module_config(staking_router, module_id: int) -> None:
     module = staking_router.getStakingModuleStateConfig(module_id)
 
@@ -101,6 +161,7 @@ def test_vote(ldo_holder):
     hash_consensus = interface.HashConsensus(CSM0X02_HASH_CONSENSUS)
     curated_v1 = interface.NodeOperatorsRegistry(CURATED_V1_ADDRESS)
     curated_v2 = interface.CuratedModule(CURATED_V2_ADDRESS)
+    ethereum_ccc = interface.CrossChainController(ETHEREUM_CROSS_CHAIN_CONTROLLER)
 
     curated_v1_config_before = staking_router.getStakingModuleStateConfig(CURATED_V1_MODULE_ID).dict()
     curated_v1_deposits_before = staking_router.getStakingModuleStateDeposits(CURATED_V1_MODULE_ID).dict()
@@ -139,6 +200,21 @@ def test_vote(ldo_holder):
     for factory in factories:
         assert factory not in easy_track.getEVMScriptFactories()
 
+    # a.DI: all four bridges forward to BNB Chain, the Agent is an approved sender, and the message is not sent yet.
+    assert ethereum_ccc.isSenderApproved(AGENT)
+    assert _forwarder_bridge_adapters(ethereum_ccc, BNB_CHAIN_ID) == BNB_BRIDGE_ADAPTERS_BEFORE
+    bnb_message = bnb_actions_set_message()
+    envelope_nonce_before = ethereum_ccc.getCurrentEnvelopeNonce()
+    transaction_nonce_before = ethereum_ccc.getCurrentTransactionNonce()
+    envelope_id = web3.keccak(encode_adi_envelope(envelope_nonce_before, bnb_message))
+    transaction_id = web3.keccak(encode_adi_transaction(transaction_nonce_before, envelope_nonce_before, bnb_message))
+    assert not ethereum_ccc.isEnvelopeRegistered["bytes32"](envelope_id)
+    assert not ethereum_ccc.isTransactionForwarded["bytes32"](transaction_id)
+    ethereum_ccc_eth_balance_before = web3.eth.get_balance(ETHEREUM_CROSS_CHAIN_CONTROLLER)
+    adi_from_block = web3.eth.block_number
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    dg_proposals_count_before = timelock.getProposalsCount()
+
     vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
     pass_and_exec_dao_vote(vote_id)
 
@@ -171,3 +247,52 @@ def test_vote(ldo_holder):
     assert hash_consensus.getFrameConfig()[0] == CSM0X02_ORACLE_INITIAL_EPOCH
     for target in circuit_breaker_targets:
         assert circuit_breaker.getPauser(target) == CSM_COMMITTEE
+
+    # a.DI: exactly one envelope with the expected BNB Chain action set was registered and forwarded,
+    # bridge fees were paid from the CrossChainController balance, and Wormhole no longer forwards to BNB Chain.
+    # The BNB Chain side (disallowing the Wormhole adapter, 2-of-3 confirmations) is checked on a BNB Chain fork
+    # in tests/test_vote_csm0x02_bnb.py.
+    assert ethereum_ccc.getCurrentEnvelopeNonce() == envelope_nonce_before + 1
+    assert ethereum_ccc.getCurrentTransactionNonce() == transaction_nonce_before + 1
+    assert ethereum_ccc.isEnvelopeRegistered["bytes32"](envelope_id)
+    assert ethereum_ccc.isTransactionForwarded["bytes32"](transaction_id)
+    assert web3.eth.get_balance(ETHEREUM_CROSS_CHAIN_CONTROLLER) < ethereum_ccc_eth_balance_before
+    assert _forwarder_bridge_adapters(ethereum_ccc, BNB_CHAIN_ID) == BNB_BRIDGE_ADAPTERS_AFTER
+    assert ethereum_ccc.isSenderApproved(AGENT)
+
+    # a.DI: the vote's DG proposal packs the expected forwardMessage call, including the gas limit for BNB Chain delivery.
+    assert timelock.getProposalsCount() == dg_proposals_count_before + 1
+    destination_chain_id, destination, gas_limit, message = _forward_message_args(
+        timelock.getProposalCalls(dg_proposals_count_before + 1)
+    )
+    assert destination_chain_id == BNB_CHAIN_ID
+    assert destination == BNB_CROSS_CHAIN_EXECUTOR
+    assert gas_limit == BNB_MESSAGE_GAS_LIMIT
+    assert bytes(message) == bnb_message
+
+    # a.DI: all four bridges got the same encoded transaction. A failed bridge does not revert forwardMessage, and
+    # without Wormhole the message reaches the 3-of-4 quorum only if the three remaining bridges all accepted it.
+    attempts = _forwarding_attempts(adi_from_block, envelope_id)
+    assert len(attempts) == len(BNB_BRIDGE_ADAPTERS_BEFORE)
+    assert {(a["destinationBridgeAdapter"], a["bridgeAdapter"]) for a in attempts} == BNB_BRIDGE_ADAPTERS_BEFORE
+    assert all(
+        a["adapterSuccessful"]
+        for a in attempts
+        if (a["destinationBridgeAdapter"], a["bridgeAdapter"]) in BNB_BRIDGE_ADAPTERS_AFTER
+    )
+    encoded_transactions = {bytes(a["encodedTransaction"]) for a in attempts}
+    assert len(encoded_transactions) == 1
+    encoded_transaction = encoded_transactions.pop()
+    assert web3.keccak(encoded_transaction) == transaction_id
+
+    with open(ADI_BNB_MESSAGE_ARTIFACT, "w") as f:
+        json.dump(
+            {
+                "encodedTransaction": "0x" + encoded_transaction.hex(),
+                "transactionId": transaction_id.hex(),
+                "gasLimit": gas_limit,
+                "session": ADI_BNB_MESSAGE_SESSION,
+            },
+            f,
+            indent=2,
+        )

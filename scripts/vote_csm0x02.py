@@ -1,7 +1,8 @@
 """
 Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 
-1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits
+1. Submit a Dual Governance proposal to activate CSM 0x02, update curated module limits,
+   and reconfigure a.DI governance forwarding to BNB Chain
 1.1. Add CSM 0x02 to the Staking Router
 1.2. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
 1.3. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE on Triggerable Withdrawals Gateway to CSM 0x02 Ejector
@@ -17,6 +18,9 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 1.13. Set the CMv1 stake share limit to 0
 1.14. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
 1.15. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
+1.16. Forward an a.DI message to the BNB Chain CrossChainExecutor that disallows the Wormhole adapter
+      and sets the required confirmations for messages from Ethereum to 2
+1.17. Disable the Wormhole adapter for BNB Chain on the Ethereum CrossChainController
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
 4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
@@ -25,6 +29,7 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 from typing import Dict, List, Tuple
 
 from brownie import interface
+from eth_abi import encode
 
 from utils.agent import agent_forward
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
@@ -56,6 +61,15 @@ CSM0X02_EJECTOR = "0x2EE500885870b020e84E86a09A5d26D1EEec3E5E"
 EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY = "0x8D74020d8EACCdFf0366dAAFfb96e6c98CDFc112"
 EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY = "0x0B676AdEABcf4A696187cfAb90290Aa3ac51aFA2"
 EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x5b0De22E65C068430f6e769754D51133775408cc"
+
+# a.DI governance forwarding to BNB Chain
+# https://docs.lido.fi/deployed-contracts/#adi-governance-forwarding-eth
+# https://docs.lido.fi/deployed-contracts/#adi-governance-forwarding-bsc
+ETHEREUM_CROSS_CHAIN_CONTROLLER = "0x93559892D3C7F66DE4570132d68b69BD3c369A7C"
+ETHEREUM_WORMHOLE_ADAPTER = "0xEDc0D2cb2289BBa1587424dd42bDD1ca7eAbDF17"
+BNB_CROSS_CHAIN_CONTROLLER = "0x40C4464fCa8caCd550C33B39d674fC257966022F"
+BNB_CROSS_CHAIN_EXECUTOR = "0x8E5175D17f74d1D512de59b2f5d5A5d8177A123d"
+BNB_WORMHOLE_ADAPTER = "0xBb1E43408BbF2C767Ff3Bd5bBC34E183CC1Ef119"
 
 DEPLOYMENT_ADDRESSES = {
     "CSM0X02": CSM0X02,
@@ -108,17 +122,34 @@ CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 # TODO: Calculate for the expected mainnet vote date after a complete oracle frame.
 CSM0X02_ORACLE_INITIAL_EPOCH = 0
 
+# Wormhole shut down its Standard Relayer on 2026-04-01, so the Wormhole leg of the a.DI route no longer
+# delivers Lido DAO messages to BNB Chain. Drop it and lower the BNB Chain quorum from 3 of 4 to 2 of 3.
+# https://github.com/lidofinance/aave-delivery-infrastructure/issues/12
+ETHEREUM_CHAIN_ID = 1
+BNB_CHAIN_ID = 56
+BNB_REQUIRED_CONFIRMATIONS = 2
+# Queueing the action set on the BNB Chain CrossChainExecutor takes about 880,000 gas.
+BNB_MESSAGE_GAS_LIMIT = 1_200_000
+ADI_FORUM_POST_URL = (
+    "https://research.lido.fi/t/reconfigure-bsc-governance-forwarding-after-wormhole-auto-delivery-shutdown/11980"
+)
+
 
 # ============================= Description ==================================
-IPFS_DESCRIPTION = """
+IPFS_DESCRIPTION = f"""
 1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; and set the Consensys operator target limits to 0 in both curated modules (soft mode). Items 1.1-1.15.
-2. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
+2. **Remove the Wormhole adapter from a.DI governance forwarding to BNB Chain and lower the required confirmations on BNB Chain from 3 of 4 to 2 of 3**, [as proposed on the forum]({ADI_FORUM_POST_URL}). Wormhole shut down its Standard Relayer on April 1, 2026, so only CCIP, LayerZero, and Hyperlane still deliver Lido DAO messages to BNB Chain. Items 1.16-1.17.
+3. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
 """
 
 DG_PROPOSAL_METADATA = (
-    "Activate CSM 0x02, set CMv1 stake share limit to 0, and set Consensys target limits to 0 in CMv1 and CMv2"
+    "Activate CSM 0x02, set CMv1 stake share limit to 0, set Consensys target limits to 0 in CMv1 and CMv2, "
+    "remove the Wormhole adapter from a.DI forwarding to BNB Chain, and set BNB Chain confirmations to 2 of 3"
 )
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits"
+DG_SUBMISSION_DESCRIPTION = (
+    "1. Submit a Dual Governance proposal to activate CSM 0x02, update curated module limits, "
+    "and reconfigure a.DI governance forwarding to BNB Chain"
+)
 
 
 def validate_configuration() -> None:
@@ -130,6 +161,40 @@ def validate_configuration() -> None:
         raise ValueError("Set CSM0X02_ORACLE_INITIAL_EPOCH before building the vote")
 
 
+def encode_bnb_actions_set() -> bytes:
+    """
+    ABI-encode the action set the BNB Chain CrossChainExecutor queues once the a.DI message is confirmed.
+
+    The executor decodes (targets, values, signatures, calldatas, withDelegatecalls) and, for a non-empty
+    signature, calls the target with the signature's selector followed by the given calldata.
+    """
+    bnb_ccc = interface.CrossChainController(ETHEREUM_CROSS_CHAIN_CONTROLLER)  # Same ABI on both chains.
+
+    actions = [
+        # Stop accepting Wormhole deliveries from Ethereum on the BNB Chain CrossChainController.
+        (
+            "disallowReceiverBridgeAdapters((address,uint256[])[])",
+            bnb_ccc.disallowReceiverBridgeAdapters.encode_input([(BNB_WORMHOLE_ADAPTER, [ETHEREUM_CHAIN_ID])]),
+        ),
+        # Require 2 bridge confirmations for messages from Ethereum.
+        (
+            "updateConfirmations((uint256,uint8)[])",
+            bnb_ccc.updateConfirmations.encode_input([(ETHEREUM_CHAIN_ID, BNB_REQUIRED_CONFIRMATIONS)]),
+        ),
+    ]
+
+    return encode(
+        ["address[]", "uint256[]", "string[]", "bytes[]", "bool[]"],
+        [
+            [BNB_CROSS_CHAIN_CONTROLLER] * len(actions),
+            [0] * len(actions),
+            [signature for signature, _ in actions],
+            [bytes.fromhex(calldata.removeprefix("0x")[8:]) for _, calldata in actions],  # Strip the selector.
+            [False] * len(actions),
+        ],
+    )
+
+
 def get_dg_items() -> List[Tuple[str, str]]:
     validate_configuration()
 
@@ -139,6 +204,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
     csm = interface.CSModule(CSM0X02)
     hash_consensus = interface.HashConsensus(CSM0X02_HASH_CONSENSUS)
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
+    ethereum_ccc = interface.CrossChainController(ETHEREUM_CROSS_CHAIN_CONTROLLER)
 
     return [
         agent_forward(
@@ -279,6 +345,25 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     staking_router.updateTargetValidatorsLimits.encode_input(
                         CURATED_V2_MODULE_ID, CONSENSYS_V2_NODE_OPERATOR_ID, NO_TARGET_LIMIT_SOFT_MODE, 0
                     ),
+                )
+            ]
+        ),
+        # Forward first: the message still goes out through all four bridges under the current 3-of-4 setting.
+        agent_forward(
+            [
+                (
+                    ethereum_ccc.address,
+                    ethereum_ccc.forwardMessage.encode_input(
+                        BNB_CHAIN_ID, BNB_CROSS_CHAIN_EXECUTOR, BNB_MESSAGE_GAS_LIMIT, encode_bnb_actions_set()
+                    ),
+                )
+            ]
+        ),
+        agent_forward(
+            [
+                (
+                    ethereum_ccc.address,
+                    ethereum_ccc.disableBridgeAdapters.encode_input([(ETHEREUM_WORMHOLE_ADAPTER, [BNB_CHAIN_ID])]),
                 )
             ]
         ),
