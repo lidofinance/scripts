@@ -18,8 +18,8 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 1.13. Set the CMv1 stake share limit to 0
 1.14. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
 1.15. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
-1.16. Forward an a.DI message to the BNB Chain CrossChainExecutor that disallows the Wormhole adapter
-      and sets the required confirmations for messages from Ethereum to 2
+1.16. Forward an a.DI message to the BNB Chain CrossChainExecutor with an action set for the BNB Chain
+      CrossChainController: disallow the Wormhole adapter and require 2 confirmations for messages from Ethereum
 1.17. Disable the Wormhole adapter for BNB Chain on the Ethereum CrossChainController
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
@@ -125,13 +125,14 @@ CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 # This places reports midway between CSM 0x01 windows and about a week from CMv2 windows.
 CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
-# Wormhole shut down its Standard Relayer on 2026-04-01, so the Wormhole leg of the a.DI route no longer
-# delivers Lido DAO messages to BNB Chain. Drop it and lower the BNB Chain quorum from 3 of 4 to 2 of 3.
+# Wormhole shut down its Standard Relayer on 2026-04-01 and no longer delivers Lido DAO messages to BNB Chain.
+# Remove the Wormhole adapter on both chains and lower the BNB Chain quorum from 3 of 4 bridges to 2 of 3.
 # https://github.com/lidofinance/aave-delivery-infrastructure/issues/12
 ETHEREUM_CHAIN_ID = 1
 BNB_CHAIN_ID = 56
 BNB_REQUIRED_CONFIRMATIONS = 2
-# Queueing the action set on the BNB Chain CrossChainExecutor takes about 880,000 gas.
+# Gas limit for each bridge's delivery on BNB Chain. The delivery that completes the quorum also queues the action
+# set on the CrossChainExecutor and needs about 880,000 gas; with less, that delivery reverts.
 BNB_MESSAGE_GAS_LIMIT = 1_200_000
 ADI_FORUM_POST_URL = (
     "https://research.lido.fi/t/reconfigure-bsc-governance-forwarding-after-wormhole-auto-delivery-shutdown/11980"
@@ -141,13 +142,13 @@ ADI_FORUM_POST_URL = (
 # ============================= Description ==================================
 IPFS_DESCRIPTION = f"""
 1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; and set the Consensys operator target limits to 0 in both curated modules (soft mode). Items 1.1-1.15.
-2. **Remove the Wormhole adapter from a.DI governance forwarding to BNB Chain and lower the required confirmations on BNB Chain from 3 of 4 to 2 of 3**, [as proposed on the forum]({ADI_FORUM_POST_URL}). Wormhole shut down its Standard Relayer on April 1, 2026, so only CCIP, LayerZero, and Hyperlane still deliver Lido DAO messages to BNB Chain. Items 1.16-1.17.
+2. **Remove the Wormhole adapter from a.DI governance forwarding to BNB Chain and lower the BNB Chain quorum from 3 of 4 bridges to 2 of 3**, [as proposed on the forum]({ADI_FORUM_POST_URL}). Wormhole shut down its Standard Relayer on April 1, 2026, so only CCIP, LayerZero, and Hyperlane still deliver Lido DAO messages to BNB Chain. Items 1.16-1.17.
 3. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
 """
 
 DG_PROPOSAL_METADATA = (
     "Activate CSM 0x02, set CMv1 stake share limit to 0, set Consensys target limits to 0 in CMv1 and CMv2, "
-    "remove the Wormhole adapter from a.DI forwarding to BNB Chain, and set BNB Chain confirmations to 2 of 3"
+    "remove the Wormhole adapter from a.DI forwarding to BNB Chain, and set the BNB Chain quorum to 2 of 3 bridges"
 )
 DG_SUBMISSION_DESCRIPTION = (
     "1. Submit a Dual Governance proposal to activate CSM 0x02, update curated module limits, "
@@ -351,7 +352,8 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 )
             ]
         ),
-        # Forward first: the message still goes out through all four bridges under the current 3-of-4 setting.
+        # Forward before disabling the Wormhole adapter: this message still needs 3 of 4 confirmations on BNB Chain,
+        # and its Wormhole copy can be redeemed manually if one of the other three bridges fails to deliver it.
         agent_forward(
             [
                 (

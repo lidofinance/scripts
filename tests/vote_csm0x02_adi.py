@@ -1,7 +1,7 @@
 """
-a.DI expectations shared by tests/test_vote_csm0x02.py and tests/test_vote_csm0x02_bnb.py.
+Expected a.DI parameters shared by tests/test_vote_csm0x02.py and tests/test_vote_csm0x02_bnb.py.
 
-They are deliberately independent from the vote script.
+They are independent from the vote script.
 """
 
 import uuid
@@ -31,7 +31,8 @@ BNB_CHAIN_ID = 56
 BNB_REQUIRED_CONFIRMATIONS = 2
 BNB_MESSAGE_GAS_LIMIT = 1_200_000
 
-# Forwarder bridge adapter configs as (destinationBridgeAdapter, currentChainBridgeAdapter).
+# Forwarder adapters of the Ethereum CrossChainController for BNB Chain as (destinationBridgeAdapter,
+# currentChainBridgeAdapter) pairs.
 BNB_BRIDGE_ADAPTERS_BEFORE = {
     (BNB_CCIP_ADAPTER, ETHEREUM_CCIP_ADAPTER),
     (BNB_LAYERZERO_ADAPTER, ETHEREUM_LAYERZERO_ADAPTER),
@@ -42,7 +43,7 @@ BNB_BRIDGE_ADAPTERS_AFTER = BNB_BRIDGE_ADAPTERS_BEFORE - {(BNB_WORMHOLE_ADAPTER,
 
 # The forwarded a.DI transaction is saved here for tests/test_vote_csm0x02_bnb.py to replay on a BNB Chain fork.
 ADI_BNB_MESSAGE_ARTIFACT = "build/adi_bnb_message.json"
-# Written into the artifact, so the replay only accepts one produced in the same pytest session.
+# Id of this pytest session. The vote test writes it into the artifact, and the replay accepts only a matching id.
 ADI_BNB_MESSAGE_SESSION = uuid.uuid4().hex
 
 ENVELOPE_TYPE = "(uint256,address,address,uint256,uint256,bytes)"
@@ -67,7 +68,8 @@ def bnb_actions_set_message() -> bytes:
 
 
 def encode_adi_envelope(envelope_nonce: int, message: bytes) -> bytes:
-    # Envelope(nonce, origin, destination, originChainId, destinationChainId, message), id = keccak256(abi.encode(envelope))
+    # Envelope(nonce, origin, destination, originChainId, destinationChainId, message),
+    # id = keccak256(abi.encode(envelope))
     envelope = (envelope_nonce, AGENT, BNB_CROSS_CHAIN_EXECUTOR, ETHEREUM_CHAIN_ID, BNB_CHAIN_ID, message)
     return encode([ENVELOPE_TYPE], [envelope])
 

@@ -121,10 +121,10 @@ EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 4
 EXPECTED_DG_EVENTS_FROM_AGENT = 17
 EXPECTED_DG_EVENTS_COUNT = 17
-IPFS_DESCRIPTION_HASH = "bafkreiaiwzkhrsi7wizbvhrn2rhcatgqwxzmxbu3hsyqd4hknli2gq33wm"
+IPFS_DESCRIPTION_HASH = "bafkreibmx5eji72q4hecj6ups3542bbyvme4j63fyjljqr35vtvin5mezy"
 DG_PROPOSAL_METADATA = (
     "Activate CSM 0x02, set CMv1 stake share limit to 0, set Consensys target limits to 0 in CMv1 and CMv2, "
-    "remove the Wormhole adapter from a.DI forwarding to BNB Chain, and set BNB Chain confirmations to 2 of 3"
+    "remove the Wormhole adapter from a.DI forwarding to BNB Chain, and set the BNB Chain quorum to 2 of 3 bridges"
 )
 
 
@@ -405,7 +405,7 @@ def test_vote(
     # ======================= Execute DG Proposal =============================
     # =========================================================================
     bnb_message = bnb_actions_set_message()
-    # a.DI: the vote's DG proposal packs the expected forwardMessage call, including the gas limit for BNB Chain delivery.
+    # a.DI: the DG proposal contains the expected forwardMessage call, with the gas limit for the BNB Chain delivery.
     destination_chain_id, destination, gas_limit, message = _forward_message_args(
         timelock.getProposalCalls(proposal_id)
     )
@@ -544,18 +544,17 @@ def test_vote(
         ):
             _validate_target_limit_event(dg_events[index], module, operator_id, summary_before, nonce_before)
 
-        # a.DI: exactly one envelope with the expected BNB Chain action set was registered and forwarded,
-        # bridge fees were paid from the CrossChainController balance, and Wormhole no longer forwards to BNB Chain.
-        # The BNB Chain side (disallowing the Wormhole adapter, 2-of-3 confirmations) is checked on a BNB Chain fork
-        # in tests/test_vote_csm0x02_bnb.py.
+        # a.DI: exactly one envelope with the expected BNB Chain action set was registered and forwarded, and the bridge
+        # fees were paid from the CrossChainController balance. tests/test_vote_csm0x02_bnb.py checks the BNB Chain
+        # changes on a BNB Chain fork.
         assert ethereum_ccc.getCurrentEnvelopeNonce() == envelope_nonce_before + 1
         assert ethereum_ccc.getCurrentTransactionNonce() == transaction_nonce_before + 1
         assert ethereum_ccc.isEnvelopeRegistered["bytes32"](envelope_id)
         assert ethereum_ccc.isTransactionForwarded["bytes32"](transaction_id)
         assert web3.eth.get_balance(ETHEREUM_CROSS_CHAIN_CONTROLLER) < ethereum_ccc_eth_balance_before
 
-        # a.DI: all four bridges got the same encoded transaction. A failed bridge does not revert forwardMessage, and
-        # without Wormhole the message reaches the 3-of-4 quorum only if the three remaining bridges all accepted it.
+        # a.DI: all four bridges got the same encoded transaction. forwardMessage does not revert when a bridge fails,
+        # and since Wormhole no longer delivers, the 3-of-4 quorum needs CCIP, LayerZero, and Hyperlane to accept it.
         attempts = _forwarding_attempts(adi_from_block, envelope_id)
         assert len(attempts) == len(BNB_BRIDGE_ADAPTERS_BEFORE)
         assert {(a["destinationBridgeAdapter"], a["bridgeAdapter"]) for a in attempts} == BNB_BRIDGE_ADAPTERS_BEFORE

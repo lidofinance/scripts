@@ -1,13 +1,14 @@
 """
-Replays the a.DI message forwarded by scripts/vote_csm0x02.py on a BNB Chain fork.
+Replays the a.DI transaction forwarded by the vote in scripts/vote_csm0x02.py on a BNB Chain fork.
 
 tests/test_vote_csm0x02.py executes the vote on the Ethereum fork and saves the forwarded a.DI transaction to
 ADI_BNB_MESSAGE_ARTIFACT. This module delivers exactly those bytes to the BNB Chain CrossChainController, executes
 the queued action set, and checks the resulting configuration. Brownie forks Ethereum only, so the BNB Chain fork
 is a separate anvil process driven through web3.
 
-Requires anvil and BNB_RPC_URL. Run both stages in one session:
-    BNB_RPC_URL=<bnb rpc> poetry run brownie test tests/test_vote_csm0x02.py tests/test_vote_csm0x02_bnb.py --network mfh-1
+Requires anvil and BNB_RPC_URL. The replay skips an artifact saved in another pytest session, so run both stages
+together:
+    BNB_RPC_URL=<rpc> poetry run brownie test tests/test_vote_csm0x02.py tests/test_vote_csm0x02_bnb.py --network mfh-1
 """
 
 import json
@@ -177,7 +178,7 @@ def _receive_from_adapter(w3, ccc, adapter: str, encoded_transaction: bytes) -> 
 
 
 def _bridge_delivery(bridge: str, encoded_transaction: bytes) -> tuple:
-    """The entry point that calls the bridge's BNB Chain adapter, the adapter, and the calldata of that call."""
+    """The bridge's BNB Chain entry point, its adapter, and the calldata the entry point sends to the adapter."""
     ethereum_ccc_as_bytes32 = bytes(12) + bytes.fromhex(ETHEREUM_CROSS_CHAIN_CONTROLLER.removeprefix("0x"))
     if bridge == "ccip":
         signature = "ccipReceive((bytes32,uint64,bytes,bytes,(address,uint256)[]))"
@@ -214,7 +215,7 @@ def test_vote_bnb_actions_set(bnb, forwarded_transaction, last_bridge):
     executor = _contract(bnb, BNB_CROSS_CHAIN_EXECUTOR, "CrossChainExecutor")
     bridge_adapters = {"ccip": BNB_CCIP_ADAPTER, "layerzero": BNB_LAYERZERO_ADAPTER, "hyperlane": BNB_HYPERLANE_ADAPTER}
 
-    # The BNB Chain side still requires 3 of 4 bridges, and the executor runs action sets without a delay.
+    # Before the action set: BNB Chain requires 3 of 4 bridges, and queued action sets can be executed immediately.
     assert set(ccc.functions.getReceiverBridgeAdaptersByChain(ETHEREUM_CHAIN_ID).call()) == {
         *bridge_adapters.values(),
         BNB_WORMHOLE_ADAPTER,
@@ -233,10 +234,10 @@ def test_vote_bnb_actions_set(bnb, forwarded_transaction, last_bridge):
             _receive_from_adapter(bnb, ccc, adapter, encoded_transaction)
     assert executor.functions.getActionsSetCount().call() == actions_sets_count_before
 
-    # The last bridge delivers with the gas limit paid on Ethereum (adapters add no base gas). CCIP calls the adapter
-    # with exactly that gas, LayerZero also spends part of it in the endpoint, and Hyperlane relayers pick the gas
-    # themselves once it is paid for. A transaction with that much gas above the intrinsic cost gives the adapter
-    # the whole gas limit, which is slightly optimistic for LayerZero; 1.2M against ~880k used covers the difference.
+    # The last bridge delivers through its BNB Chain entry point with the gas limit paid on Ethereum on top of the
+    # intrinsic cost (adapters add no base gas). CCIP passes exactly this gas to the adapter. LayerZero spends part of
+    # it in the endpoint first, so the test is slightly optimistic there; Hyperlane relayers choose the gas themselves.
+    # The ~880k used leaves enough margin within 1.2M.
     entry_point, adapter, data = _bridge_delivery(last_bridge, encoded_transaction)
     receipt = _send(bnb, entry_point, adapter, data, gas=_intrinsic_gas(data) + gas_limit)
 
@@ -259,7 +260,7 @@ def test_vote_bnb_actions_set(bnb, forwarded_transaction, last_bridge):
     assert queued.args.withDelegatecalls == list(with_delegatecalls)
     assert executor.functions.getCurrentState(queued.args.id).call() == ACTIONS_SET_STATE_QUEUED
 
-    # Anyone can execute the action set. It makes exactly the two configuration changes and nothing else.
+    # Anyone can execute the action set. It makes exactly the two configuration changes on the CrossChainController.
     receipt = _send(bnb, BNB_STRANGER, executor.address, executor.encodeABI(fn_name="execute", args=[queued.args.id]))
     assert executor.functions.getCurrentState(queued.args.id).call() == ACTIONS_SET_STATE_EXECUTED
     assert [(event.event, dict(event.args)) for event in _events(ccc, receipt)] == [
@@ -287,6 +288,7 @@ def test_vote_bnb_two_of_three(bnb, forwarded_transaction):
     ccc = _contract(bnb, BNB_CROSS_CHAIN_CONTROLLER, "CrossChainController")
     executor = _contract(bnb, BNB_CROSS_CHAIN_EXECUTOR, "CrossChainExecutor")
 
+    # Apply the vote's action set.
     for adapter in [BNB_CCIP_ADAPTER, BNB_LAYERZERO_ADAPTER, BNB_HYPERLANE_ADAPTER]:
         _receive_from_adapter(bnb, ccc, adapter, encoded_transaction)
     vote_actions_set_id = executor.functions.getActionsSetCount().call() - 1
