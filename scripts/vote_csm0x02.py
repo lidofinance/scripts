@@ -119,8 +119,11 @@ CURATED_V1_TREASURY_FEE_BP = 650
 CURATED_V1_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
-# TODO: Calculate for the expected mainnet vote date after a complete oracle frame.
-CSM0X02_ORACLE_INITIAL_EPOCH = 0
+# First report window opens on 2026-12-07 at 13:36:23 UTC (Monday).
+# Its full 6,300-epoch (28-day) observation period starts on 2026-11-09 at 13:36:23 UTC,
+# after the expected 2026-10-24 DG enactment for a vote launched on 2026-10-15.
+# This places reports midway between CSM 0x01 windows and about a week from CMv2 windows.
+CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
 # Wormhole shut down its Standard Relayer on 2026-04-01, so the Wormhole leg of the a.DI route no longer
 # delivers Lido DAO messages to BNB Chain. Drop it and lower the BNB Chain quorum from 3 of 4 to 2 of 3.

@@ -5,15 +5,15 @@ from brownie.network.account import Account
 from utils.config import (
     AGENT,
     CIRCUIT_BREAKER,
+    CIRCUIT_BREAKER_COMMITTEE,
     CIRCUIT_BREAKER_HEARTBEAT_INTERVAL,
     CIRCUIT_BREAKER_MAX_HEARTBEAT_INTERVAL,
     CIRCUIT_BREAKER_MAX_PAUSE_DURATION,
     CIRCUIT_BREAKER_MIN_HEARTBEAT_INTERVAL,
     CIRCUIT_BREAKER_MIN_PAUSE_DURATION,
+    CIRCUIT_BREAKER_PAUSABLES,
     CIRCUIT_BREAKER_PAUSE_DURATION,
-    CSM_ADDRESS,
-    CSM_COMMITTEE_MS,
-    GATE_SEAL_COMMITTEE as CIRCUIT_BREAKER_COMMITTEE,
+    CIRCUIT_BREAKER_PAUSERS,
     RESEAL_MANAGER,
     VOTING,
     contracts,
@@ -50,9 +50,23 @@ def circuit_breaker_committee() -> Account:
     return accounts.at(CIRCUIT_BREAKER_COMMITTEE, force=True)
 
 
-@pytest.fixture(scope="module")
-def csm_committee() -> Account:
-    return accounts.at(CSM_COMMITTEE_MS, force=True)
+@pytest.fixture(params=CIRCUIT_BREAKER_PAUSERS)
+def pauser(request) -> Account:
+    return accounts.at(request.param, force=True)
+
+
+@pytest.fixture()
+def pausables(pauser):
+    return [
+        interface.IPausableUntilWithRoles(target)
+        for target, owner in CIRCUIT_BREAKER_PAUSABLES
+        if owner == pauser.address
+    ]
+
+
+@pytest.fixture()
+def other_pausers(pauser):
+    return [accounts.at(address, force=True) for address in CIRCUIT_BREAKER_PAUSERS if address != pauser.address]
 
 
 @pytest.fixture(scope="module")
@@ -74,73 +88,73 @@ def _submit_dg_proposal_via_voting(calls, description, voting_acct):
 # ============================================================================
 # Pause flow: events, state changes, auto-resume
 # ============================================================================
-def test_pause_flow(
-    circuit_breaker, circuit_breaker_committee, withdrawal_queue
-):
-    assert not withdrawal_queue.isPaused()
-    assert circuit_breaker.getPauser(withdrawal_queue.address) == circuit_breaker_committee.address
+def test_pause_flow(circuit_breaker, pauser, pausables):
+    remaining_pausables = set(circuit_breaker.getPausables())
+    assert circuit_breaker.getPausableCount(pauser.address) == len(pausables)
 
-    pre_count = circuit_breaker.getPausableCount(circuit_breaker_committee.address)
-    tx = circuit_breaker.pause(withdrawal_queue.address, {"from": circuit_breaker_committee})
+    for index, target in enumerate(pausables):
+        assert circuit_breaker.getPauser(target.address) == pauser.address
+        assert not target.isPaused()
 
-    assert circuit_breaker.getPauser(withdrawal_queue.address) == ZERO_ADDRESS
-    assert circuit_breaker.getPausableCount(circuit_breaker_committee.address) == pre_count - 1
-    assert withdrawal_queue.address not in circuit_breaker.getPausables()
+        tx = circuit_breaker.pause(target.address, {"from": pauser})
+        remaining_pausables.remove(target.address)
 
-    assert tx.events["PauserSet"]["pausable"] == withdrawal_queue.address
-    assert tx.events["PauserSet"]["previousPauser"] == circuit_breaker_committee.address
-    assert tx.events["PauserSet"]["newPauser"] == ZERO_ADDRESS
-    assert tx.events["PauseTriggered"]["pausable"] == withdrawal_queue.address
-    assert tx.events["PauseTriggered"]["pauser"] == circuit_breaker_committee.address
-    assert tx.events["PauseTriggered"]["pauseDuration"] == CIRCUIT_BREAKER_PAUSE_DURATION
+        assert target.isPaused()
+        assert target.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION
+        assert circuit_breaker.getPauser(target.address) == ZERO_ADDRESS
+        assert circuit_breaker.getPausableCount(pauser.address) == len(pausables) - index - 1
+        assert set(circuit_breaker.getPausables()) == remaining_pausables
 
-    assert withdrawal_queue.isPaused()
-    assert withdrawal_queue.getResumeSinceTimestamp() == tx.timestamp + CIRCUIT_BREAKER_PAUSE_DURATION
+        assert tx.events["PauserSet"]["pausable"] == target.address
+        assert tx.events["PauserSet"]["previousPauser"] == pauser.address
+        assert tx.events["PauserSet"]["newPauser"] == ZERO_ADDRESS
+        assert tx.events["PauseTriggered"]["pausable"] == target.address
+        assert tx.events["PauseTriggered"]["pauser"] == pauser.address
+        assert tx.events["PauseTriggered"]["pauseDuration"] == CIRCUIT_BREAKER_PAUSE_DURATION
 
 
-def test_pause_auto_resumes_after_pause_duration(
-    circuit_breaker, circuit_breaker_committee, withdrawal_queue
-):
-    circuit_breaker.pause(withdrawal_queue.address, {"from": circuit_breaker_committee})
-    assert withdrawal_queue.isPaused()
+def test_pause_auto_resumes_after_pause_duration(circuit_breaker, pauser, pausables):
+    for target in pausables:
+        circuit_breaker.pause(target.address, {"from": pauser})
+        assert target.isPaused()
 
     chain.sleep(CIRCUIT_BREAKER_PAUSE_DURATION + 1)
     chain.mine(1)
-    assert not withdrawal_queue.isPaused()
+    for target in pausables:
+        assert not target.isPaused()
+        assert circuit_breaker.getPauser(target.address) == ZERO_ADDRESS
 
 
 # ============================================================================
 # Heartbeat updates triggered by pause()
 # ============================================================================
-def test_pause_refreshes_heartbeat_when_pauser_has_more_pausables(
-    circuit_breaker, csm_committee
-):
-    assert circuit_breaker.getPausableCount(csm_committee.address) >= 2
+def test_pause_refreshes_heartbeat_when_pauser_has_more_pausables(circuit_breaker, pauser, pausables):
+    assert circuit_breaker.getPausableCount(pauser.address) == len(pausables)
+    assert len(pausables) >= 2
 
-    tx = circuit_breaker.pause(CSM_ADDRESS, {"from": csm_committee})
-    expected_expiry = tx.timestamp + CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
+    for target in pausables[1:]:
+        tx = circuit_breaker.pause(target.address, {"from": pauser})
+        expected_expiry = tx.timestamp + CIRCUIT_BREAKER_HEARTBEAT_INTERVAL
 
-    assert circuit_breaker.heartbeatExpiry(csm_committee.address) == expected_expiry
-    assert circuit_breaker.isPauserLive(csm_committee.address)
-    assert tx.events["HeartbeatUpdated"]["pauser"] == csm_committee.address
-    assert tx.events["HeartbeatUpdated"]["newHeartbeatExpiry"] == expected_expiry
+        assert circuit_breaker.heartbeatExpiry(pauser.address) == expected_expiry
+        assert circuit_breaker.isPauserLive(pauser.address)
+        assert tx.events["HeartbeatUpdated"]["pauser"] == pauser.address
+        assert tx.events["HeartbeatUpdated"]["newHeartbeatExpiry"] == expected_expiry
 
 
-def test_pause_zeroes_heartbeat_when_pausing_last_pausable(
-    circuit_breaker, agent, stranger, withdrawal_queue
-):
-    circuit_breaker.registerPauser(withdrawal_queue.address, stranger.address, {"from": agent})
-    assert circuit_breaker.getPausableCount(stranger.address) == 1
-    assert circuit_breaker.isPauserLive(stranger.address)
+def test_pause_zeroes_heartbeat_when_pausing_last_pausable(circuit_breaker, pauser, pausables):
+    for target in pausables[1:]:
+        circuit_breaker.pause(target.address, {"from": pauser})
+    assert circuit_breaker.getPausableCount(pauser.address) == 1
 
-    assert circuit_breaker.pause(
-        withdrawal_queue.address, {"from": stranger}
-    ).events["HeartbeatUpdated"]["newHeartbeatExpiry"] == 0
-    assert circuit_breaker.heartbeatExpiry(stranger.address) == 0
-    assert not circuit_breaker.isPauserLive(stranger.address)
+    tx = circuit_breaker.pause(pausables[0].address, {"from": pauser})
+    assert tx.events["HeartbeatUpdated"]["pauser"] == pauser.address
+    assert tx.events["HeartbeatUpdated"]["newHeartbeatExpiry"] == 0
+    assert circuit_breaker.heartbeatExpiry(pauser.address) == 0
+    assert not circuit_breaker.isPauserLive(pauser.address)
 
     with reverts(encode_error("SenderNotPauser()")):
-        circuit_breaker.heartbeat({"from": stranger})
+        circuit_breaker.heartbeat({"from": pauser})
 
 
 # ============================================================================
@@ -167,21 +181,18 @@ def test_pause_reverts_when_pausable_already_paused(
         circuit_breaker.pause(withdrawal_queue.address, {"from": circuit_breaker_committee})
 
 
-def test_pause_reverts_when_sender_not_pauser(circuit_breaker, stranger, withdrawal_queue):
-    with reverts(encode_error("SenderNotPauser()")):
-        circuit_breaker.pause(withdrawal_queue.address, {"from": stranger})
+def test_pause_reverts_when_sender_not_pauser(circuit_breaker, pausables, stranger):
+    for target in pausables:
+        with reverts(encode_error("SenderNotPauser()")):
+            circuit_breaker.pause(target.address, {"from": stranger})
 
 
-def test_pauser_isolation(
-    circuit_breaker, circuit_breaker_committee, csm_committee, withdrawal_queue
-):
-    # The circuit breaker committee can pause WithdrawalQueue but not CSModule.
-    with reverts(encode_error("SenderNotPauser()")):
-        circuit_breaker.pause(CSM_ADDRESS, {"from": circuit_breaker_committee})
-
-    # The CSM committee can pause CSModule but not WithdrawalQueue.
-    with reverts(encode_error("SenderNotPauser()")):
-        circuit_breaker.pause(withdrawal_queue.address, {"from": csm_committee})
+def test_pauser_isolation(circuit_breaker, pauser, pausables, other_pausers):
+    for target in pausables:
+        assert circuit_breaker.getPauser(target.address) == pauser.address
+        for sender in other_pausers:
+            with reverts(encode_error("SenderNotPauser()")):
+                circuit_breaker.pause(target.address, {"from": sender})
 
 
 # ============================================================================
