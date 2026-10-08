@@ -17,6 +17,7 @@ from utils.test.event_validators.dual_governance import validate_dual_governance
 from utils.test.event_validators.easy_track import EVMScriptFactoryAdded, validate_evmscript_factory_added_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.staking_router import StakingModuleItem, validate_staking_module_update_event
+from utils.test.event_validators.time_constraints import validate_dg_time_constraints_executed_within_day_time_event
 from utils.test.tx_tracing_helpers import (
     count_vote_items_by_events,
     display_dg_events,
@@ -42,6 +43,7 @@ AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
 # Vote targets
 STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
@@ -65,7 +67,9 @@ UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x5b0De22E65C068430f6e769754D51133
 
 # Expected deployment parameters are deliberately independent from the vote script.
 CSM0X02_NAME = "Community Staking 0x02"
-CSM0X02_TARGET_SHARE_BP = 200
+CSM0X02_TARGET_SHARE_BP = 1
+CSM0X02_PRE_VOTE_TOP_UP_QUEUE_LIMIT = 16
+CSM0X02_TOP_UP_QUEUE_LIMIT = 32
 CSM0X02_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 240
 CSM0X02_MODULE_FEE_BP = 200
 CSM0X02_TREASURY_FEE_BP = 800
@@ -102,9 +106,11 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 4
-EXPECTED_DG_EVENTS_FROM_AGENT = 15
-EXPECTED_DG_EVENTS_COUNT = 15
-IPFS_DESCRIPTION_HASH = "bafkreihtbwwbrymbe4taczpjuwo6d5jt7oynrcn4rlntkxchkwk67qqdqq"
+EXPECTED_DG_EVENTS_FROM_AGENT = 18
+EXPECTED_DG_EVENTS_COUNT = 19
+TIME_WINDOW_FROM = 14 * 3600
+TIME_WINDOW_TO = 23 * 3600
+IPFS_DESCRIPTION_HASH = "bafkreiaqqrw52ufv6jcppgeos65v3a7ioxns7pvun6g6fy4pefjzynmhmi"
 DG_PROPOSAL_METADATA = (
     "Activate CSM 0x02, set CMv1 stake share limit to 0, and set Consensys target limits to 0 in CMv1 and CMv2"
 )
@@ -361,6 +367,10 @@ def test_vote(
         assert not twg.hasRole(twg.ADD_FULL_WITHDRAWAL_REQUEST_ROLE(), CSM0X02_EJECTOR)
         assert csm.isPaused()
         assert not csm.hasRole(csm.RESUME_ROLE(), AGENT)
+        assert csm.getTopUpQueue()["enabled"]
+        assert csm.getTopUpQueue()["limit"] == CSM0X02_PRE_VOTE_TOP_UP_QUEUE_LIMIT
+        assert csm.getRoleMemberCount(csm.MANAGE_TOP_UP_QUEUE_ROLE()) == 0
+        csm_nonce_before = csm.getNonce()
         frame_config_before = hash_consensus.getFrameConfig()
         assert frame_config_before["initialEpoch"] == CSM0X02_ORACLE_PRE_VOTE_INITIAL_EPOCH
         assert frame_config_before["epochsPerFrame"] == CSM0X02_ORACLE_EPOCHS_PER_FRAME
@@ -376,13 +386,20 @@ def test_vote(
         assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
         assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
 
-        # 1.1. Register CSM 0x02 and its independent router parameters.
-        _validate_module_added_event(dg_events[0])
-        # 1.2-1.4. Grant Burner, TWG and temporary module resume permissions.
+        # 1.1. Check execution time window (14:00-23:00 UTC).
+        validate_dg_time_constraints_executed_within_day_time_event(
+            dg_events[0],
+            TIME_WINDOW_FROM,
+            TIME_WINDOW_TO,
+            emitted_by=DUAL_GOVERNANCE_TIME_CONSTRAINTS,
+        )
+        # 1.2. Register CSM 0x02 and its independent router parameters.
+        _validate_module_added_event(dg_events[1])
+        # 1.3-1.5. Grant Burner, TWG and temporary module resume permissions.
         for index, role_name, account, emitter in (
-            (1, "REQUEST_BURN_MY_STETH_ROLE", CSM0X02_ACCOUNTING, BURNER),
-            (2, "ADD_FULL_WITHDRAWAL_REQUEST_ROLE", CSM0X02_EJECTOR, TRIGGERABLE_WITHDRAWALS_GATEWAY),
-            (3, "RESUME_ROLE", AGENT, CSM0X02),
+            (2, "REQUEST_BURN_MY_STETH_ROLE", CSM0X02_ACCOUNTING, BURNER),
+            (3, "ADD_FULL_WITHDRAWAL_REQUEST_ROLE", CSM0X02_EJECTOR, TRIGGERABLE_WITHDRAWALS_GATEWAY),
+            (4, "RESUME_ROLE", AGENT, CSM0X02),
         ):
             validate_grant_role_event(
                 dg_events[index],
@@ -392,25 +409,25 @@ def test_vote(
                 emitted_by=emitter,
                 event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
             )
-        # 1.5-1.6. Resume the module and remove the temporary permission.
+        # 1.6-1.7. Resume the module and remove the temporary permission.
         validate_events_chain(
-            [event.name for event in dg_events[4]],
+            [event.name for event in dg_events[5]],
             ["LogScriptCall", "Resumed", "ScriptResult", "Executed"],
         )
-        _event(dg_events[4], "Resumed", CSM0X02)
+        _event(dg_events[5], "Resumed", CSM0X02)
         validate_revoke_role_event(
-            dg_events[5], web3.keccak(text="RESUME_ROLE").hex(), AGENT, sender=AGENT, emitted_by=CSM0X02
+            dg_events[6], web3.keccak(text="RESUME_ROLE").hex(), AGENT, sender=AGENT, emitted_by=CSM0X02
         )
-        # 1.7. Set the initial oracle epoch without changing the 28-day frame.
+        # 1.8. Set the initial oracle epoch without changing the 28-day frame.
         validate_events_chain(
-            [event.name for event in dg_events[6]],
+            [event.name for event in dg_events[7]],
             ["LogScriptCall", "FrameConfigSet", "ScriptResult", "Executed"],
         )
-        frame = _event(dg_events[6], "FrameConfigSet", CSM0X02_HASH_CONSENSUS)
+        frame = _event(dg_events[7], "FrameConfigSet", CSM0X02_HASH_CONSENSUS)
         assert frame["newInitialEpoch"] == CSM0X02_ORACLE_INITIAL_EPOCH
         assert frame["newEpochsPerFrame"] == CSM0X02_ORACLE_EPOCHS_PER_FRAME
-        # 1.8-1.12. Register each pausable with the CSM committee.
-        for index, target in enumerate(circuit_breaker_targets, start=7):
+        # 1.9-1.13. Register each pausable with the CSM committee.
+        for index, target in enumerate(circuit_breaker_targets, start=8):
             validate_events_chain(
                 [event.name for event in dg_events[index]],
                 ["LogScriptCall", "PauserSet", "HeartbeatUpdated", "ScriptResult", "Executed"],
@@ -419,9 +436,9 @@ def test_vote(
             _event(dg_events[index], "PauserSet", CIRCUIT_BREAKER)
             heartbeat = _event(dg_events[index], "HeartbeatUpdated", CIRCUIT_BREAKER)
             assert heartbeat["newHeartbeatExpiry"] == dg_tx.timestamp + circuit_breaker.heartbeatInterval()
-        # 1.13. Set only the CMv1 share limit to zero.
+        # 1.14. Set only the CMv1 share limit to zero.
         validate_staking_module_update_event(
-            dg_events[12],
+            dg_events[13],
             StakingModuleItem(
                 CURATED_V1_MODULE_ID,
                 CURATED_V1_ADDRESS,
@@ -439,24 +456,48 @@ def test_vote(
             "StakingModuleMaxDepositsPerBlockSet",
             "StakingModuleMinDepositBlockDistanceSet",
         ):
-            event = _event(dg_events[12], event_name, STAKING_ROUTER)
+            event = _event(dg_events[13], event_name, STAKING_ROUTER)
             assert event["stakingModuleId"] == CURATED_V1_MODULE_ID
             assert event["setBy"] == AGENT
-        assert dg_events[12]["StakingModuleMaxDepositsPerBlockSet"]["maxDepositsPerBlock"] == (
+        assert dg_events[13]["StakingModuleMaxDepositsPerBlockSet"]["maxDepositsPerBlock"] == (
             CURATED_V1_MAX_DEPOSITS_PER_BLOCK
         )
-        assert dg_events[12]["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == (
+        assert dg_events[13]["StakingModuleMinDepositBlockDistanceSet"]["minDepositBlockDistance"] == (
             CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE
         )
-        # 1.14-1.15. Stop deposits for Consensys in both curated modules.
+        # 1.15-1.16. Stop deposits for Consensys in both curated modules.
         for index, module, operator_id, summary_before, nonce_before in zip(
-            (13, 14),
+            (14, 15),
             (curated_v1, curated_v2),
             (CONSENSYS_V1_NODE_OPERATOR_ID, CONSENSYS_V2_NODE_OPERATOR_ID),
             target_summaries_before,
             target_nonces_before,
         ):
             _validate_target_limit_event(dg_events[index], module, operator_id, summary_before, nonce_before)
+
+        # 1.17-1.19. Increase the queue limit with temporary Agent permission,
+        # then revoke it without granting the role to the CSM committee.
+        validate_grant_role_event(
+            dg_events[16],
+            web3.keccak(text="MANAGE_TOP_UP_QUEUE_ROLE").hex(),
+            AGENT,
+            sender=AGENT,
+            emitted_by=CSM0X02,
+            event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
+        )
+        validate_events_chain(
+            [event.name for event in dg_events[17]],
+            ["LogScriptCall", "TopUpQueueLimitSet", "NonceChanged", "ScriptResult", "Executed"],
+        )
+        assert _event(dg_events[17], "TopUpQueueLimitSet", CSM0X02)["limit"] == CSM0X02_TOP_UP_QUEUE_LIMIT
+        assert _event(dg_events[17], "NonceChanged", CSM0X02)["nonce"] == csm_nonce_before + 1
+        validate_revoke_role_event(
+            dg_events[18],
+            web3.keccak(text="MANAGE_TOP_UP_QUEUE_ROLE").hex(),
+            AGENT,
+            sender=AGENT,
+            emitted_by=CSM0X02,
+        )
 
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
@@ -496,6 +537,11 @@ def test_vote(
     assert twg.hasRole(twg.ADD_FULL_WITHDRAWAL_REQUEST_ROLE(), CSM0X02_EJECTOR)
     assert not csm.isPaused()
     assert not csm.hasRole(csm.RESUME_ROLE(), AGENT)
+    assert csm.getTopUpQueue()["enabled"]
+    assert csm.getTopUpQueue()["limit"] == CSM0X02_TOP_UP_QUEUE_LIMIT
+    assert csm.getRoleMemberCount(csm.MANAGE_TOP_UP_QUEUE_ROLE()) == 0
+    assert not csm.hasRole(csm.MANAGE_TOP_UP_QUEUE_ROLE(), CSM_COMMITTEE)
+    assert not csm.hasRole(csm.MANAGE_TOP_UP_QUEUE_ROLE(), AGENT)
     frame_config_after = hash_consensus.getFrameConfig()
     assert frame_config_after["initialEpoch"] == CSM0X02_ORACLE_INITIAL_EPOCH
     assert frame_config_after["epochsPerFrame"] == CSM0X02_ORACLE_EPOCHS_PER_FRAME

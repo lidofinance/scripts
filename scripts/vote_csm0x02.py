@@ -2,21 +2,25 @@
 Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 
 1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits
-1.1. Add CSM 0x02 to the Staking Router
-1.2. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
-1.3. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE on Triggerable Withdrawals Gateway to CSM 0x02 Ejector
-1.4. Grant RESUME_ROLE on CSM 0x02 to Aragon Agent
-1.5. Resume CSM 0x02
-1.6. Revoke RESUME_ROLE on CSM 0x02 from Aragon Agent
-1.7. Set the initial epoch on CSM 0x02 HashConsensus
-1.8. Register CSM 0x02 on CircuitBreaker
-1.9. Register CSM 0x02 Accounting on CircuitBreaker
-1.10. Register CSM 0x02 FeeOracle on CircuitBreaker
-1.11. Register CSM 0x02 Verifier on CircuitBreaker
-1.12. Register CSM 0x02 Ejector on CircuitBreaker
-1.13. Set the CMv1 stake share limit to 0
-1.14. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
-1.15. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
+1.1. Check the DG execution time window (14:00-23:00 UTC)
+1.2. Add CSM 0x02 to the Staking Router
+1.3. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
+1.4. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE on Triggerable Withdrawals Gateway to CSM 0x02 Ejector
+1.5. Grant RESUME_ROLE on CSM 0x02 to Aragon Agent
+1.6. Resume CSM 0x02
+1.7. Revoke RESUME_ROLE on CSM 0x02 from Aragon Agent
+1.8. Set the initial epoch on CSM 0x02 HashConsensus
+1.9. Register CSM 0x02 on CircuitBreaker
+1.10. Register CSM 0x02 Accounting on CircuitBreaker
+1.11. Register CSM 0x02 FeeOracle on CircuitBreaker
+1.12. Register CSM 0x02 Verifier on CircuitBreaker
+1.13. Register CSM 0x02 Ejector on CircuitBreaker
+1.14. Set the CMv1 stake share limit to 0
+1.15. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
+1.16. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
+1.17. Grant MANAGE_TOP_UP_QUEUE_ROLE on CSM 0x02 to Aragon Agent
+1.18. Increase the CSM 0x02 top-up queue limit to 32
+1.19. Revoke MANAGE_TOP_UP_QUEUE_ROLE on CSM 0x02 from Aragon Agent
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
 4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
@@ -43,6 +47,7 @@ BURNER = "0xE76c52750019b80B43E36DF30bf4060EB73F573a"
 TRIGGERABLE_WITHDRAWALS_GATEWAY = "0xDC00116a0D3E064427dA2600449cfD2566B3037B"
 CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 CSM_COMMITTEE = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
+DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
 TODO_ADDRESS = "TODO"
 
@@ -73,11 +78,19 @@ DEPLOYMENT_ADDRESSES = {
 
 
 # ============================== Parameters ==================================
+# Execute only after the current AccountingOracle report is fully processed,
+# including all extra-data chunks, and before the next reference slot.
+# This daily window only checks time; report completion must be checked before enactment.
+TIME_WINDOW_FROM = 14 * 3600
+TIME_WINDOW_TO = 23 * 3600
+
 CSM0X02_NAME = "Community Staking 0x02"
 
-# Initial share: 2%.
-CSM0X02_TARGET_SHARE_BP = 200
-# Match the current CSM 0x01 priority-exit multiplier: 1080 / 900 = 1.2.
+# Initial bootstrap share: 0.01% (1 basis point).
+CSM0X02_TARGET_SHARE_BP = 1
+CSM0X02_TOP_UP_QUEUE_LIMIT = 32
+# Keep the planned 2.4% priority-exit threshold unchanged during bootstrap.
+# It was set using the CSM 0x01 multiplier (1080 / 900 = 1.2) on the planned 2% share.
 # https://etherscan.io/tx/0x2d418e0fc5f9276ad33cf4e525285f4d480f2beb9b71ea1fe3cc5b4ca4d7876f#eventlog
 CSM0X02_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 240
 # 2% NO / 8% DAO with the deployment's defaultRewardShareBP = 10000.
@@ -114,7 +127,7 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = """
-1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; and set the Consensys operator target limits to 0 in both curated modules (soft mode). Items 1.1-1.15.
+1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; set the Consensys operator target limits to 0 in both curated modules (soft mode); and increase the CSM 0x02 top-up queue limit to 32. Restrict DG execution to 14:00-23:00 UTC; verify completion of the current AccountingOracle report, including all extra data, before enactment. Items 1.1-1.19.
 2. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
 """
 
@@ -142,8 +155,13 @@ def get_dg_items() -> List[Tuple[str, str]]:
     csm = interface.CSModule(CSM0X02)
     hash_consensus = interface.HashConsensus(CSM0X02_HASH_CONSENSUS)
     circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
+    time_constraints = interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
 
     return [
+        (
+            time_constraints.address,
+            time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(TIME_WINDOW_FROM, TIME_WINDOW_TO),
+        ),
         agent_forward(
             [
                 (
@@ -282,6 +300,25 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     staking_router.updateTargetValidatorsLimits.encode_input(
                         CURATED_V2_MODULE_ID, CONSENSYS_V2_NODE_OPERATOR_ID, NO_TARGET_LIMIT_SOFT_MODE, 0
                     ),
+                )
+            ]
+        ),
+        agent_forward(
+            [
+                encode_oz_grant_role(
+                    contract=csm,
+                    role_name="MANAGE_TOP_UP_QUEUE_ROLE",
+                    grant_to=ARAGON_AGENT,
+                )
+            ]
+        ),
+        agent_forward([(csm.address, csm.setTopUpQueueLimit.encode_input(CSM0X02_TOP_UP_QUEUE_LIMIT))]),
+        agent_forward(
+            [
+                encode_oz_revoke_role(
+                    contract=csm,
+                    role_name="MANAGE_TOP_UP_QUEUE_ROLE",
+                    revoke_from=ARAGON_AGENT,
                 )
             ]
         ),
