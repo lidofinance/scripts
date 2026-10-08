@@ -108,7 +108,7 @@ CONSENSYS_V1_NODE_OPERATOR_ID = 21
 CONSENSYS_V2_NODE_OPERATOR_ID = 6
 CURATED_V1_ADDRESS = "0x55032650b14df07b85bF18A3a3eC8E0Af2e028d5"
 CURATED_V2_ADDRESS = "0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1"
-CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 10_000
+CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 0
 CURATED_V1_MODULE_FEE_BP = 350
 CURATED_V1_TREASURY_FEE_BP = 650
 CURATED_V1_MAX_DEPOSITS_PER_BLOCK = 150
@@ -131,9 +131,10 @@ EXPECTED_DG_EVENTS_FROM_AGENT = 18
 EXPECTED_DG_EVENTS_COUNT = 19
 TIME_WINDOW_FROM = 14 * 3600
 TIME_WINDOW_TO = 23 * 3600
-IPFS_DESCRIPTION_HASH = "bafkreihl2jqykyy4rmq7t7plvqn5wt6tdg357yq6hwsspx5jbgiteu277e"
+IPFS_DESCRIPTION_HASH = "bafkreify2cuzb2dcvlz4ndn445o2y4cyc4tktgvx6tcflpnihcurgd3e7a"
 DG_PROPOSAL_METADATA = (
-    "Activate CSM 0x02, set CMv1 stake share limit to 0, and set Consensys target limits to 0 in CMv1 and CMv2"
+    "Activate CSM 0x02, set CMv1 stake share limit and priority exit share threshold to 0, "
+    "and set Consensys target limits to 0 in CMv1 and CMv2"
 )
 
 
@@ -494,7 +495,7 @@ def test_vote(
             _event(dg_events[index], "PauserSet", CIRCUIT_BREAKER)
             heartbeat = _event(dg_events[index], "HeartbeatUpdated", CIRCUIT_BREAKER)
             assert heartbeat["newHeartbeatExpiry"] == dg_tx.timestamp + circuit_breaker.heartbeatInterval()
-        # 1.14. Set only the CMv1 share limit to zero.
+        # 1.14. Set the CMv1 share limit and priority-exit threshold to zero.
         validate_staking_module_update_event(
             dg_events[13],
             StakingModuleItem(
@@ -576,7 +577,11 @@ def test_vote(
     assert curated_v1_deposits_after["maxDepositsPerBlock"] == CURATED_V1_MAX_DEPOSITS_PER_BLOCK
     assert curated_v1_deposits_after["minDepositBlockDistance"] == CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE
     if curated_v1_config_before is not None:
-        assert curated_v1_config_after == {**curated_v1_config_before, "stakeShareLimit": 0}
+        assert curated_v1_config_after == {
+            **curated_v1_config_before,
+            "stakeShareLimit": 0,
+            "priorityExitShareThreshold": 0,
+        }
         assert curated_v1_deposits_after["maxDepositsPerBlock"] == curated_v1_deposits_before["maxDepositsPerBlock"]
         assert (
             curated_v1_deposits_after["minDepositBlockDistance"]

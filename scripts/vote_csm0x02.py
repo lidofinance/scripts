@@ -1,7 +1,8 @@
 """
 Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 
-1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits
+1. Submit a Dual Governance proposal to activate CSM 0x02, update curated module limits,
+   and set target limits for Consensys Node Operators
 1.1. Check the DG execution time window (14:00-23:00 UTC)
 1.2. Add CSM 0x02 to the Staking Router
 1.3. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
@@ -15,7 +16,7 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 1.11. Register CSM 0x02 FeeOracle on CircuitBreaker
 1.12. Register CSM 0x02 Verifier on CircuitBreaker
 1.13. Register CSM 0x02 Ejector on CircuitBreaker
-1.14. Set the CMv1 stake share limit to 0
+1.14. Set the CMv1 stake share limit and priority exit share threshold to 0
 1.15. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
 1.16. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
 1.17. Grant MANAGE_TOP_UP_QUEUE_ROLE on CSM 0x02 to Aragon Agent
@@ -116,9 +117,10 @@ NO_TARGET_LIMIT_SOFT_MODE = 1
 
 # Period 2: stop new deposits into CMv1 while consolidations continue.
 # https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/45
-# Keep the other current mainnet CMv1 router parameters unchanged.
+# Zero the priority-exit threshold to prioritize exits from CMv1.
+# Keep the current mainnet CMv1 fees and deposit limits unchanged.
 CURATED_V1_TARGET_SHARE_BP = 0
-CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 10_000
+CURATED_V1_PRIORITY_EXIT_SHARE_THRESHOLD_BP = 0
 CURATED_V1_MODULE_FEE_BP = 350
 CURATED_V1_TREASURY_FEE_BP = 650
 CURATED_V1_MAX_DEPOSITS_PER_BLOCK = 150
@@ -128,20 +130,28 @@ CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 # Its full 6,300-epoch (28-day) observation period starts on 2026-11-09 at 13:36:23 UTC,
 # after the expected 2026-10-24 DG enactment for a vote launched on 2026-10-15.
 # This places reports midway between CSM 0x01 windows and about a week from CMv2 windows.
+# So the resulting report schedule for staking modules is:
+# Week   |        1 |        2 |        3 |        4 |        5 |        6 |        7 |
+# -------+----------+----------+----------+----------+----------+----------+----------+
+# Module | 0x01 CSM |   CMv2   | 0x02 CSM |   CMv2   | 0x01 CSM |   CMv2   | 0x02 CSM |
 CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = """
-1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; set the Consensys operator target limits to 0 in both curated modules (soft mode); and increase the CSM 0x02 top-up queue limit to 32. Restrict DG execution to 14:00-23:00 UTC; verify completion of the current AccountingOracle report, including all extra data, before enactment. Items 1.1-1.19.
+1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit and priority exit share threshold to 0 to transition to Period 2 of the deposits and consolidations plan and prioritize exits from CMv1; set the Consensys operator target limits to 0 in both curated modules (soft mode); and increase the CSM 0x02 top-up queue limit to 32. Restrict DG execution to 14:00-23:00 UTC; verify completion of the current AccountingOracle report, including all extra data, before enactment. Items 1.1-1.19.
 2. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
 3. **Add the LOL LDO Easy Track top-up factory** for the contingent CEX liquidity mandate. [Mandate and deployment details](https://research.lido.fi/t/authorize-a-contingent-ldo-cex-liquidity-market-making-mandate/11839/39). Item 5.
 """
 
 DG_PROPOSAL_METADATA = (
-    "Activate CSM 0x02, set CMv1 stake share limit to 0, and set Consensys target limits to 0 in CMv1 and CMv2"
+    "Activate CSM 0x02, set CMv1 stake share limit and priority exit share threshold to 0, "
+    "and set Consensys target limits to 0 in CMv1 and CMv2"
 )
-DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to activate CSM 0x02 and update curated module limits"
+DG_SUBMISSION_DESCRIPTION = (
+    "1. Submit a Dual Governance proposal to activate CSM 0x02, update curated module limits, "
+    "and set target limits for Consensys Node Operators"
+)
 
 
 def validate_configuration() -> None:
