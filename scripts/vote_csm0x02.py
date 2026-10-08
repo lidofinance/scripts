@@ -24,6 +24,7 @@ Mainnet vote to activate the CSM deployment for 0x02 withdrawal credentials.
 2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
 3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
 4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
+5. Add the LOL LDO TopUpAllowedRecipients factory to Easy Track
 """
 
 from typing import Dict, List, Tuple
@@ -31,6 +32,7 @@ from typing import Dict, List, Tuple
 from brownie import interface
 
 from utils.agent import agent_forward
+from utils.allowed_recipients_registry import create_top_up_allowed_recipient_permission
 from utils.config import get_deployer_account, get_is_live, get_priority_fee
 from utils.dual_governance import submit_proposals
 from utils.easy_track import add_evmscript_factory, create_permissions
@@ -61,6 +63,10 @@ CSM0X02_EJECTOR = "0x2EE500885870b020e84E86a09A5d26D1EEec3E5E"
 EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY = "0x8D74020d8EACCdFf0366dAAFfb96e6c98CDFc112"
 EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY = "0x0B676AdEABcf4A696187cfAb90290Aa3ac51aFA2"
 EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x5b0De22E65C068430f6e769754D51133775408cc"
+
+# https://research.lido.fi/t/authorize-a-contingent-ldo-cex-liquidity-market-making-mandate/11839/39
+LOL_LDO_REGISTRY = "0xf1e9c3bD021ED1419Dd3b37f9b6E49Eb662877Fe"
+LOL_LDO_TOP_UP_FACTORY = "0xa3e98cb26F1277B623Edb95cee3bd33269b305F7"
 
 DEPLOYMENT_ADDRESSES = {
     "CSM0X02": CSM0X02,
@@ -129,6 +135,7 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 IPFS_DESCRIPTION = """
 1. **Submit a Dual Governance proposal to activate the CSM deployment for 0x02 withdrawal credentials on Ethereum mainnet**, including its Staking Router registration, protocol permissions, oracle schedule, and CircuitBreaker configuration; set the CMv1 stake share limit to 0 to transition to Period 2 of the deposits and consolidations plan; set the Consensys operator target limits to 0 in both curated modules (soft mode); and increase the CSM 0x02 top-up queue limit to 32. Restrict DG execution to 14:00-23:00 UTC; verify completion of the current AccountingOracle report, including all extra data, before enactment. Items 1.1-1.19.
 2. **Add the CSM 0x02 Easy Track factories** for reporting slashed withdrawals, settling general delayed penalties, and updating the module share limits. Items 2-4.
+3. **Add the LOL LDO Easy Track top-up factory** for the contingent CEX liquidity mandate. [Mandate and deployment details](https://research.lido.fi/t/authorize-a-contingent-ldo-cex-liquidity-market-making-mandate/11839/39). Item 5.
 """
 
 DG_PROPOSAL_METADATA = (
@@ -363,6 +370,16 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
                     create_permissions(update_staking_module_share_limits_factory, "validateParams")
                     + create_permissions(staking_router, "updateModuleShares")[2:]
                 ),
+            ),
+        ),
+        (
+            "5. Add LOL LDO TopUpAllowedRecipients EVM script factory "
+            "0xa3e98cb26F1277B623Edb95cee3bd33269b305F7 with newImmediatePayment permission on Aragon Finance "
+            "0xB9E5CBB9CA5b0d659238807E84D0176930753d86 and updateSpentAmount permission on LOL LDO "
+            "AllowedRecipientsRegistry 0xf1e9c3bD021ED1419Dd3b37f9b6E49Eb662877Fe to Easy Track",
+            add_evmscript_factory(
+                factory=LOL_LDO_TOP_UP_FACTORY,
+                permissions=create_top_up_allowed_recipient_permission(registry_address=LOL_LDO_REGISTRY),
             ),
         ),
     )
