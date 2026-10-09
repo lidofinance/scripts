@@ -1,7 +1,7 @@
 import pytest
 from web3 import Web3
 import eth_abi
-from brownie import web3
+from brownie import reverts, web3
 
 from utils.staking_module import calc_module_reward_shares
 from utils.test.extra_data import (
@@ -11,7 +11,8 @@ from utils.test.helpers import shares_balance, ETH
 from utils.test.oracle_report_helpers import (
     oracle_report,
 )
-from utils.config import contracts, STAKING_ROUTER
+from utils.config import contracts, CURATED_STAKING_MODULE_ID, STAKING_ROUTER
+from utils.evm_script import encode_error
 from utils.test.node_operators_helpers import distribute_reward, node_operator_gindex
 from utils.test.simple_dvt_helpers import fill_simple_dvt_ops_keys
 from utils.test.staking_router_helpers import set_staking_module_status, StakingModuleStatus
@@ -360,6 +361,23 @@ def module_happy_path(staking_module, extra_data_service, impersonated_agent, st
     assert no3_deposited_keys_before != no3_deposited_keys_after
 
 
+def test_node_operator_registry_deposits_disabled():
+    staking_router = contracts.staking_router
+    module_id = CURATED_STAKING_MODULE_ID
+
+    assert staking_router.getStakingModule(module_id)["stakeShareLimit"] == 0
+    assert staking_router.getStakingModuleStatus(module_id) == StakingModuleStatus.Active
+    assert contracts.node_operators_registry.getStakingModuleSummary()["depositableValidatorsCount"] > 0
+
+    # There is enough ETH and the module has keys, but its zero share forbids new deposits.
+    fill_deposit_buffer(1)
+    assert staking_router.getStakingModuleMaxDepositsCount(module_id, contracts.lido.getDepositableEther()) == 0
+
+    with reverts(encode_error("ZeroDeposits()")):
+        staking_router.deposit(module_id, "0x", {"from": contracts.deposit_security_module})
+
+
+@pytest.mark.skip(reason="CMv1 has a zero stake share after the CSM 0x02 vote; this happy path requires new deposits")
 def test_node_operator_registry(impersonated_agent, stranger, helpers):
     nor = contracts.node_operators_registry
     nor.module_id = 1

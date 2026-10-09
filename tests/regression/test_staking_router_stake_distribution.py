@@ -187,7 +187,7 @@ def test_stake_distribution(stranger):
     """
     Test stake distribution among the staking modules
     1. checks that result of `getDepositAllocations` matches the local allocation calculations
-    2. checks that deposits to modules can be made according to the calculated allocation
+    2. checks actual deposits and ETH consumption against the keys returned by each module
     """
     assure_depositable_keys(stranger)
 
@@ -204,19 +204,34 @@ def test_stake_distribution(stranger):
     # check that local allocation matches the contract allocation
     assert allocation_from_contract == (total_allocated, allocated, new_allocations)
 
-    # perform deposits to the modules; the router computes the deposits count itself:
-    # min(maxDepositsPerBlock, module allocation / 32 ETH)
+    # A module may return fewer keys than the router requests. Recompute the request
+    # before each deposit because earlier deposits have changed the available buffer.
+    expected_deposits_by_module = {module_id: 0 for module_id in modules}
+    deposit_size = contracts.staking_router.INITIAL_DEPOSIT_SIZE()
     for module in modules.values():
-        expected_deposits = min(module.maxDepositsPerBlock, module.allocated_keys)
-        if expected_deposits == 0:
+        requested_deposits = min(
+            module.maxDepositsPerBlock,
+            contracts.staking_router.getStakingModuleMaxDepositsCount(module.id, contracts.lido.getDepositableEther()),
+        )
+        if requested_deposits == 0:
             continue
 
-        (_, deposited_before, _) = contracts.staking_router.getStakingModuleSummary(module.id)
         chain.mine(module.minDepositBlockDistance)
+        public_keys, _ = interface.BaseModule(module.address).obtainDepositData.call(
+            requested_deposits, "0x", {"from": contracts.staking_router}
+        )
+        assert len(public_keys) % 48 == 0
+        expected_deposits = len(public_keys) // 48
+        assert expected_deposits <= requested_deposits
+        expected_deposits_by_module[module.id] = expected_deposits
+
+        (_, deposited_before, _) = contracts.staking_router.getStakingModuleSummary(module.id)
+        buffered_ether_before = contracts.lido.getBufferedEther()
         contracts.staking_router.deposit(module.id, "0x", {"from": contracts.deposit_security_module})
         (_, deposited_after, _) = contracts.staking_router.getStakingModuleSummary(module.id)
 
         assert deposited_after - deposited_before == expected_deposits
+        assert buffered_ether_before - contracts.lido.getBufferedEther() == expected_deposits * deposit_size
 
     # check that the new active keys in the modules match the expected values
     module_digests_after_deposit = contracts.staking_router.getAllStakingModuleDigests()
@@ -229,9 +244,7 @@ def test_stake_distribution(stranger):
 
         active_keys_after_deposit = deposited_keys - exited_keys
         expected = expected_modules_state[id]
-        assert active_keys_after_deposit == expected.active_keys + min(
-            expected.maxDepositsPerBlock, expected.allocated_keys
-        )
+        assert active_keys_after_deposit == expected.active_keys + expected_deposits_by_module[id]
 
 
 def test_target_share_distribution(stranger):

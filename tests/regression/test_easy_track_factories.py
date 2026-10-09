@@ -46,11 +46,35 @@ NODE_OPERATORS = [
 ]
 
 CSM_FACTORY_NAME = "CSM"
+CSM0X02_FACTORY_NAME = "CSM0x02"
 CM_FACTORY_NAME = "CM"
 CSM_MERKLE_GATE_ADDRESSES = [
     CS_VETTED_GATE_ADDRESS,
     CS_IDENTIFIED_DVT_CLUSTER_GATE_ADDRESS,
 ]
+
+
+@dataclass(frozen=True)
+class ModuleParams:
+    module_address: str
+    module_id: int
+    gate_address: str | None = None
+
+
+CSM_PARAMS = ModuleParams(
+    module_address=CSM_ADDRESS,
+    module_id=CS_MODULE_ID,
+    gate_address=CS_PERMISSIONLESS_GATE_ADDRESS,
+)
+CSM0X02_PARAMS = ModuleParams(
+    module_address=CSM0X02_ADDRESS,
+    module_id=CSM0X02_MODULE_ID,
+    gate_address=CSM0X02_PERMISSIONLESS_GATE_ADDRESS,
+)
+CM_PARAMS = ModuleParams(
+    module_address=CURATED_V2_STAKING_MODULE_ADDRESS,
+    module_id=CURATED_V2_STAKING_MODULE_ID,
+)
 
 
 def add_node_operators(operators, stranger):
@@ -851,14 +875,14 @@ class TestReportWithdrawalsForSlashedValidators:
                     return node_operator_id, key_index
         return None
 
-    def _get_csm_unwithdrawn_unslashed_validator(self):
-        module = interface.BaseModule(CSM_ADDRESS)
+    def _get_csm_unwithdrawn_unslashed_validator(self, module_address, gate_address):
+        module = interface.CSModule(module_address)
         validator = self._find_unwithdrawn_unslashed_validator(module)
         if validator is None:
             csm_add_node_operator(
-                contracts.csm,
-                contracts.cs_permissionless_gate,
-                contracts.cs_accounting,
+                module,
+                interface.PermissionlessGate(gate_address),
+                interface.ModuleAccounting(module.ACCOUNTING()),
                 set_balance(accounts[5], 100),
                 keys_count=1,
             )
@@ -896,26 +920,35 @@ class TestReportWithdrawalsForSlashedValidators:
         )
 
     @pytest.mark.parametrize(
-        "factory_address,module_address,factory_name",
+        "factory_address,module_params,factory_name",
         [
-            (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_ADDRESS, CSM_FACTORY_NAME),
-            (EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CURATED_V2_STAKING_MODULE_ADDRESS, CM_FACTORY_NAME),
+            (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_PARAMS, CSM_FACTORY_NAME),
+            (EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM0X02_PARAMS, CSM0X02_FACTORY_NAME),
+            (EASYTRACK_CM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CM_PARAMS, CM_FACTORY_NAME),
         ],
-        ids=["csm", "cm"],
+        ids=["csm", "csm0x02", "cm"],
     )
-    def test_configuration(self, factory_address, module_address, factory_name):
+    def test_configuration(self, factory_address, module_params, factory_name):
         factory = interface.ReportWithdrawalsForSlashedValidators(factory_address)
-        module = interface.BaseModule(module_address)
+        module = interface.BaseModule(module_params.module_address)
 
         assert factory.module() == module.address
         assert factory.name() == factory_name
         assert _permissions_include(factory.address, module.address, module.reportSlashedWithdrawnValidators)
 
-    def test_csm_reverts_for_unslashed_validator(self):
-        factory = interface.ReportWithdrawalsForSlashedValidators(
-            EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+    @pytest.mark.parametrize(
+        "factory_address,module_params",
+        [
+            (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_PARAMS),
+            (EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM0X02_PARAMS),
+        ],
+        ids=["csm", "csm0x02"],
+    )
+    def test_csm_reverts_for_unslashed_validator(self, factory_address, module_params):
+        factory = interface.ReportWithdrawalsForSlashedValidators(factory_address)
+        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator(
+            module_params.module_address, module_params.gate_address
         )
-        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator()
 
         with pytest.raises(VirtualMachineError, match="VALIDATOR_NOT_SLASHED"):
             factory.createEVMScript(
@@ -941,12 +974,20 @@ class TestReportWithdrawalsForSlashedValidators:
                 ),
             )
 
-    def test_csm_scenario(self, stranger):
-        module = interface.BaseModule(CSM_ADDRESS)
-        factory = interface.ReportWithdrawalsForSlashedValidators(
-            EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY
+    @pytest.mark.parametrize(
+        "factory_address,module_params",
+        [
+            (EASYTRACK_CSM_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM_PARAMS),
+            (EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FOR_SLASHED_VALIDATORS_FACTORY, CSM0X02_PARAMS),
+        ],
+        ids=["csm", "csm0x02"],
+    )
+    def test_csm_scenario(self, factory_address, module_params, stranger):
+        module = interface.BaseModule(module_params.module_address)
+        factory = interface.ReportWithdrawalsForSlashedValidators(factory_address)
+        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator(
+            module_params.module_address, module_params.gate_address
         )
-        node_operator_id, key_index = self._get_csm_unwithdrawn_unslashed_validator()
 
         self._mark_validator_slashed(module, node_operator_id, key_index)
         node_operator_before = module.getNodeOperator(node_operator_id)
@@ -1009,31 +1050,39 @@ class TestSettleGeneralDelayedPenalty:
             stranger,
         )
 
-    def test_csm_factory(self):
-        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
-        module = interface.BaseModule(CSM_ADDRESS)
+    @pytest.mark.parametrize(
+        "factory_address,module_params,factory_name",
+        [
+            (EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY, CSM_PARAMS, CSM_FACTORY_NAME),
+            (EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY, CSM0X02_PARAMS, CSM0X02_FACTORY_NAME),
+            (EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY, CM_PARAMS, CM_FACTORY_NAME),
+        ],
+        ids=["csm", "csm0x02", "cm"],
+    )
+    def test_configuration(self, factory_address, module_params, factory_name):
+        factory = interface.SettleGeneralDelayedPenalty(factory_address)
+        module = interface.BaseModule(module_params.module_address)
 
         assert factory.module() == module.address
         assert factory.accounting() == module.ACCOUNTING()
-        assert factory.name() == CSM_FACTORY_NAME
+        assert factory.name() == factory_name
         assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
 
-    def test_cm_factory(self):
-        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
-        module = interface.BaseModule(CURATED_V2_STAKING_MODULE_ADDRESS)
-
-        assert factory.module() == module.address
-        assert factory.accounting() == module.ACCOUNTING()
-        assert factory.name() == CM_FACTORY_NAME
-        assert _permissions_include(factory.address, module.address, module.settleGeneralDelayedPenalty)
-
-    def test_csm_scenario(self, stranger):
-        module = interface.BaseModule(CSM_ADDRESS)
-        accounting = contracts.cs_accounting
-        factory = interface.SettleGeneralDelayedPenalty(EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY)
+    @pytest.mark.parametrize(
+        "factory_address,module_params",
+        [
+            (EASYTRACK_CSM_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY, CSM_PARAMS),
+            (EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY, CSM0X02_PARAMS),
+        ],
+        ids=["csm", "csm0x02"],
+    )
+    def test_csm_scenario(self, factory_address, module_params, stranger):
+        module = interface.CSModule(module_params.module_address)
+        accounting = interface.ModuleAccounting(module.ACCOUNTING())
+        factory = interface.SettleGeneralDelayedPenalty(factory_address)
         node_operator_id = csm_add_node_operator(
-            contracts.csm,
-            contracts.cs_permissionless_gate,
+            module,
+            interface.PermissionlessGate(module_params.gate_address),
             accounting,
             set_balance(accounts[5], 100),
             keys_count=1,
@@ -1130,10 +1179,19 @@ class TestCreateOrUpdateOperatorGroup:
 
 
 class TestUpdateStakingModuleShareLimits:
-    def test_scenario(self, stranger):
-        factory = interface.UpdateStakingModuleShareLimits(EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY)
+
+    @pytest.mark.parametrize(
+        "factory_address,module_params",
+        [
+            (EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY, CSM_PARAMS),
+            (EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY, CSM0X02_PARAMS),
+        ],
+        ids=["csm", "csm0x02"],
+    )
+    def test_scenario(self, factory_address, module_params, stranger):
+        factory = interface.UpdateStakingModuleShareLimits(factory_address)
         assert factory.stakingRouter() == STAKING_ROUTER
-        assert factory.stakingModuleId() == CS_MODULE_ID
+        assert factory.stakingModuleId() == module_params.module_id
         assert _permissions_include(factory.address, factory.address, factory.validateParams)
         assert _permissions_include(factory.address, STAKING_ROUTER, contracts.staking_router.updateModuleShares)
 
