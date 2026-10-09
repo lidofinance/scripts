@@ -85,3 +85,41 @@ git clone https://github.com/lidofinance/lido-cli
 ```shell
 ./run.sh tx parse-error <error-messages>
 ```
+
+## CSM 0x02 rollout scenario
+
+`regression/test_csm0x02_deployment_scenario.py` follows the [rollout proposal and its
+validator-cycle diagram](https://research.lido.fi/t/0x02-csm-landscape/11697/10).
+Run it on a pre-activation mainnet fork containing the deployed CSM 0x02 contracts
+(verified with Anvil forked at block `26141816`):
+
+```sh
+poetry run brownie test tests/regression/test_csm0x02_deployment_scenario.py --network mfh-1 -s
+```
+
+The regression fixtures execute the current vote and Dual Governance proposal.
+The scenario seeds the initial 1-bp share, verifies other-module top-ups, raises
+share through Easy Track after synthetic activation, and follows FIFO turnover:
+full top-up, freed queue position, new seed. It then reports selected exits and
+withdrawals, seeds replacement keys, reproduces the inactive-head bottleneck,
+and exercises both sides of CMv2's top-up buffer threshold. It separately proves
+that CMv2 seed deposits still work, supplying a key if needed inside a reverted
+snapshot. Recovery is checked from the same blocked state both by activation and
+by lowering CSM's share through Easy Track.
+
+`MockTopUpGateway` replaces the gateway implementation only inside test isolation.
+It models activation with a 24-day test delay and derives effective-plus-pending
+balances from EL allocations, without CL rewards. It does not verify beacon
+proofs. Exits and withdrawals are submitted through the real authorized reporting
+methods; CL withdrawal settlement is outside this scenario, and fresh user inflow
+funds the post-exit buffer. Router allocation, module queues, stake accounting,
+and transfers to the deposit contract remain real. The test checks **depositable**
+ETH, excluding withdrawal demand and reserves; a remainder below 32 ETH is normal
+Router granularity. Initial key count and blocking threshold depend on fork state.
+
+Observed on that fork: 29 bootstrap keys; the derived safe share increase was
+1 → 51 → 63 bp, reaching 60 seed deposits and 57,896 ETH in CSM top-ups. Selected
+withdrawals and replacement seeds left about 997.52 ETH depositable but unavailable
+to CMv2 top-ups; the first positive CMv2 top-up allocation appeared at a 5,632 ETH
+buffer. Lowering the share from 63 to 57 bp restored allocation before the new keys
+activated. These are scenario outputs, not recommended rollout parameters.
