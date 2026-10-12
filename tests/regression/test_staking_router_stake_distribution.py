@@ -3,6 +3,9 @@ from typing import Dict
 from brownie import chain, interface
 
 from utils.config import (
+    CSM0X02_ADDRESS,
+    CSM0X02_MODULE_ID,
+    CSM0X02_PERMISSIONLESS_GATE_ADDRESS,
     CS_MODULE_ID,
     CURATED_STAKING_MODULE_ID,
     CURATED_V2_STAKING_MODULE_ID,
@@ -181,6 +184,14 @@ def assure_depositable_keys(stranger):
         csm_add_node_operator(contracts.csm, contracts.cs_permissionless_gate, contracts.cs_accounting, stranger)
     if not modules[CURATED_V2_STAKING_MODULE_ID].depositable_keys:
         ensure_curated_v2_depositable_keys(5, stranger)
+    if not modules[CSM0X02_MODULE_ID].depositable_keys:
+        csm0x02 = interface.CSModule(CSM0X02_ADDRESS)
+        csm_add_node_operator(
+            csm0x02,
+            interface.PermissionlessGate(CSM0X02_PERMISSIONLESS_GATE_ADDRESS),
+            interface.ModuleAccounting(csm0x02.ACCOUNTING()),
+            stranger,
+        )
 
 
 def test_stake_distribution(stranger):
@@ -199,6 +210,7 @@ def test_stake_distribution(stranger):
 
     # collect the modules information
     modules = get_modules_info(contracts.staking_router)
+    assert modules[CSM0X02_MODULE_ID].depositable_keys > 0
     total_allocated, allocated, new_allocations = calc_allocation(modules, deposit_amount)
 
     # check that local allocation matches the contract allocation

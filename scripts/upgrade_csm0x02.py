@@ -122,7 +122,7 @@ CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 # First report window opens on 2026-12-07 at 13:36:23 UTC (Monday).
 # Its full 6,300-epoch (28-day) observation period starts on 2026-11-09 at 13:36:23 UTC,
-# after the expected 2026-10-24 DG enactment for a vote launched on 2026-10-15.
+# after the expected 2026-10-23 DG enactment for a vote launched on 2026-10-14.
 # This places reports midway between CSM 0x01 windows and about a week from CMv2 windows.
 # So the resulting report schedule for staking modules is:
 # Week   |        1 |        2 |        3 |        4 |        5 |        6 |        7 |

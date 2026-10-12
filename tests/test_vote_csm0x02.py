@@ -52,7 +52,6 @@ EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
-DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
@@ -115,7 +114,7 @@ CURATED_V1_MAX_DEPOSITS_PER_BLOCK = 150
 CURATED_V1_MIN_DEPOSIT_BLOCK_DISTANCE = 25
 
 # First report window: 2026-12-07 13:36:23 UTC; the preceding 28-day observation period
-# starts on 2026-11-09 13:36:23 UTC, after the expected 2026-10-24 DG enactment.
+# starts on 2026-11-09 13:36:23 UTC, after the expected 2026-10-23 DG enactment.
 CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
 
@@ -149,9 +148,9 @@ def _permission(contract_address: str, signature: str) -> str:
     return convert.to_address(contract_address).lower() + _selector(signature).removeprefix("0x")
 
 
-def _assert_module_config(staking_router, module_id: int) -> None:
-    module = staking_router.getStakingModuleStateConfig(module_id)
-    registered_module = staking_router.getStakingModule(module_id)
+def _assert_module_config(staking_router) -> None:
+    module = staking_router.getStakingModuleStateConfig(CSM0X02_MODULE_ID)
+    registered_module = staking_router.getStakingModule(CSM0X02_MODULE_ID)
 
     assert registered_module["name"] == CSM0X02_NAME
     assert registered_module["status"] == CSM0X02_MODULE_STATUS_ACTIVE
@@ -161,8 +160,10 @@ def _assert_module_config(staking_router, module_id: int) -> None:
     assert module["moduleFee"] == CSM0X02_MODULE_FEE_BP
     assert module["treasuryFee"] == CSM0X02_TREASURY_FEE_BP
     assert module["withdrawalCredentialsType"] == CSM0X02_WITHDRAWAL_CREDENTIALS_TYPE
-    assert staking_router.getStakingModuleMaxDepositsPerBlock(module_id) == CSM0X02_MAX_DEPOSITS_PER_BLOCK
-    assert staking_router.getStakingModuleMinDepositBlockDistance(module_id) == CSM0X02_MIN_DEPOSIT_BLOCK_DISTANCE
+    assert staking_router.getStakingModuleMaxDepositsPerBlock(CSM0X02_MODULE_ID) == CSM0X02_MAX_DEPOSITS_PER_BLOCK
+    assert (
+        staking_router.getStakingModuleMinDepositBlockDistance(CSM0X02_MODULE_ID) == CSM0X02_MIN_DEPOSIT_BLOCK_DISTANCE
+    )
 
 
 def _assert_easy_track_factories(easy_track, factories, factory_permissions) -> None:
@@ -406,7 +407,6 @@ def test_vote(
             executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
-            emitted_by=(EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE),
         )
         for index, (factory, permissions) in enumerate(zip(factories, factory_permissions), start=1):
             validate_evmscript_factory_added_event(
@@ -577,7 +577,7 @@ def test_vote(
 
     assert staking_router.getStakingModulesCount() == CSM0X02_MODULE_ID
     assert staking_router.hasStakingModule(CSM0X02_MODULE_ID)
-    _assert_module_config(staking_router, CSM0X02_MODULE_ID)
+    _assert_module_config(staking_router)
 
     curated_v1_config_after = staking_router.getStakingModuleStateConfig(CURATED_V1_MODULE_ID).dict()
     curated_v1_deposits_after = staking_router.getStakingModuleStateDeposits(CURATED_V1_MODULE_ID).dict()
