@@ -8,7 +8,6 @@ import pytest
 from brownie import ZERO_ADDRESS, chain, convert, history, interface, reverts, web3
 from brownie.network.transaction import TransactionReceipt
 
-from utils.config import contracts
 from utils.dual_governance import PROPOSAL_STATUS, process_pending_proposals, process_proposals
 from utils.evm_script import encode_call_script
 from utils.import_current_votes import is_there_any_upgrade_scripts, is_there_any_vote_scripts
@@ -39,7 +38,7 @@ from utils.voting import find_metadata_by_vote_id
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_csm0x02 import get_dg_items, get_vote_items, start_vote
+from scripts.upgrade_csm0x02 import get_dg_items, get_vote_items, start_vote
 
 
 # ============================================================================
@@ -53,6 +52,7 @@ EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
 FINANCE = "0xB9E5CBB9CA5b0d659238807E84D0176930753d86"
 LDO_TOKEN = "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32"
 EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+DUAL_GOVERNANCE = "0xC1db28B3301331277e307FDCfF8DE28242A4486E"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
 DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
@@ -122,10 +122,10 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-# Fill the identifiers after the mainnet vote is created; fresh fork runs resolve
-# the proposal ID from the vote execution receipt instead of assuming the latest proposal.
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+# Expected next IDs at mainnet block 26_174_675: votesLength = 206, getProposalsCount = 14.
+# Recheck these IDs when the mainnet vote is created and its DG proposal is submitted.
+EXPECTED_VOTE_ID = 206
+EXPECTED_DG_PROPOSAL_ID = 15
 EXPECTED_VOTE_EVENTS_COUNT = 5
 EXPECTED_DG_EVENTS_FROM_AGENT = 18
 EXPECTED_DG_EVENTS_COUNT = 19
@@ -268,6 +268,16 @@ def _validate_target_limit_event(events, module, operator_id: int, summary_befor
 # ============================== Fixtures ====================================
 # ============================================================================
 @pytest.fixture(scope="module")
+def easy_track():
+    return interface.EasyTrack(EASY_TRACK)
+
+
+@pytest.fixture(scope="module")
+def ldo_token():
+    return interface.MiniMeToken(LDO_TOKEN)
+
+
+@pytest.fixture(scope="module")
 def dual_governance_proposal_calls():
     return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
 
@@ -396,6 +406,7 @@ def test_vote(
             executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             metadata=DG_PROPOSAL_METADATA,
             proposal_calls=dual_governance_proposal_calls,
+            emitted_by=(EMERGENCY_PROTECTED_TIMELOCK, DUAL_GOVERNANCE),
         )
         for index, (factory, permissions) in enumerate(zip(factories, factory_permissions), start=1):
             validate_evmscript_factory_added_event(
@@ -623,8 +634,8 @@ def _start_fresh_lol_ldo_period(registry):
     return period_end
 
 
-def test_lol_ldo_motion_guards(vote_applied, stranger):
-    assert LOL_LDO_TOP_UP_FACTORY in contracts.easy_track.getEVMScriptFactories()
+def test_lol_ldo_motion_guards(vote_applied, easy_track, stranger):
+    assert LOL_LDO_TOP_UP_FACTORY in easy_track.getEVMScriptFactories()
     factory = interface.TopUpAllowedRecipientsSingleToken(LOL_LDO_TOP_UP_FACTORY)
     for creator, recipients, amounts, reason in (
         (stranger, [LOL_TRUSTED_CALLER], [1], "CALLER_IS_FORBIDDEN"),
@@ -636,15 +647,15 @@ def test_lol_ldo_motion_guards(vote_applied, stranger):
         )
 
 
-def test_lol_ldo_payment(vote_applied, accounts, stranger):
+def test_lol_ldo_payment(vote_applied, easy_track, ldo_token, accounts, stranger):
     registry = interface.AllowedRecipientRegistry(LOL_LDO_REGISTRY)
     multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
     amount = 1_000 * 10**18
-    assert contracts.ldo_token.balanceOf(AGENT) >= amount
+    assert ldo_token.balanceOf(AGENT) >= amount
     _start_fresh_lol_ldo_period(registry)
 
     create_and_enact_payment_motion(
-        contracts.easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, contracts.ldo_token, [multisig], [amount], stranger
+        easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, ldo_token, [multisig], [amount], stranger
     )
 
     spent, spendable, _, _ = registry.getPeriodState()
@@ -653,37 +664,37 @@ def test_lol_ldo_payment(vote_applied, accounts, stranger):
     assert registry.getAllowedRecipients() == [LOL_TRUSTED_CALLER]
 
 
-def test_lol_ldo_single_payment_capped_by_acl(vote_applied, accounts, stranger):
+def test_lol_ldo_single_payment_capped_by_acl(vote_applied, easy_track, ldo_token, accounts, stranger):
     registry = interface.AllowedRecipientRegistry(LOL_LDO_REGISTRY)
     multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
     amount = FINANCE_LDO_MAX_PER_CALL + 1
     assert amount < LOL_LDO_LIMIT
-    assert contracts.ldo_token.balanceOf(AGENT) >= amount
+    assert ldo_token.balanceOf(AGENT) >= amount
     _start_fresh_lol_ldo_period(registry)
     period_before = registry.getPeriodState()
-    balances_before = [contracts.ldo_token.balanceOf(address) for address in (AGENT, LOL_TRUSTED_CALLER)]
+    balances_before = [ldo_token.balanceOf(address) for address in (AGENT, LOL_TRUSTED_CALLER)]
 
     with reverts("APP_AUTH_FAILED"):
         create_and_enact_payment_motion(
-            contracts.easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, contracts.ldo_token, [multisig], [amount], stranger
+            easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, ldo_token, [multisig], [amount], stranger
         )
 
     assert registry.getPeriodState() == period_before
-    assert [contracts.ldo_token.balanceOf(address) for address in (AGENT, LOL_TRUSTED_CALLER)] == balances_before
+    assert [ldo_token.balanceOf(address) for address in (AGENT, LOL_TRUSTED_CALLER)] == balances_before
 
 
-def test_lol_ldo_period_limit(vote_applied, accounts, stranger):
+def test_lol_ldo_period_limit(vote_applied, easy_track, ldo_token, accounts, stranger):
     registry = interface.AllowedRecipientRegistry(LOL_LDO_REGISTRY)
     multisig = accounts.at(LOL_TRUSTED_CALLER, force=True)
-    assert contracts.ldo_token.balanceOf(AGENT) >= LOL_LDO_LIMIT
+    assert ldo_token.balanceOf(AGENT) >= LOL_LDO_LIMIT
     period_end_before = _start_fresh_lol_ldo_period(registry)
 
     # The entire period budget in one motion, with each payment within the unchanged Finance ACL cap.
     create_and_enact_payment_motion(
-        contracts.easy_track,
+        easy_track,
         multisig,
         LOL_LDO_TOP_UP_FACTORY,
-        contracts.ldo_token,
+        ldo_token,
         [multisig, multisig],
         [FINANCE_LDO_MAX_PER_CALL, LOL_LDO_LIMIT - FINANCE_LDO_MAX_PER_CALL],
         stranger,
@@ -696,5 +707,5 @@ def test_lol_ldo_period_limit(vote_applied, accounts, stranger):
 
     with reverts("SUM_EXCEEDS_SPENDABLE_BALANCE"):
         create_and_enact_payment_motion(
-            contracts.easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, contracts.ldo_token, [multisig], [1], stranger
+            easy_track, multisig, LOL_LDO_TOP_UP_FACTORY, ldo_token, [multisig], [1], stranger
         )

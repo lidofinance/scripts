@@ -11,6 +11,7 @@ def validate_dual_governance_submit_event(
     executor: str,
     metadata: str = None,
     proposal_calls: any = None,
+    emitted_by: tuple[str, str] = (TIMELOCK, DUAL_GOVERNANCE),
 ) -> None:
     _events_chain = ["LogScriptCall", "ProposalSubmitted", "ProposalSubmitted"]
 
@@ -23,22 +24,26 @@ def validate_dual_governance_submit_event(
 
     assert len(event["ProposalSubmitted"][0]["calls"]) == len(proposal_calls), "Wrong callsCount"
     for i in range(0, len(proposal_calls)):
-        assert event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"], f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
+        assert (
+            event["ProposalSubmitted"][0]["calls"][i][0] == proposal_calls[i]["target"]
+        ), f"Wrong target {i}: {event['ProposalSubmitted'][0]['calls'][i][0]} : {proposal_calls[i]['target']}"
         assert event["ProposalSubmitted"][0]["calls"][i][1] == proposal_calls[i]["value"], f"Wrong value {i}"
-        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f'Wrong data {i}'
+        assert event["ProposalSubmitted"][0]["calls"][i][2] == proposal_calls[i]["data"], f"Wrong data {i}"
 
     assert event["ProposalSubmitted"][1]["proposalId"] == proposal_id, "Wrong proposalId"
     assert event["ProposalSubmitted"][1]["proposerAccount"] == proposer, "Wrong proposer"
 
     if metadata:
-        assert event["ProposalSubmitted"][1]["metadata"] == metadata, f"Wrong metadata {event['ProposalSubmitted'][1]['metadata']}"
+        assert (
+            event["ProposalSubmitted"][1]["metadata"] == metadata
+        ), f"Wrong metadata {event['ProposalSubmitted'][1]['metadata']}"
 
     assert len(event["ProposalSubmitted"]) == 2, "Wrong emitted_by count"
     assert convert.to_address(event["ProposalSubmitted"][0]["_emitted_by"]) == convert.to_address(
-        TIMELOCK
+        emitted_by[0]
     ), "Wrong event emitter"
     assert convert.to_address(event["ProposalSubmitted"][1]["_emitted_by"]) == convert.to_address(
-        DUAL_GOVERNANCE
+        emitted_by[1]
     ), "Wrong event emitter"
 
 

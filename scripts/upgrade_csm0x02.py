@@ -1,5 +1,5 @@
 """
-Mainnet vote that connects CSM 0x02 instance to the protocol, tweaks CMv1 parameters and connects LOL LDO factory to Easy Track.
+Mainnet upgrade vote that connects CSM 0x02 instance to the protocol, tweaks CMv1 parameters and connects LOL LDO factory to Easy Track.
 
 1. Submit a Dual Governance proposal to connect CSM 0x02 to the protocol, update CMv1 module limits, and set limits for node operator "Consensys" in CMv1 and CMv2.
     1.1. Check the DG execution time window (14:00-23:00 UTC)
@@ -402,9 +402,7 @@ def start_vote(tx_params: dict[str, str], silent: bool = False):
     vote_items = bake_vote_items(vote_desc_items, call_script_items)
 
     desc_ipfs = (
-        calculate_vote_ipfs_description(IPFS_DESCRIPTION)
-        if silent
-        else upload_vote_ipfs_description(IPFS_DESCRIPTION)
+        calculate_vote_ipfs_description(IPFS_DESCRIPTION) if silent else upload_vote_ipfs_description(IPFS_DESCRIPTION)
     )
     if not confirm_vote_script(vote_items, silent, desc_ipfs):
         raise SystemExit(1)
