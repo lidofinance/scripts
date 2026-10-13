@@ -130,10 +130,10 @@ EXPECTED_DG_EVENTS_FROM_AGENT = 18
 EXPECTED_DG_EVENTS_COUNT = 19
 TIME_WINDOW_FROM = 14 * 3600
 TIME_WINDOW_TO = 23 * 3600
-IPFS_DESCRIPTION_HASH = "bafkreihqycnpry73szml3hvhuj6fgv4w4oif4adbcg7klpnmfa7fbjvzmi"
+IPFS_DESCRIPTION_HASH = "bafkreidit5luahi52jduv6haumr3u66rzxwom3q7cc6mxxcfdmhiclehbu"
 DG_PROPOSAL_METADATA = (
-    "Connect CSM 0x02 to the protocol, set CMv1 stake share limit and priority exit share threshold to 0, "
-    "set Consensys target limits to 0 in CMv1 and CMv2 (soft mode), and increase the CSM 0x02 top-up queue limit to 32"
+    "Activate 0x02 CSM with a 0.01% stake share limit and 32 top-up queue limit, set CMv1 stake share limit to 0, "
+    "set Consensys target validators limit to 0 in CMv1 and CMv2 (soft mode)"
 )
 
 

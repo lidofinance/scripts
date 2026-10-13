@@ -1,30 +1,39 @@
 """
-Mainnet upgrade vote that connects CSM 0x02 instance to the protocol, tweaks CMv1 parameters and connects LOL LDO factory to Easy Track.
+Mainnet upgrade vote to activate 0x02 CSM, update curated module limits, and add CSM and LOL LDO Easy Track factories.
 
-1. Submit a Dual Governance proposal to connect CSM 0x02 to the protocol, update CMv1 module limits, and set limits for node operator "Consensys" in CMv1 and CMv2.
-    1.1. Check the DG execution time window (14:00-23:00 UTC)
-    1.2. Add CSM 0x02 to the Staking Router
-    1.3. Grant REQUEST_BURN_MY_STETH_ROLE on Burner to CSM 0x02 Accounting
-    1.4. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE on Triggerable Withdrawals Gateway to CSM 0x02 Ejector
-    1.5. Grant RESUME_ROLE on CSM 0x02 to Aragon Agent
-    1.6. Resume CSM 0x02
-    1.7. Revoke RESUME_ROLE on CSM 0x02 from Aragon Agent
-    1.8. Set the initial epoch on CSM 0x02 HashConsensus
-    1.9. Register CSM 0x02 Module on CircuitBreaker
-    1.10. Register CSM 0x02 Accounting on CircuitBreaker
-    1.11. Register CSM 0x02 FeeOracle on CircuitBreaker
-    1.12. Register CSM 0x02 Verifier on CircuitBreaker
-    1.13. Register CSM 0x02 Ejector on CircuitBreaker
-    1.14. Set the CMv1 stake share limit and priority exit share threshold to 0
-    1.15. Set the Consensys operator target limit to 0 in CMv1 (soft mode)
-    1.16. Set the Consensys operator target limit to 0 in CMv2 (soft mode)
-    1.17. Grant MANAGE_TOP_UP_QUEUE_ROLE on CSM 0x02 to Aragon Agent
-    1.18. Increase the CSM 0x02 top-up queue limit to 32
-    1.19. Revoke MANAGE_TOP_UP_QUEUE_ROLE on CSM 0x02 from Aragon Agent
-2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track
-3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track
-4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track
-5. Add the LOL LDO TopUpAllowedRecipients factory to Easy Track
+1. Submit a Dual Governance proposal to activate 0x02 CSM with a 0.01% stake share limit and 32 top-up queue limit,
+   set CMv1 stake share limit to 0, and set Consensys target validators limit to 0 in CMv1 and CMv2 (soft mode).
+    1.1. Restrict proposal execution time to 14:00-23:00 UTC on Dual Governance Time Constraints
+    1.2.1. Add 0x02 CSM with name "Community Staking 0x02" to Staking Router:
+           stake share limit 1 BP (0.01%), priority exit share threshold 240 BP (2.4%),
+           module fee 200 BP (2%), treasury fee 800 BP (8%), maximum 30 deposits per block,
+           minimum deposit block distance 25, withdrawal credentials type 0x02
+    1.3.1. Grant REQUEST_BURN_MY_STETH_ROLE to 0x02 CSM Accounting on Burner
+    1.4.1. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to 0x02 CSM Ejector on Triggerable Withdrawals Gateway
+    1.5.1. Grant RESUME_ROLE to Aragon Agent on 0x02 CSM
+    1.6.1. Enable 0x02 CSM
+    1.7.1. Revoke RESUME_ROLE from Aragon Agent on 0x02 CSM
+    1.8.1. Set 0x02 CSM HashConsensus initial epoch to 494340
+    1.9.1. Register 0x02 CSM Module on CircuitBreaker with pauser CSM Committee
+    1.10.1. Register 0x02 CSM Accounting on CircuitBreaker with pauser CSM Committee
+    1.11.1. Register 0x02 CSM FeeOracle on CircuitBreaker with pauser CSM Committee
+    1.12.1. Register 0x02 CSM Verifier on CircuitBreaker with pauser CSM Committee
+    1.13.1. Register 0x02 CSM Ejector on CircuitBreaker with pauser CSM Committee
+    1.14.1. Set CMv1 (module ID 1) stake share limit and priority exit share threshold to 0 on Staking Router:
+            module fee 350 BP (3.5%), treasury fee 650 BP (6.5%), maximum 150 deposits per block,
+            minimum deposit block distance 25
+    1.15.1. Set target validators limit for Consensys (operator ID 21) in CMv1 (module ID 1)
+            to 0 in soft mode (1) on Staking Router
+    1.16.1. Set target validators limit for Consensys (operator ID 6) in CMv2 (module ID 4)
+            to 0 in soft mode (1) on Staking Router
+    1.17.1. Grant MANAGE_TOP_UP_QUEUE_ROLE to Aragon Agent on 0x02 CSM
+    1.18.1. Set top-up queue limit to 32 on 0x02 CSM
+    1.19.1. Revoke MANAGE_TOP_UP_QUEUE_ROLE from Aragon Agent on 0x02 CSM
+2. Add ReportWithdrawalsForSlashedValidators EVM script factory for 0x02 CSM to Easy Track
+3. Add SettleGeneralDelayedPenalty EVM script factory for 0x02 CSM to Easy Track
+4. Add UpdateStakingModuleShareLimits EVM script factory for 0x02 CSM to Easy Track
+5. Add LOL LDO TopUpAllowedRecipients EVM script factory to Easy Track
+   for top-ups with a limit of 7.5M LDO per 12-month period
 """
 
 from brownie import interface
@@ -48,8 +57,6 @@ CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
 CSM_COMMITTEE = "0xC52fC3081123073078698F1EAc2f1Dc7Bd71880f"
 DUAL_GOVERNANCE_TIME_CONSTRAINTS = "0x2a30F5aC03187674553024296bed35Aa49749DDa"
 
-TODO_ADDRESS = "TODO"
-
 # https://docs.lido.fi/deployed-contracts/#community-staking-module-0x02
 CSM0X02_MODULE = "0x792Cd25e4aE3578375031FB55e048E163A804F7B"
 CSM0X02_ACCOUNTING = "0x3696dDd942A9e156F5D4728505D1b9a32dCef900"
@@ -66,21 +73,6 @@ EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0x5b0De22E65C068
 # https://docs.lido.fi/deployed-contracts/#easy-track-factories-for-staking-modules
 LOL_LDO_REGISTRY = "0xf1e9c3bD021ED1419Dd3b37f9b6E49Eb662877Fe"
 LOL_LDO_TOP_UP_FACTORY = "0xa3e98cb26F1277B623Edb95cee3bd33269b305F7"
-
-DEPLOYMENT_ADDRESSES = {
-    "CSM0X02": CSM0X02_MODULE,
-    "CSM0X02_ACCOUNTING": CSM0X02_ACCOUNTING,
-    "CSM0X02_FEE_ORACLE": CSM0X02_FEE_ORACLE,
-    "CSM0X02_HASH_CONSENSUS": CSM0X02_HASH_CONSENSUS,
-    "CSM0X02_VERIFIER": CSM0X02_VERIFIER,
-    "CSM0X02_EJECTOR": CSM0X02_EJECTOR,
-    "EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY": EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY,
-    "EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY": EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY,
-    "EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY": EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
-    "LOL_LDO_REGISTRY": LOL_LDO_REGISTRY,
-    "LOL_LDO_TOP_UP_FACTORY": LOL_LDO_TOP_UP_FACTORY,
-}
-
 
 # ============================== Parameters ==================================
 # Execute only after the current AccountingOracle report is fully processed,
@@ -133,42 +125,29 @@ CSM0X02_ORACLE_INITIAL_EPOCH = 494_340
 
 # ============================= Description ==================================
 IPFS_DESCRIPTION = """
-1. **Submit a Dual Governance proposal to connect CSM 0x02 to the protocol and update curated module limits.** Items 1.1-1.19:
-   - Restrict execution to 14:00-23:00 UTC. Before enactment, verify that the current AccountingOracle report is fully processed, including all extra-data chunks, and that the next reference slot has not been reached.
-   - Register and resume CSM 0x02 with an initial stake share limit of 0.01%, a priority exit share threshold of 2.4%, a module fee of 2%, a treasury fee of 8%, and deposit limits of 30 deposits per block with a minimum block distance of 25. Grant the required Burner and Triggerable Withdrawals Gateway permissions and register the Module, Accounting, FeeOracle, Verifier, and Ejector on CircuitBreaker with the CSM Committee as pauser. [Deployment details](https://github.com/lidofinance/staking-modules/pull/899).
-   - Set the HashConsensus initial epoch to 494340, scheduling the first report window for 2026-12-07 at 13:36:23 UTC, after a full 28-day observation period starting on 2026-11-09 at 13:36:23 UTC.
-   - Set the CMv1 stake share limit and priority exit share threshold to 0 to transition to Period 2 of the deposits and consolidations plan and prioritize exits from CMv1. [Curated module transition plan](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/45).
-   - Set the Consensys operator target limit to 0 in CMv1 (operator ID 21) and CMv2 (operator ID 6), both in soft mode.
-   - Increase the CSM 0x02 top-up queue limit to 32, temporarily granting and then revoking MANAGE_TOP_UP_QUEUE_ROLE for Aragon Agent.
-2. **Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track**, with permission to call reportSlashedWithdrawnValidators on CSM 0x02. [Factory deployment details](https://github.com/lidofinance/easy-track/pull/139#pullrequestreview-5410616152).
-3. **Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track**, with permission to call settleGeneralDelayedPenalty on CSM 0x02.
-4. **Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track**, with permissions to call validateParams on the factory and updateModuleShares on the Staking Router.
-5. **Add the LOL LDO TopUpAllowedRecipients factory to Easy Track** for the contingent CEX liquidity mandate, with newImmediatePayment permission on Aragon Finance and updateSpentAmount permission on the LOL LDO AllowedRecipientsRegistry. [Mandate and deployment details](https://research.lido.fi/t/authorize-a-contingent-ldo-cex-liquidity-market-making-mandate/11839/39).
+# 0x02 CSM, CMv1 stakeShareLimit -> 0, Consensys target limit → 0, LDO Liquidity ET Factory
+
+1. **Activate the Community Staking Module for 0x02 withdrawal credentials**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0xed2a3b1f796cefdd531abe14ba01363b2da7887434cefdd54ba71ffb6dff59a7). Audits: CSMv3 and CMv2 — [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20CSM%20v3%20and%20CM%20v2%20Audit%20Report%2006-2026.pdf), [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Lido%20CSM%20v3%20and%20CM%20v2%20Audit%20Report%20-%2006-2026.pdf); Easy Track factories — [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20Easy%20Track%20Factories%20(SRv3%20CSMv3%20CMv2)%20Security%20Audit%20Report%2007-2026.pdf) | Deployment verification — MixBytes: [0x02 CSM](https://github.com/lidofinance/audits/blob/main/Lido%20CSM%200x02%20Deployment%20Verification%20Report.pdf), [0x02 CSM Easy Track factories](https://github.com/lidofinance/audits/blob/main/Lido%20Easy%20Track%20Factories%20CSM%200x02%20Deployment%20Verification%20Report.pdf)
+    - Restrict proposal execution to 14:00-23:00 UTC. Item 1.1.
+    - Register, enable and configure 0x02 CSM with an initial stake share limit of 0.01% and top-up queue limit of 32. Items 1.2.1 - 1.8.1, 1.17.1 - 1.19.1.
+    - Register 0x02 CSM Module, Accounting, FeeOracle, Verifier and Ejector on CircuitBreaker with the [CSM Committee](https://docs.lido.fi/multisigs/committees#29-community-staking-module-committee) as pauser. Items 1.9.1 - 1.13.1.
+    - Add 0x02 CSM Easy Track factories to report withdrawals for slashed validators, settle delayed penalties, and update share limit. Items 2 - 4.
+2. **Set CMv1 stake share limit and priority exit share threshold to 0**, as per [Snapshot decision](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x7b07bc31f0b38b69a117473031bc126becc70b9fa37246b53d9fe5a841c814f5). Item 1.14.1
+3. **Set Consensys target validators limit to 0 in CMv1 and CMv2 (soft mode)**, as [proposed on the forum](https://research.lido.fi/t/security-disclosure-metamask-staking-precautionary-out-of-order-exits/11961/2). Items 1.15.1 - 1.16.1.
+4. **Add LOL LDO Easy Track factory for top-ups with a limit of 7.5M LDO per 12-month period**, under the [Snapshot-approved liquidity mandate](https://snapshot.box/#/s:lido-snapshot.eth/proposal/0x71b50a792e4606e593ff4502b1753aa3fb894a0bf994d6a5f1d42cee9c94a594). Item 5.
 """
 
 DG_PROPOSAL_METADATA = (
-    "Connect CSM 0x02 to the protocol, set CMv1 stake share limit and priority exit share threshold to 0, "
-    "set Consensys target limits to 0 in CMv1 and CMv2 (soft mode), and increase the CSM 0x02 top-up queue limit to 32"
+    "Activate 0x02 CSM with a 0.01% stake share limit and 32 top-up queue limit, set CMv1 stake share limit to 0, "
+    "set Consensys target validators limit to 0 in CMv1 and CMv2 (soft mode)"
 )
 DG_SUBMISSION_DESCRIPTION = (
-    "1. Submit a Dual Governance proposal to connect CSM 0x02 to the protocol, "
-    "set CMv1 stake share limit and priority exit share threshold to 0, "
-    "set Consensys target limits to 0 in CMv1 and CMv2 (soft mode), and increase the CSM 0x02 top-up queue limit to 32"
+    "1. Submit a Dual Governance proposal to activate 0x02 CSM with a 0.01% stake share limit and 32 top-up queue limit, "
+    "set CMv1 stake share limit to 0, set Consensys target validators limit to 0 in CMv1 and CMv2 (soft mode)"
 )
-
-
-def validate_configuration() -> None:
-    unresolved_addresses = [name for name, address in DEPLOYMENT_ADDRESSES.items() if address == TODO_ADDRESS]
-    if unresolved_addresses:
-        raise ValueError(f"Set deployment addresses before building the vote: {', '.join(unresolved_addresses)}")
-
-    if CSM0X02_ORACLE_INITIAL_EPOCH <= 0:
-        raise ValueError("Set CSM0X02_ORACLE_INITIAL_EPOCH before building the vote")
 
 
 def get_dg_items() -> list[tuple[str, str]]:
-    validate_configuration()
-
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     burner = interface.Burner(BURNER)
     twg = interface.TriggerableWithdrawalsGateway(TRIGGERABLE_WITHDRAWALS_GATEWAY)
@@ -178,10 +157,15 @@ def get_dg_items() -> list[tuple[str, str]]:
     time_constraints = interface.TimeConstraints(DUAL_GOVERNANCE_TIME_CONSTRAINTS)
 
     return [
+        # 1.1. Restrict proposal execution time to 14:00-23:00 UTC on Dual Governance Time Constraints.
         (
             time_constraints.address,
             time_constraints.checkTimeWithinDayTimeAndEmit.encode_input(TIME_WINDOW_FROM, TIME_WINDOW_TO),
         ),
+        # 1.2.1. Add 0x02 CSM with name "Community Staking 0x02" to Staking Router:
+        # stake share limit 1 BP (0.01%), priority exit share threshold 240 BP (2.4%),
+        # module fee 200 BP (2%), treasury fee 800 BP (8%), maximum 30 deposits per block,
+        # minimum deposit block distance 25, withdrawal credentials type 0x02.
         agent_forward(
             [
                 (
@@ -202,6 +186,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.3.1. Grant REQUEST_BURN_MY_STETH_ROLE to 0x02 CSM Accounting on Burner.
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -211,6 +196,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.4.1. Grant ADD_FULL_WITHDRAWAL_REQUEST_ROLE to 0x02 CSM Ejector on Triggerable Withdrawals Gateway.
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -220,6 +206,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.5.1. Grant RESUME_ROLE to Aragon Agent on 0x02 CSM.
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -229,7 +216,9 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.6.1. Enable 0x02 CSM.
         agent_forward([(csm.address, csm.resume.encode_input())]),
+        # 1.7.1. Revoke RESUME_ROLE from Aragon Agent on 0x02 CSM.
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -239,6 +228,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.8.1. Set 0x02 CSM HashConsensus initial epoch to 494340.
         agent_forward(
             [
                 (
@@ -247,6 +237,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.9.1. Register 0x02 CSM Module on CircuitBreaker with pauser CSM Committee.
         agent_forward(
             [
                 (
@@ -255,6 +246,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.10.1. Register 0x02 CSM Accounting on CircuitBreaker with pauser CSM Committee.
         agent_forward(
             [
                 (
@@ -263,6 +255,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.11.1. Register 0x02 CSM FeeOracle on CircuitBreaker with pauser CSM Committee.
         agent_forward(
             [
                 (
@@ -271,6 +264,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.12.1. Register 0x02 CSM Verifier on CircuitBreaker with pauser CSM Committee.
         agent_forward(
             [
                 (
@@ -279,6 +273,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.13.1. Register 0x02 CSM Ejector on CircuitBreaker with pauser CSM Committee.
         agent_forward(
             [
                 (
@@ -287,6 +282,9 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.14.1. Set CMv1 (module ID 1) stake share limit and priority exit share threshold to 0 on Staking Router:
+        # module fee 350 BP (3.5%), treasury fee 650 BP (6.5%), maximum 150 deposits per block,
+        # minimum deposit block distance 25.
         agent_forward(
             [
                 (
@@ -303,6 +301,8 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.15.1. Set target validators limit for Consensys (operator ID 21) in CMv1 (module ID 1)
+        # to 0 in soft mode (1) on Staking Router.
         agent_forward(
             [
                 (
@@ -313,6 +313,8 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.16.1. Set target validators limit for Consensys (operator ID 6) in CMv2 (module ID 4)
+        # to 0 in soft mode (1) on Staking Router.
         agent_forward(
             [
                 (
@@ -323,6 +325,7 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.17.1. Grant MANAGE_TOP_UP_QUEUE_ROLE to Aragon Agent on 0x02 CSM.
         agent_forward(
             [
                 encode_oz_grant_role(
@@ -332,7 +335,9 @@ def get_dg_items() -> list[tuple[str, str]]:
                 )
             ]
         ),
+        # 1.18.1. Set top-up queue limit to 32 on 0x02 CSM.
         agent_forward([(csm.address, csm.setTopUpQueueLimit.encode_input(CSM0X02_TOP_UP_QUEUE_LIMIT))]),
+        # 1.19.1. Revoke MANAGE_TOP_UP_QUEUE_ROLE from Aragon Agent on 0x02 CSM.
         agent_forward(
             [
                 encode_oz_revoke_role(
@@ -346,8 +351,6 @@ def get_dg_items() -> list[tuple[str, str]]:
 
 
 def get_vote_items() -> tuple[list[str], list[tuple[str, str]]]:
-    validate_configuration()
-
     csm = interface.CSModule(CSM0X02_MODULE)
     staking_router = interface.StakingRouter(STAKING_ROUTER)
     update_staking_module_share_limits_factory = interface.UpdateStakingModuleShareLimits(
@@ -362,21 +365,21 @@ def get_vote_items() -> tuple[list[str], list[tuple[str, str]]]:
             dg_call_script,
         ),
         (
-            "2. Add ReportWithdrawalsForSlashedValidators for CSM 0x02 to Easy Track",
+            "2. Add ReportWithdrawalsForSlashedValidators EVM script factory for 0x02 CSM to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CSM0X02_REPORT_WITHDRAWALS_FACTORY,
                 permissions=create_permissions(csm, "reportSlashedWithdrawnValidators"),
             ),
         ),
         (
-            "3. Add SettleGeneralDelayedPenalty for CSM 0x02 to Easy Track",
+            "3. Add SettleGeneralDelayedPenalty EVM script factory for 0x02 CSM to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CSM0X02_SETTLE_GENERAL_DELAYED_PENALTY_FACTORY,
                 permissions=create_permissions(csm, "settleGeneralDelayedPenalty"),
             ),
         ),
         (
-            "4. Add UpdateStakingModuleShareLimits for CSM 0x02 to Easy Track",
+            "4. Add UpdateStakingModuleShareLimits EVM script factory for 0x02 CSM to Easy Track",
             add_evmscript_factory(
                 factory=EASYTRACK_CSM0X02_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY,
                 permissions=(
@@ -386,7 +389,8 @@ def get_vote_items() -> tuple[list[str], list[tuple[str, str]]]:
             ),
         ),
         (
-            "5. Add LOL LDO TopUpAllowedRecipients EVM script factory to Easy Track",
+            "5. Add LOL LDO TopUpAllowedRecipients EVM script factory to Easy Track "
+            "for top-ups with a limit of 7.5M LDO per 12-month period",
             add_evmscript_factory(
                 factory=LOL_LDO_TOP_UP_FACTORY,
                 permissions=create_top_up_allowed_recipient_permission(registry_address=LOL_LDO_REGISTRY),
