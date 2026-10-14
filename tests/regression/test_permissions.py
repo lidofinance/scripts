@@ -69,6 +69,16 @@ from utils.config import (
     CS_VETTED_GATE_ADDRESS,
     CS_PARAMS_REGISTRY_ADDRESS,
     CS_STRIKES_ADDRESS,
+    CSM0X02_ADDRESS,
+    CSM0X02_ACCOUNTING_ADDRESS,
+    CSM0X02_FEE_DISTRIBUTOR_ADDRESS,
+    CSM0X02_FEE_ORACLE_ADDRESS,
+    CSM0X02_HASH_CONSENSUS_ADDRESS,
+    CSM0X02_VERIFIER_ADDRESS,
+    CSM0X02_PARAMETERS_REGISTRY_ADDRESS,
+    CSM0X02_STRIKES_ADDRESS,
+    CSM0X02_EJECTOR_ADDRESS,
+    CSM0X02_PERMISSIONLESS_GATE_ADDRESS,
     CURATED_V2_STAKING_MODULE_ADDRESS,
     CURATED_V2_ACCOUNTING,
     CURATED_V2_FEE_DISTRIBUTOR,
@@ -105,7 +115,7 @@ def protocol_permissions():
     cs_permissionless_gate_address = CS_PERMISSIONLESS_GATE_V3_ADDRESS
     cs_verifier = interface.Verifier(CS_VERIFIER_V3_ADDRESS)
     cs_verifier_address = cs_verifier.address
-    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CURATED_V2_ACCOUNTING]
+    burner_request_burn_my_steth_holders = [CS_ACCOUNTING_ADDRESS, CURATED_V2_ACCOUNTING, CSM0X02_ACCOUNTING_ADDRESS]
     burner_request_burn_shares_holders = [contracts.accounting]
     csm_create_node_operator_holders = [
         cs_permissionless_gate_address,
@@ -121,6 +131,7 @@ def protocol_permissions():
         VALIDATORS_EXIT_BUS_ORACLE,
         cs_ejector_address,
         CURATED_V2_EJECTOR,
+        CSM0X02_EJECTOR_ADDRESS,
     ]
     csm_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
@@ -164,6 +175,22 @@ def protocol_permissions():
         "MANAGE_REWARD_SHARE_ROLE": [],
         "MANAGE_VALIDATOR_EXIT_PARAMETERS_ROLE": [],
         "MANAGE_CURVE_PARAMETERS_ROLE": [],
+    }
+    csm0x02_roles = {
+        "DEFAULT_ADMIN_ROLE": [contracts.agent],
+        "STAKING_ROUTER_ROLE": [STAKING_ROUTER],
+        "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+        "CREATE_NODE_OPERATOR_ROLE": [CSM0X02_PERMISSIONLESS_GATE_ADDRESS],
+        "VERIFIER_ROLE": [CSM0X02_VERIFIER_ADDRESS],
+        "RESUME_ROLE": [RESEAL_MANAGER],
+        "RECOVERER_ROLE": [],
+        "MANAGE_TOP_UP_QUEUE_ROLE": [],
+        "REWIND_TOP_UP_QUEUE_ROLE": [CSM_COMMITTEE_MS],
+        "OPERATOR_ADDRESSES_ADMIN_ROLE": [],
+        "REPORT_GENERAL_DELAYED_PENALTY_ROLE": [CSM_COMMITTEE_MS],
+        "SETTLE_GENERAL_DELAYED_PENALTY_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+        "REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE": [CSM0X02_VERIFIER_ADDRESS],
+        "REPORT_SLASHED_WITHDRAWN_VALIDATORS_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
     }
     cm_roles = {
         "DEFAULT_ADMIN_ROLE": [contracts.agent],
@@ -566,6 +593,111 @@ def protocol_permissions():
         cs_permissionless_gate_address: {
             "contract_name": "PermissionlessGate",
             "contract": interface.PermissionlessGate(cs_permissionless_gate_address),
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CSM0X02_ADDRESS: {
+            "contract_name": "CSM0x02Module",
+            "contract": interface.CSModule(CSM0X02_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": csm0x02_roles,
+        },
+        CSM0X02_ACCOUNTING_ADDRESS: {
+            "contract_name": "CSM0x02Accounting",
+            "contract": interface.ModuleAccounting(CSM0X02_ACCOUNTING_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "SET_BOND_CURVE_ROLE": [],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "MANAGE_BOND_CURVES_ROLE": [],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CSM0X02_FEE_DISTRIBUTOR_ADDRESS: {
+            "contract_name": "CSM0x02FeeDistributor",
+            "contract": interface.FeeDistributor(CSM0X02_FEE_DISTRIBUTOR_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CSM0X02_FEE_ORACLE_ADDRESS: {
+            "contract_name": "CSM0x02FeeOracle",
+            "contract": interface.FeeOracle(CSM0X02_FEE_ORACLE_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_CONSENSUS_CONTRACT_ROLE": [],
+                "MANAGE_CONSENSUS_VERSION_ROLE": [],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "SUBMIT_DATA_ROLE": [],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CSM0X02_HASH_CONSENSUS_ADDRESS: {
+            "contract_name": "CSM0x02HashConsensus",
+            "contract": interface.HashConsensus(CSM0X02_HASH_CONSENSUS_ADDRESS),
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "MANAGE_MEMBERS_AND_QUORUM_ROLE": [contracts.agent],
+                "DISABLE_CONSENSUS_ROLE": [],
+                "MANAGE_FRAME_CONFIG_ROLE": [],
+                "MANAGE_FAST_LANE_CONFIG_ROLE": [],
+                "MANAGE_REPORT_PROCESSOR_ROLE": [],
+            },
+        },
+        CSM0X02_VERIFIER_ADDRESS: {
+            "contract_name": "CSM0x02Verifier",
+            "contract": interface.Verifier(CSM0X02_VERIFIER_ADDRESS),
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+            },
+        },
+        CSM0X02_PARAMETERS_REGISTRY_ADDRESS: {
+            "contract_name": "CSM0x02ParametersRegistry",
+            "contract": interface.ParametersRegistry(CSM0X02_PARAMETERS_REGISTRY_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": cs_parameters_registry_roles,
+        },
+        CSM0X02_STRIKES_ADDRESS: {
+            "contract_name": "CSM0x02ValidatorStrikes",
+            "contract": interface.ValidatorStrikes(CSM0X02_STRIKES_ADDRESS),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+            },
+        },
+        CSM0X02_EJECTOR_ADDRESS: {
+            "contract_name": "CSM0x02Ejector",
+            "contract": interface.Ejector(CSM0X02_EJECTOR_ADDRESS),
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "PAUSE_ROLE": [CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUME_ROLE": [RESEAL_MANAGER],
+                "RECOVERER_ROLE": [],
+            },
+        },
+        CSM0X02_PERMISSIONLESS_GATE_ADDRESS: {
+            "contract_name": "CSM0x02PermissionlessGate",
+            "contract": interface.PermissionlessGate(CSM0X02_PERMISSIONLESS_GATE_ADDRESS),
             "type": "CustomApp",
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
