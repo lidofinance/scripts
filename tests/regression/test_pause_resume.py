@@ -8,6 +8,7 @@ from utils.config import contracts
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.staking_module import calc_module_reward_shares
+from utils.test.csm_helpers import csm_add_node_operator
 from utils.test.deposits_helpers import fill_deposit_buffer
 from utils.test.edf_helpers import send_as_edf_member
 from utils.test.oracle_report_helpers import oracle_report, prepare_exit_bus_report
@@ -248,6 +249,9 @@ def test_resumed_lido_can_stake(stranger):
 @pytest.mark.usefixtures("stopped_lido")
 def test_resumed_lido_can_deposit(stranger):
     contracts.lido.resume({"from": contracts.agent})
+    # CMv1 has a zero stake share limit and the other modules may have no depositable keys
+    # on mainnet, so give CSM one key to keep a module with a non-zero allocation.
+    csm_add_node_operator(contracts.csm, contracts.cs_permissionless_gate, contracts.cs_accounting, stranger, 1)
     fill_deposit_buffer(1)
     # min-first allocation gives the buffer to the least filled module, so the
     # deposit goes to whichever module actually got a non-zero allocation
