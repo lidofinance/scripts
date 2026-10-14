@@ -1,0 +1,765 @@
+import pytest
+
+from brownie import ZERO_ADDRESS, chain, convert, interface, reverts, web3
+from brownie.network.event import EventDict
+from brownie.network.transaction import TransactionReceipt
+
+from utils.config import network_name
+from utils.test.tx_tracing_helpers import (
+    count_vote_items_by_events,
+    display_dg_events,
+    display_voting_events,
+    group_dg_events_from_receipt,
+    group_voting_events_from_receipt,
+)
+from utils.evm_script import encode_call_script, encode_error
+from utils.dual_governance import PROPOSAL_STATUS
+from utils.test.event_validators.circuit_breaker import validate_register_pauser_event
+from utils.test.event_validators.common import validate_events_chain
+from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
+from utils.test.event_validators.proxy import validate_proxy_upgrade_event
+from utils.voting import find_metadata_by_vote_id
+from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
+
+
+# ============================================================================
+# ============================== Import vote =================================
+# ============================================================================
+from scripts.vote_gloas_hoodi import (
+    IPFS_DESCRIPTION,
+    get_dg_items,
+    get_vote_items,
+    start_vote,
+)
+
+
+# ============================================================================
+# ============================== Constants ===================================
+# ============================================================================
+# Addresses are hardcoded here on purpose, independently from the vote script,
+# as a cross-check of the vote script data.
+VOTING = "0x49B3512c44891bef83F8967d075121Bd1b07a01B"
+AGENT = "0x0534aA41907c9631fae990960bCC72d75fA7cfeD"
+EMERGENCY_PROTECTED_TIMELOCK = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
+DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
+
+# Fill these independently from scripts/vote_gloas_hoodi.py (do not copy-paste from
+# the script)
+# TODO set after the Gloas core contracts are deployed on Hoodi (lidofinance/core gloas-verifier)
+NEW_LIDO_LOCATOR_IMPLEMENTATION = None
+NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION = None
+NEW_TOP_UP_GATEWAY_IMPLEMENTATION = None
+NEW_CONSOLIDATION_BUS_IMPLEMENTATION = None
+NEW_WITHDRAWAL_VAULT_IMPLEMENTATION = None
+NEW_VALIDATOR_EXIT_DELAY_VERIFIER = None
+NEW_CONSOLIDATION_GATEWAY = None
+# TODO set after the new module Verifiers are deployed on Hoodi (lidofinance/staking-modules gloas)
+NEW_CSM_VERIFIER = None
+NEW_CSM0X02_VERIFIER = None
+NEW_CM_V2_VERIFIER = None
+# GLOAS_FORK_EPOCH 132352 * 32 slots per epoch,
+# https://github.com/eth-clients/hoodi/blob/main/metadata/config.yaml#L49
+HOODI_GLOAS_SLOT = 4_235_264
+# CAPELLA_FORK_EPOCH 0,
+# https://github.com/eth-clients/hoodi/blob/main/metadata/config.yaml#L33
+HOODI_CAPELLA_SLOT = 0
+# https://github.com/ethereum/consensus-specs/blob/master/presets/mainnet/phase0.yaml#L42
+SLOTS_PER_HISTORICAL_ROOT = 8192
+
+LIDO_LOCATOR = "0xe2EF9536DAAAEBFf5b1c130957AB3E80056b06D8"
+STAKING_ROUTER = "0xCc820558B39ee15C7C45B59390B503b83fb499A8"
+CIRCUIT_BREAKER = "0x44a5789dFeDa59cD176Ab5709ec2F4829dE4d555"
+CIRCUIT_BREAKER_COMMITTEE = "0x83BCE68B4e8b7071b2a664a26e6D3Bc17eEe3102"
+RESEAL_MANAGER = "0x05172CbCDb7307228F781436b327679e4DAE166B"
+PREDEPOSIT_GUARANTEE = "0xa5F55f3402beA2B14AE15Dae1b6811457D43581d"
+TOP_UP_GATEWAY = "0x10DBEb3367876826d00D21718D1d893e0fbD2956"
+CONSOLIDATION_BUS = "0xe09fBcE63826468867eE66Eda491E444829E022A"
+WITHDRAWAL_VAULT = "0x4473dCDDbf77679A643BdB654dbd86D67F8d32f2"
+OLD_VALIDATOR_EXIT_DELAY_VERIFIER = "0xa5F5A9360275390fF9728262a29384399f38d2f0"
+OLD_CONSOLIDATION_GATEWAY = "0xC9991Bb865d025364BCbBd99f36e85889Fb68e69"
+ORACLE_REPORT_SANITY_CHECKER = "0xD0261b0032A00a7449ee7fbE14d3f98702996441"
+ORACLE_DAEMON_CONFIG = "0x2a833402e3F46fFC1ecAb3598c599147a78731a9"
+ACCOUNTING_ORACLE = "0xcb883B1bD0a41512b42D2dB267F2A2cd919FB216"
+VALIDATORS_EXIT_BUS_ORACLE = "0x8664d394C2B3278F26A1B44B967aEf99707eeAB2"
+
+CSM = "0x79CEf36D84743222f37765204Bec41E92a93E59d"
+CSM_FEE_ORACLE = "0xe7314f561B2e72f9543F1004e741bab6Fc51028B"
+OLD_CSM_VERIFIER = "0xC96406b0eADdAC5708aFCa04DcCA67BAdC9642Fd"
+CSM_COMMITTEE = "0x4AF43Ee34a6fcD1fEcA1e1F832124C763561dA53"
+CSM0X02 = "0xbb7dd81FAC80f3Effa10eA8b973c15AE65a4CAf9"
+CSM0X02_FEE_ORACLE = "0x9B8bBA11bbE1a351CC8dD1CFCa6719FF7274A208"
+OLD_CSM0X02_VERIFIER = "0xFdE0FD9aDa4E898D3b34Dd4EA3433b75f0B6dd30"
+CM_V2 = "0x87EB69Ae51317405FD285efD2326a4a11f6173b9"
+CM_V2_FEE_ORACLE = "0x5D2F27000C80f6f7A03015Fd49dB7FEba3fBfa83"
+OLD_CM_V2_VERIFIER = "0x209190Ebc2Be80367a15d05e626784Eb94d6A880"
+CM_COMMITTEE = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
+# Second DEFAULT_ADMIN_ROLE holder of the new module Verifiers on Hoodi (dev team EOA),
+# https://github.com/lidofinance/staking-modules/blob/b25d92df4625db8d6bd96f49d837d940ff505ec0/artifacts/hoodi/csm/upgrade-v3-hoodi.json#L172
+VERIFIER_SECOND_ADMIN = "0x4AF43Ee34a6fcD1fEcA1e1F832124C763561dA53"
+
+PAUSE_ROLE = web3.keccak(text="PAUSE_ROLE").hex()
+RESUME_ROLE = web3.keccak(text="RESUME_ROLE").hex()
+ADD_CONSOLIDATION_REQUEST_ROLE = web3.keccak(text="ADD_CONSOLIDATION_REQUEST_ROLE").hex()
+REPORT_VALIDATOR_EXITING_STATUS_ROLE = web3.keccak(text="REPORT_VALIDATOR_EXITING_STATUS_ROLE").hex()
+VERIFIER_ROLE = web3.keccak(text="VERIFIER_ROLE").hex()
+REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE = web3.keccak(text="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE").hex()
+MANAGE_CONSENSUS_VERSION_ROLE = web3.keccak(text="MANAGE_CONSENSUS_VERSION_ROLE").hex()
+CONFIG_MANAGER_ROLE = web3.keccak(text="CONFIG_MANAGER_ROLE").hex()
+ALL_LIMITS_MANAGER_ROLE = web3.keccak(text="ALL_LIMITS_MANAGER_ROLE").hex()
+DEFAULT_ADMIN_ROLE = "0x" + "00" * 32
+
+ACCOUNTING_ORACLE_CONSENSUS_VERSION = 7
+VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION = 6
+FEE_ORACLE_CONSENSUS_VERSION = 5
+MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY = "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT"
+MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT = 500
+EXITED_ETH_AMOUNT_PER_DAY_LIMIT = 411_975
+CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT = 205_875
+MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH = 11_520
+# LimitsList in the ABI order of OracleReportSanityChecker.setOracleReportLimits
+ORACLE_REPORT_LIMITS = (
+    EXITED_ETH_AMOUNT_PER_DAY_LIMIT,  # exitedEthAmountPerDayLimit
+    57_600,  # appearedEthAmountPerDayLimit
+    1_000,  # annualBalanceIncreaseBPLimit
+    50,  # simulatedShareRateDeviationBPLimit
+    MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH,  # maxBalanceExitRequestedPerReportInEth
+    32,  # maxEffectiveBalanceWeightWCType01
+    2_048,  # maxEffectiveBalanceWeightWCType02
+    8,  # maxItemsPerExtraDataTransaction
+    24,  # maxNodeOperatorsPerExtraDataItem
+    128,  # requestTimestampMargin
+    750_000,  # maxPositiveTokenRebase
+    360,  # maxCLBalanceDecreaseBP
+    50,  # clBalanceOraclesErrorUpperBPLimit
+    CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT,  # consolidationEthAmountPerDayLimit
+    32,  # exitedValidatorEthAmountLimit
+    300,  # externalPendingBalanceCapEth
+)
+SECOND_OPINION_ORACLE = ZERO_ADDRESS
+
+
+# ============================================================================
+# ============================= Test params ==================================
+# ============================================================================
+# TODO set after the vote is started
+EXPECTED_VOTE_ID = None
+EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_EVENTS_COUNT = 1
+# 13 core items + 3 * 9 module Verifier items + 5 * 3 consensus version items
+# + 3 OracleDaemonConfig items + 3 OracleReportSanityChecker items
+EXPECTED_DG_EVENTS_FROM_AGENT = 61
+EXPECTED_DG_EVENTS_COUNT = 61
+# TODO set after the vote is started
+IPFS_DESCRIPTION_HASH = None
+DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
+
+
+# ============================================================================
+# ================================ Helpers ===================================
+# ============================================================================
+def _event_list(events: EventDict, name: str):
+    return [event_item for event_item in events if event_item.name == name]
+
+
+def _single_event(events: EventDict, name: str):
+    items = _event_list(events, name)
+    assert len(items) == 1, f"Expected exactly one {name} event, got {len(items)}"
+    return items[0]
+
+
+def _assert_emitted_by(event_item, emitted_by: str) -> None:
+    assert convert.to_address(event_item["_emitted_by"]) == convert.to_address(
+        emitted_by
+    ), f"Wrong event emitter: expected {emitted_by}, got {event_item['_emitted_by']}"
+
+
+def _assert_oz_role_members(contract_address: str, role: str, expected_members) -> None:
+    contract = interface.AccessControlEnumerable(contract_address)
+    actual_members = [contract.getRoleMember(role, i) for i in range(contract.getRoleMemberCount(role))]
+    assert {convert.to_address(member) for member in actual_members} == {
+        convert.to_address(member) for member in expected_members
+    }
+
+
+# ============================================================================
+# =========================== Event validators ===============================
+# ============================================================================
+def validate_circuit_breaker_unregistration_event(
+    event: EventDict, pausable: str, previous_pauser: str, emitted_by: str
+) -> None:
+    # Unregister always emits PauserSet(pausable, previousPauser, 0). It additionally emits
+    # HeartbeatUpdated(previousPauser, 0) iff previousPauser no longer guards any pausable
+    # afterwards, so that tail is validated only when present.
+    validate_events_chain(
+        [e.name for e in event],
+        ["LogScriptCall", "LogScriptCall", "PauserSet", "HeartbeatUpdated", "ScriptResult", "Executed"],
+    )
+
+    pauser_set_event = _single_event(event, "PauserSet")
+    assert convert.to_address(pauser_set_event["pausable"]) == convert.to_address(pausable)
+    assert convert.to_address(pauser_set_event["previousPauser"]) == convert.to_address(previous_pauser)
+    assert convert.to_address(pauser_set_event["newPauser"]) == convert.to_address(ZERO_ADDRESS)
+    _assert_emitted_by(pauser_set_event, emitted_by)
+
+    if event.count("HeartbeatUpdated") > 0:
+        heartbeat_updated_event = _single_event(event, "HeartbeatUpdated")
+        assert convert.to_address(heartbeat_updated_event["pauser"]) == convert.to_address(previous_pauser)
+        assert heartbeat_updated_event["newHeartbeatExpiry"] == 0
+        _assert_emitted_by(heartbeat_updated_event, emitted_by)
+
+
+def validate_consensus_version_set_event(event: EventDict, version: int, prev_version: int, emitted_by: str) -> None:
+    validate_events_chain(
+        [e.name for e in event], ["LogScriptCall", "LogScriptCall", "ConsensusVersionSet", "ScriptResult", "Executed"]
+    )
+
+    consensus_version_set_event = _single_event(event, "ConsensusVersionSet")
+    assert consensus_version_set_event["version"] == version, "Wrong consensus version"
+    assert consensus_version_set_event["prevVersion"] == prev_version, "Wrong previous consensus version"
+    _assert_emitted_by(consensus_version_set_event, emitted_by)
+
+
+def validate_config_value_set_event(event: EventDict, key: str, value: int, emitted_by: str) -> None:
+    validate_events_chain(
+        [e.name for e in event], ["LogScriptCall", "LogScriptCall", "ConfigValueSet", "ScriptResult", "Executed"]
+    )
+
+    config_value_set_event = _single_event(event, "ConfigValueSet")
+    assert config_value_set_event["key"] == key, "Wrong config key"
+    assert convert.to_uint(config_value_set_event["value"]) == value, "Wrong config value"
+    _assert_emitted_by(config_value_set_event, emitted_by)
+
+
+def validate_oracle_report_limits_event(
+    event: EventDict, exited: int, consolidation: int, max_exit: int, emitted_by: str
+) -> None:
+    # The setter emits an event only for a changed limit, any other limit event or SecondOpinionOracleChanged is wrong
+    assert [e.name for e in event] == [
+        "LogScriptCall",
+        "ExitedEthAmountPerDayLimitSet",
+        "ConsolidationEthAmountPerDayLimitSet",
+        "MaxBalanceExitRequestedPerReportInEthSet",
+        "ScriptResult",
+        "Executed",
+    ]
+
+    exited_event = _single_event(event, "ExitedEthAmountPerDayLimitSet")
+    assert exited_event["exitedEthAmountPerDayLimit"] == exited, "Wrong exitedEthAmountPerDayLimit"
+    _assert_emitted_by(exited_event, emitted_by)
+
+    consolidation_event = _single_event(event, "ConsolidationEthAmountPerDayLimitSet")
+    assert consolidation_event["consolidationEthAmountPerDayLimit"] == consolidation, "Wrong consolidation limit"
+    _assert_emitted_by(consolidation_event, emitted_by)
+
+    max_exit_event = _single_event(event, "MaxBalanceExitRequestedPerReportInEthSet")
+    assert max_exit_event["maxBalanceExitRequestedPerReportInEth"] == max_exit, "Wrong max exit requested limit"
+    _assert_emitted_by(max_exit_event, emitted_by)
+
+
+# ============================================================================
+# =============================== Fixtures ===================================
+# ============================================================================
+@pytest.fixture(scope="module")
+def runtime_upgrade_context():
+    if network_name() != "hoodi-fork":
+        pytest.skip("Run the Gloas vote test on --network hoodi-fork.")
+
+
+@pytest.fixture(scope="module")
+def dual_governance_proposal_calls(runtime_upgrade_context):
+    return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
+
+
+# ============================================================================
+# ================================= Test =====================================
+# ============================================================================
+def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_governance_proposal_calls):
+    # =========================================================================
+    # ========================== Arrange variables ============================
+    # =========================================================================
+    voting = interface.Voting(VOTING)
+    agent = interface.Agent(AGENT)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    dual_governance = interface.DualGovernance(DUAL_GOVERNANCE)
+
+    staking_router = interface.StakingRouter(STAKING_ROUTER)
+    circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
+    locator = interface.LidoLocator(LIDO_LOCATOR)
+    old_cg = interface.ConsolidationGateway(OLD_CONSOLIDATION_GATEWAY)
+    new_cg = interface.ConsolidationGatewayGloas(NEW_CONSOLIDATION_GATEWAY)
+    sanity_checker = interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
+    oracle_daemon_config = interface.OracleDaemonConfig(ORACLE_DAEMON_CONFIG)
+
+    expected_ipfs_description_hash = IPFS_DESCRIPTION_HASH or calculate_vote_ipfs_description(IPFS_DESCRIPTION)["cid"]
+
+    # =========================================================================
+    # ======================== Identify or Create vote ========================
+    # =========================================================================
+    if vote_ids_from_env:
+        vote_id = vote_ids_from_env[0]
+        if EXPECTED_VOTE_ID is not None:
+            assert vote_id == EXPECTED_VOTE_ID
+    elif EXPECTED_VOTE_ID is not None and voting.votesLength() > EXPECTED_VOTE_ID:
+        vote_id = EXPECTED_VOTE_ID
+    else:
+        vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
+
+    _, call_script_items = get_vote_items()
+    onchain_script = voting.getVote(vote_id)["script"]
+    assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
+
+    expected_dg_proposal_id = EXPECTED_DG_PROPOSAL_ID
+    dg_proposals_count_before_vote_execution = timelock.getProposalsCount()
+
+    # =========================================================================
+    # ============================= Execute Vote ==============================
+    # =========================================================================
+    is_executed = voting.getVote(vote_id)["executed"]
+    if not is_executed:
+        # =======================================================================
+        # ========================= Before voting checks ========================
+        # =======================================================================
+        assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == expected_ipfs_description_hash
+
+        vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
+        display_voting_events(vote_tx)
+        vote_events = group_voting_events_from_receipt(vote_tx)
+
+        # =======================================================================
+        # ========================= After voting checks =========================
+        # =======================================================================
+        assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
+        assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
+
+        if expected_dg_proposal_id is None:
+            expected_dg_proposal_id = dg_proposals_count_before_vote_execution + 1
+
+        assert expected_dg_proposal_id == timelock.getProposalsCount()
+
+        # 1. Submit the Gloas upgrade to Dual Governance
+        validate_dual_governance_submit_event(
+            vote_events[0],
+            proposal_id=expected_dg_proposal_id,
+            proposer=VOTING,
+            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            metadata=DG_PROPOSAL_METADATA,
+            proposal_calls=dual_governance_proposal_calls,
+        )
+
+    # =========================================================================
+    # ======================= Execute DG Proposal =============================
+    # =========================================================================
+    if expected_dg_proposal_id is None:
+        expected_dg_proposal_id = timelock.getProposalsCount()
+
+    details = timelock.getProposalDetails(expected_dg_proposal_id)
+    old_cg_limits_before = None
+    if details["status"] != PROPOSAL_STATUS["executed"]:
+        # =======================================================================
+        # ================= DG before proposal executed checks ==================
+        # =======================================================================
+        assert convert.to_address(interface.OssifiableProxy(LIDO_LOCATOR).proxy__getImplementation()) != (
+            convert.to_address(NEW_LIDO_LOCATOR_IMPLEMENTATION)
+        )
+        assert convert.to_address(locator.validatorExitDelayVerifier()) == convert.to_address(
+            OLD_VALIDATOR_EXIT_DELAY_VERIFIER
+        )
+        assert convert.to_address(locator.consolidationGateway()) == convert.to_address(OLD_CONSOLIDATION_GATEWAY)
+
+        assert staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, OLD_VALIDATOR_EXIT_DELAY_VERIFIER)
+        assert not staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, NEW_VALIDATOR_EXIT_DELAY_VERIFIER)
+
+        assert old_cg.hasRole(PAUSE_ROLE, CIRCUIT_BREAKER)
+        assert old_cg.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+        assert old_cg.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+        assert old_cg.hasRole(ADD_CONSOLIDATION_REQUEST_ROLE, CONSOLIDATION_BUS)
+        _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
+        _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+        _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, RESUME_ROLE, [RESEAL_MANAGER])
+        _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, ADD_CONSOLIDATION_REQUEST_ROLE, [CONSOLIDATION_BUS])
+        assert convert.to_address(circuit_breaker.getPauser(OLD_CONSOLIDATION_GATEWAY)) == convert.to_address(
+            CIRCUIT_BREAKER_COMMITTEE
+        )
+        assert circuit_breaker.getPauser(NEW_CONSOLIDATION_GATEWAY) == ZERO_ADDRESS
+
+        new_withdrawal_vault = interface.WithdrawalVault(NEW_WITHDRAWAL_VAULT_IMPLEMENTATION)
+        assert convert.to_address(new_withdrawal_vault.CONSOLIDATION_GATEWAY()) == convert.to_address(
+            NEW_CONSOLIDATION_GATEWAY
+        )
+
+        assert (
+            interface.PredepositGuaranteeGloas(NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION).DEPOSIT_DOMAIN()
+            == interface.PredepositGuarantee(PREDEPOSIT_GUARANTEE).DEPOSIT_DOMAIN()
+        )
+
+        new_vedv = interface.ValidatorExitVerifierGloas(NEW_VALIDATOR_EXIT_DELAY_VERIFIER)
+        assert new_vedv.CAPELLA_SLOT() == HOODI_CAPELLA_SLOT
+        assert new_vedv.SLOTS_PER_HISTORICAL_ROOT() == SLOTS_PER_HISTORICAL_ROOT
+
+        # brownie drops struct field names for tuple[] return values, so module fields are read by position
+        module_ids = {str(m[1]): m[0] for m in staking_router.getStakingModules()}
+        for module, old_verifier, new_verifier, committee in [
+            (CSM, OLD_CSM_VERIFIER, NEW_CSM_VERIFIER, CSM_COMMITTEE),
+            (CSM0X02, OLD_CSM0X02_VERIFIER, NEW_CSM0X02_VERIFIER, CSM_COMMITTEE),
+            (CM_V2, OLD_CM_V2_VERIFIER, NEW_CM_V2_VERIFIER, CM_COMMITTEE),
+        ]:
+            assert int(str(interface.VerifierGloas(new_verifier).WITHDRAWAL_CREDENTIALS()), 16) == int(
+                str(staking_router.getStakingModuleWithdrawalCredentials(module_ids[convert.to_address(module)])), 16
+            )
+            assert not interface.VerifierGloas(new_verifier).isPaused()
+            module_contract = interface.AccessControl(module)
+            assert module_contract.hasRole(VERIFIER_ROLE, old_verifier)
+            assert module_contract.hasRole(REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, old_verifier)
+            assert not module_contract.hasRole(VERIFIER_ROLE, new_verifier)
+            assert not module_contract.hasRole(REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, new_verifier)
+            for verifier_contract in [interface.Verifier(old_verifier), interface.VerifierGloas(new_verifier)]:
+                assert verifier_contract.hasRole(PAUSE_ROLE, CIRCUIT_BREAKER)
+                assert verifier_contract.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+                assert verifier_contract.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+            assert convert.to_address(circuit_breaker.getPauser(old_verifier)) == convert.to_address(committee)
+            assert circuit_breaker.getPauser(new_verifier) == ZERO_ADDRESS
+
+        assert interface.BaseOracle(ACCOUNTING_ORACLE).getConsensusVersion() == ACCOUNTING_ORACLE_CONSENSUS_VERSION - 1
+        assert (
+            interface.BaseOracle(VALIDATORS_EXIT_BUS_ORACLE).getConsensusVersion()
+            == VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION - 1
+        )
+        assert interface.BaseOracle(CSM_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION - 1
+        assert interface.BaseOracle(CSM0X02_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION - 1
+        assert interface.BaseOracle(CM_V2_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION - 1
+
+        assert sanity_checker.secondOpinionOracle() == SECOND_OPINION_ORACLE
+
+        old_cg_limits_before = old_cg.getConsolidationRequestLimitFullInfo()[:3]
+        assert new_cg.getConsolidationRequestLimitFullInfo()[:3] == old_cg_limits_before
+
+        if details["status"] == PROPOSAL_STATUS["submitted"]:
+            chain.sleep(timelock.getAfterSubmitDelay() + 1)
+            dual_governance.scheduleProposal(expected_dg_proposal_id, {"from": stranger})
+
+        if timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["scheduled"]:
+            chain.sleep(timelock.getAfterScheduleDelay() + 1)
+
+            dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
+            display_dg_events(dg_tx)
+
+            dg_events = group_dg_events_from_receipt(
+                dg_tx,
+                timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            )
+
+            assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
+            assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+            # =======================================================================
+            # ============================ DG events checks =========================
+            # =======================================================================
+            # 1.1-1.5. Upgrade the proxy implementations
+            validate_proxy_upgrade_event(dg_events[0], NEW_LIDO_LOCATOR_IMPLEMENTATION, LIDO_LOCATOR)
+            validate_proxy_upgrade_event(dg_events[1], NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION, PREDEPOSIT_GUARANTEE)
+            validate_proxy_upgrade_event(dg_events[2], NEW_TOP_UP_GATEWAY_IMPLEMENTATION, TOP_UP_GATEWAY)
+            validate_proxy_upgrade_event(dg_events[3], NEW_CONSOLIDATION_BUS_IMPLEMENTATION, CONSOLIDATION_BUS)
+            validate_proxy_upgrade_event(dg_events[4], NEW_WITHDRAWAL_VAULT_IMPLEMENTATION, WITHDRAWAL_VAULT)
+
+            # 1.6-1.7. Move REPORT_VALIDATOR_EXITING_STATUS_ROLE to the new ValidatorExitDelayVerifier
+            validate_grant_role_event(
+                dg_events[5],
+                REPORT_VALIDATOR_EXITING_STATUS_ROLE,
+                NEW_VALIDATOR_EXIT_DELAY_VERIFIER,
+                AGENT,
+                STAKING_ROUTER,
+            )
+            validate_revoke_role_event(
+                dg_events[6],
+                REPORT_VALIDATOR_EXITING_STATUS_ROLE,
+                OLD_VALIDATOR_EXIT_DELAY_VERIFIER,
+                AGENT,
+                STAKING_ROUTER,
+            )
+
+            # 1.8-1.9. New ConsolidationGateway CircuitBreaker registration
+            validate_register_pauser_event(
+                dg_events[7], NEW_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
+            )
+            validate_circuit_breaker_unregistration_event(
+                dg_events[8], OLD_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
+            )
+
+            # 1.10-1.13. Old ConsolidationGateway roles
+            validate_revoke_role_event(dg_events[9], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CONSOLIDATION_GATEWAY)
+            validate_revoke_role_event(dg_events[10], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY)
+            validate_revoke_role_event(dg_events[11], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY)
+            validate_revoke_role_event(
+                dg_events[12], ADD_CONSOLIDATION_REQUEST_ROLE, CONSOLIDATION_BUS, AGENT, OLD_CONSOLIDATION_GATEWAY
+            )
+
+            # 1.14-1.22. CSM Verifier
+            validate_grant_role_event(dg_events[13], VERIFIER_ROLE, NEW_CSM_VERIFIER, AGENT, CSM)
+            validate_grant_role_event(
+                dg_events[14], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM_VERIFIER, AGENT, CSM
+            )
+            validate_register_pauser_event(dg_events[15], NEW_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(dg_events[16], VERIFIER_ROLE, OLD_CSM_VERIFIER, AGENT, CSM)
+            validate_revoke_role_event(
+                dg_events[17], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM_VERIFIER, AGENT, CSM
+            )
+            validate_circuit_breaker_unregistration_event(
+                dg_events[18], OLD_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
+            )
+            validate_revoke_role_event(dg_events[19], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM_VERIFIER)
+            validate_revoke_role_event(dg_events[20], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
+            validate_revoke_role_event(dg_events[21], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
+
+            # 1.23-1.31. CSM 0x02 Verifier
+            validate_grant_role_event(dg_events[22], VERIFIER_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02)
+            validate_grant_role_event(
+                dg_events[23], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02
+            )
+            validate_register_pauser_event(dg_events[24], NEW_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(dg_events[25], VERIFIER_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02)
+            validate_revoke_role_event(
+                dg_events[26], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02
+            )
+            validate_circuit_breaker_unregistration_event(
+                dg_events[27], OLD_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
+            )
+            validate_revoke_role_event(dg_events[28], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM0X02_VERIFIER)
+            validate_revoke_role_event(dg_events[29], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
+            validate_revoke_role_event(dg_events[30], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
+
+            # 1.32-1.40. Curated Module v2 Verifier
+            validate_grant_role_event(dg_events[31], VERIFIER_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2)
+            validate_grant_role_event(
+                dg_events[32], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2
+            )
+            validate_register_pauser_event(dg_events[33], NEW_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(dg_events[34], VERIFIER_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2)
+            validate_revoke_role_event(
+                dg_events[35], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2
+            )
+            validate_circuit_breaker_unregistration_event(
+                dg_events[36], OLD_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER
+            )
+            validate_revoke_role_event(dg_events[37], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CM_V2_VERIFIER)
+            validate_revoke_role_event(dg_events[38], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
+            validate_revoke_role_event(dg_events[39], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
+
+            # 1.41-1.43. OracleDaemonConfig MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT
+            validate_grant_role_event(dg_events[40], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
+            validate_config_value_set_event(
+                dg_events[41],
+                MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY,
+                MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
+                ORACLE_DAEMON_CONFIG,
+            )
+            validate_revoke_role_event(dg_events[42], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
+
+            # 1.44-1.46. OracleReportSanityChecker limits
+            validate_grant_role_event(
+                dg_events[43], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
+            )
+            validate_oracle_report_limits_event(
+                dg_events[44],
+                EXITED_ETH_AMOUNT_PER_DAY_LIMIT,
+                CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT,
+                MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH,
+                ORACLE_REPORT_SANITY_CHECKER,
+            )
+            validate_revoke_role_event(
+                dg_events[45], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
+            )
+
+            # 1.47-1.49. AccountingOracle consensus version
+            validate_grant_role_event(dg_events[46], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE)
+            validate_consensus_version_set_event(
+                dg_events[47],
+                ACCOUNTING_ORACLE_CONSENSUS_VERSION,
+                ACCOUNTING_ORACLE_CONSENSUS_VERSION - 1,
+                ACCOUNTING_ORACLE,
+            )
+            validate_revoke_role_event(dg_events[48], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE)
+
+            # 1.50-1.52. ValidatorsExitBusOracle consensus version
+            validate_grant_role_event(
+                dg_events[49], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
+            )
+            validate_consensus_version_set_event(
+                dg_events[50],
+                VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION,
+                VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION - 1,
+                VALIDATORS_EXIT_BUS_ORACLE,
+            )
+            validate_revoke_role_event(
+                dg_events[51], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
+            )
+
+            # 1.53-1.55. CSM FeeOracle consensus version
+            validate_grant_role_event(dg_events[52], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
+            validate_consensus_version_set_event(
+                dg_events[53], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM_FEE_ORACLE
+            )
+            validate_revoke_role_event(dg_events[54], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
+
+            # 1.56-1.58. CSM 0x02 FeeOracle consensus version
+            validate_grant_role_event(dg_events[55], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE)
+            validate_consensus_version_set_event(
+                dg_events[56], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM0X02_FEE_ORACLE
+            )
+            validate_revoke_role_event(dg_events[57], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE)
+
+            # 1.59-1.61. Curated Module v2 FeeOracle consensus version
+            validate_grant_role_event(dg_events[58], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE)
+            validate_consensus_version_set_event(
+                dg_events[59], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CM_V2_FEE_ORACLE
+            )
+            validate_revoke_role_event(dg_events[60], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE)
+
+    # =========================================================================
+    # ==================== After DG proposal executed checks ==================
+    # =========================================================================
+    assert timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["executed"]
+
+    # Proxies point to the new implementations and the locator to the new contracts
+    assert convert.to_address(interface.OssifiableProxy(LIDO_LOCATOR).proxy__getImplementation()) == convert.to_address(
+        NEW_LIDO_LOCATOR_IMPLEMENTATION
+    )
+    assert convert.to_address(
+        interface.OssifiableProxy(PREDEPOSIT_GUARANTEE).proxy__getImplementation()
+    ) == convert.to_address(NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION)
+    assert convert.to_address(
+        interface.OssifiableProxy(TOP_UP_GATEWAY).proxy__getImplementation()
+    ) == convert.to_address(NEW_TOP_UP_GATEWAY_IMPLEMENTATION)
+    assert convert.to_address(
+        interface.OssifiableProxy(CONSOLIDATION_BUS).proxy__getImplementation()
+    ) == convert.to_address(NEW_CONSOLIDATION_BUS_IMPLEMENTATION)
+    assert convert.to_address(
+        interface.WithdrawalsManagerProxy(WITHDRAWAL_VAULT).implementation()
+    ) == convert.to_address(NEW_WITHDRAWAL_VAULT_IMPLEMENTATION)
+    assert convert.to_address(locator.validatorExitDelayVerifier()) == convert.to_address(
+        NEW_VALIDATOR_EXIT_DELAY_VERIFIER
+    )
+    assert convert.to_address(locator.consolidationGateway()) == convert.to_address(NEW_CONSOLIDATION_GATEWAY)
+    assert convert.to_address(
+        interface.ConsolidationBus(CONSOLIDATION_BUS).getConsolidationGateway()
+    ) == convert.to_address(NEW_CONSOLIDATION_GATEWAY)
+    assert convert.to_address(
+        interface.WithdrawalVault(WITHDRAWAL_VAULT).CONSOLIDATION_GATEWAY()
+    ) == convert.to_address(NEW_CONSOLIDATION_GATEWAY)
+
+    # The new ConsolidationGateway keeps the limits of the old one (the consumed budget resets with the contract)
+    assert new_cg.getConsolidationRequestLimitFullInfo()[:3] == old_cg.getConsolidationRequestLimitFullInfo()[:3]
+    if old_cg_limits_before is not None:
+        assert new_cg.getConsolidationRequestLimitFullInfo()[:3] == old_cg_limits_before
+
+    assert interface.ValidatorExitVerifierGloas(NEW_VALIDATOR_EXIT_DELAY_VERIFIER).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.ConsolidationGatewayGloas(NEW_CONSOLIDATION_GATEWAY).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.PredepositGuaranteeGloas(NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.TopUpGatewayGloas(NEW_TOP_UP_GATEWAY_IMPLEMENTATION).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.VerifierGloas(NEW_CSM_VERIFIER).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.VerifierGloas(NEW_CSM0X02_VERIFIER).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+    assert interface.VerifierGloas(NEW_CM_V2_VERIFIER).GLOAS_SLOT() == HOODI_GLOAS_SLOT
+
+    # StakingRouter exit-delay reporting role
+    assert staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, NEW_VALIDATOR_EXIT_DELAY_VERIFIER)
+    assert not staking_router.hasRole(REPORT_VALIDATOR_EXITING_STATUS_ROLE, OLD_VALIDATOR_EXIT_DELAY_VERIFIER)
+    assert staking_router.getRoleMemberCount(REPORT_VALIDATOR_EXITING_STATUS_ROLE) == 1
+
+    # ConsolidationGateway roles and CircuitBreaker registration
+    assert new_cg.hasRole(DEFAULT_ADMIN_ROLE, AGENT)
+    assert new_cg.hasRole(PAUSE_ROLE, CIRCUIT_BREAKER)
+    assert new_cg.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+    assert new_cg.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+    assert new_cg.hasRole(ADD_CONSOLIDATION_REQUEST_ROLE, CONSOLIDATION_BUS)
+    _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, DEFAULT_ADMIN_ROLE, [AGENT])
+    _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, PAUSE_ROLE, [CIRCUIT_BREAKER, RESEAL_MANAGER])
+    _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, RESUME_ROLE, [RESEAL_MANAGER])
+    _assert_oz_role_members(NEW_CONSOLIDATION_GATEWAY, ADD_CONSOLIDATION_REQUEST_ROLE, [CONSOLIDATION_BUS])
+    assert convert.to_address(circuit_breaker.getPauser(NEW_CONSOLIDATION_GATEWAY)) == convert.to_address(
+        CIRCUIT_BREAKER_COMMITTEE
+    )
+    assert circuit_breaker.getPauser(OLD_CONSOLIDATION_GATEWAY) == ZERO_ADDRESS
+    for role in [PAUSE_ROLE, RESUME_ROLE, ADD_CONSOLIDATION_REQUEST_ROLE]:
+        assert old_cg.getRoleMemberCount(role) == 0
+
+    # Module Verifiers
+    for module, old_verifier, new_verifier, committee in [
+        (CSM, OLD_CSM_VERIFIER, NEW_CSM_VERIFIER, CSM_COMMITTEE),
+        (CSM0X02, OLD_CSM0X02_VERIFIER, NEW_CSM0X02_VERIFIER, CSM_COMMITTEE),
+        (CM_V2, OLD_CM_V2_VERIFIER, NEW_CM_V2_VERIFIER, CM_COMMITTEE),
+    ]:
+        module_contract = interface.AccessControl(module)
+        old_verifier_contract = interface.Verifier(old_verifier)
+        new_verifier_contract = interface.VerifierGloas(new_verifier)
+
+        assert module_contract.hasRole(VERIFIER_ROLE, new_verifier)
+        assert module_contract.hasRole(REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, new_verifier)
+        assert not module_contract.hasRole(VERIFIER_ROLE, old_verifier)
+        assert not module_contract.hasRole(REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, old_verifier)
+
+        assert convert.to_address(new_verifier_contract.MODULE()) == convert.to_address(module)
+        _assert_oz_role_members(new_verifier, DEFAULT_ADMIN_ROLE, [AGENT, VERIFIER_SECOND_ADMIN])
+        assert new_verifier_contract.hasRole(PAUSE_ROLE, CIRCUIT_BREAKER)
+        assert new_verifier_contract.hasRole(PAUSE_ROLE, RESEAL_MANAGER)
+        assert new_verifier_contract.hasRole(RESUME_ROLE, RESEAL_MANAGER)
+        assert new_verifier_contract.getRoleMemberCount(PAUSE_ROLE) == 2
+        assert new_verifier_contract.getRoleMemberCount(RESUME_ROLE) == 1
+
+        for role in [PAUSE_ROLE, RESUME_ROLE]:
+            assert old_verifier_contract.getRoleMemberCount(role) == 0
+
+        assert convert.to_address(circuit_breaker.getPauser(new_verifier)) == convert.to_address(committee)
+        assert circuit_breaker.getPauser(old_verifier) == ZERO_ADDRESS
+
+    # Oracles, OracleDaemonConfig and OracleReportSanityChecker
+    assert interface.BaseOracle(ACCOUNTING_ORACLE).getConsensusVersion() == ACCOUNTING_ORACLE_CONSENSUS_VERSION
+    assert (
+        interface.BaseOracle(VALIDATORS_EXIT_BUS_ORACLE).getConsensusVersion()
+        == VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION
+    )
+    assert interface.BaseOracle(CSM_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION
+    assert interface.BaseOracle(CSM0X02_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION
+    assert interface.BaseOracle(CM_V2_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION
+
+    assert convert.to_uint(oracle_daemon_config.get(MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY)) == (
+        MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT
+    )
+
+    assert tuple(sanity_checker.getOracleReportLimits()) == ORACLE_REPORT_LIMITS
+    assert sanity_checker.secondOpinionOracle() == SECOND_OPINION_ORACLE
+
+    # The Agent keeps none of the temporary roles
+    for contract, role in [
+        (ACCOUNTING_ORACLE, MANAGE_CONSENSUS_VERSION_ROLE),
+        (VALIDATORS_EXIT_BUS_ORACLE, MANAGE_CONSENSUS_VERSION_ROLE),
+        (CSM_FEE_ORACLE, MANAGE_CONSENSUS_VERSION_ROLE),
+        (CSM0X02_FEE_ORACLE, MANAGE_CONSENSUS_VERSION_ROLE),
+        (CM_V2_FEE_ORACLE, MANAGE_CONSENSUS_VERSION_ROLE),
+        (ORACLE_DAEMON_CONFIG, CONFIG_MANAGER_ROLE),
+        (ORACLE_REPORT_SANITY_CHECKER, ALL_LIMITS_MANAGER_ROLE),
+    ]:
+        assert not interface.AccessControl(contract).hasRole(role, AGENT), f"Agent keeps {role} on {contract}"
+
+    # Scenario: the CircuitBreaker committees pause the new ConsolidationGateway and Verifiers, the old ones are out
+    for pausable_name, old_pausable, new_pausable, committee in [
+        ("ConsolidationGateway", OLD_CONSOLIDATION_GATEWAY, NEW_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE),
+        ("CSM Verifier", OLD_CSM_VERIFIER, NEW_CSM_VERIFIER, CSM_COMMITTEE),
+        ("CSM 0x02 Verifier", OLD_CSM0X02_VERIFIER, NEW_CSM0X02_VERIFIER, CSM_COMMITTEE),
+        ("CM v2 Verifier", OLD_CM_V2_VERIFIER, NEW_CM_V2_VERIFIER, CM_COMMITTEE),
+    ]:
+        committee_account = accounts.at(committee, force=True)
+
+        # .call() — a reverted transaction does not always surface custom-error data
+        with reverts(encode_error("SenderNotPauser()")):
+            circuit_breaker.pause.call(old_pausable, {"from": committee_account})
+
+        chain.snapshot()
+        try:
+            assert not interface.IPausable(new_pausable).isPaused(), f"New {pausable_name} is paused"
+            circuit_breaker.pause(new_pausable, {"from": committee_account})
+            assert interface.IPausable(new_pausable).isPaused(), f"New {pausable_name} is not paused by CircuitBreaker"
+            assert not interface.IPausable(old_pausable).isPaused(), f"Old {pausable_name} is paused"
+        finally:
+            chain.revert()
