@@ -16,7 +16,7 @@ from utils.test.snapshot_helpers import _chain_snapshot
 from .utils import get_slot
 
 SLOTS_COUNT_TO_CHECK = 16
-MAX_ARRAY_SIZE = 2 ** 5
+MAX_ARRAY_SIZE = 2**5
 
 
 class Frame(TypedDict):
@@ -48,7 +48,9 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
-    return []
+    # The vote adds four Easy Track factories, changing evmScriptFactories.length.
+    # The factories and their permissions are checked in test_vote_csm0x02.py.
+    return [(contracts.easy_track.address, 5)]
 
 
 @pytest.fixture(scope="module")
