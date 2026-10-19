@@ -96,18 +96,26 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
 # ============================== Constants ===================================
-# TODO set after the Gloas core contracts are deployed on Hoodi (lidofinance/core gloas-verifier)
-NEW_LIDO_LOCATOR_IMPLEMENTATION = None
-NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION = None
-NEW_TOP_UP_GATEWAY_IMPLEMENTATION = None
-NEW_CONSOLIDATION_BUS_IMPLEMENTATION = None
-NEW_WITHDRAWAL_VAULT_IMPLEMENTATION = None
-NEW_VALIDATOR_EXIT_DELAY_VERIFIER = None
-NEW_CONSOLIDATION_GATEWAY = None
-# TODO set after the new module Verifiers are deployed on Hoodi (lidofinance/staking-modules gloas)
-NEW_CSM_VERIFIER = None
-NEW_CSM0X02_VERIFIER = None
-NEW_CM_V2_VERIFIER = None
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L753
+NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x101430e537EFfA1385CC74838EbD43a91D58a722"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L906
+NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION = "0x972A2a03011D629cded15b5b7e70e60b3E17a142"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1012
+NEW_TOP_UP_GATEWAY_IMPLEMENTATION = "0x18Ed6Ba7EBaecEd415b71dbB3795362070b227C5"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L368
+NEW_CONSOLIDATION_BUS_IMPLEMENTATION = "0x95a435Bbae97685d4a9B77d77E23e2a827a717a5"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1403
+NEW_WITHDRAWAL_VAULT_IMPLEMENTATION = "0xdfC1E89ceb393C15e2d864F453c7991230367708"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1312
+NEW_VALIDATOR_EXIT_DELAY_VERIFIER = "0x34eFB78e7e4241269D6fe96042Eaa0c5715C7Ba4"
+# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L374
+NEW_CONSOLIDATION_GATEWAY = "0x0718B7DE68ee5A82ebb17a86cF99371881154E51"
+# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/csm/upgrade-v3-hoodi.json#L206
+NEW_CSM_VERIFIER = "0xb70fA371989d7C1FCb88d6Be10A83F286E8e3508"
+# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/csm0x02/deploy-hoodi.json#L114
+NEW_CSM0X02_VERIFIER = "0x3B30b0F9b4dEc685F79192fAa407898B20E5688c"
+# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/curated/deploy-hoodi.json#L636
+NEW_CM_V2_VERIFIER = "0xda4e4a7F600bF6974e4837fBB0Caced8E9C8056D"
 
 # https://github.com/lidofinance/core/blob/ab9a169759f28ffad0f618c7714e3bd24fa89782/deployed-hoodi.json#L345
 CIRCUIT_BREAKER = "0x44a5789dFeDa59cD176Ab5709ec2F4829dE4d555"
