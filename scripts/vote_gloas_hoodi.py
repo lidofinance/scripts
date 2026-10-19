@@ -1,7 +1,7 @@
 """
 Hoodi vote for the on-chain part of LIP-43 (Glamsterdam/Gloas compatibility).
 
-1. Submit the Gloas upgrade to Dual Governance
+1. Submit the Gloas upgrade to Dual Governance as a single Aragon Agent forward call
 1.1. Upgrade LidoLocator implementation
 1.2. Upgrade PredepositGuarantee implementation
 1.3. Upgrade TopUpGateway implementation
@@ -215,599 +215,359 @@ def get_dg_items() -> List[Tuple[str, str]]:
     sanity_checker = interface.OracleReportSanityChecker(ORACLE_REPORT_SANITY_CHECKER)
 
     return [
-        # 1.1. Upgrade LidoLocator implementation
         agent_forward(
             [
+                # 1.1. Upgrade LidoLocator implementation
                 (
                     locator_proxy.address,
                     locator_proxy.proxy__upgradeTo.encode_input(NEW_LIDO_LOCATOR_IMPLEMENTATION),
-                )
-            ]
-        ),
-        # 1.2. Upgrade PredepositGuarantee implementation
-        agent_forward(
-            [
+                ),
+                # 1.2. Upgrade PredepositGuarantee implementation
                 (
                     predeposit_guarantee_proxy.address,
                     predeposit_guarantee_proxy.proxy__upgradeTo.encode_input(NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION),
-                )
-            ]
-        ),
-        # 1.3. Upgrade TopUpGateway implementation
-        agent_forward(
-            [
+                ),
+                # 1.3. Upgrade TopUpGateway implementation
                 (
                     top_up_gateway_proxy.address,
                     top_up_gateway_proxy.proxy__upgradeTo.encode_input(NEW_TOP_UP_GATEWAY_IMPLEMENTATION),
-                )
-            ]
-        ),
-        # 1.4. Upgrade ConsolidationBus implementation
-        agent_forward(
-            [
+                ),
+                # 1.4. Upgrade ConsolidationBus implementation
                 (
                     consolidation_bus_proxy.address,
                     consolidation_bus_proxy.proxy__upgradeTo.encode_input(NEW_CONSOLIDATION_BUS_IMPLEMENTATION),
-                )
-            ]
-        ),
-        # 1.5. Upgrade WithdrawalVault implementation
-        agent_forward(
-            [
+                ),
+                # 1.5. Upgrade WithdrawalVault implementation
                 (
                     withdrawal_vault_proxy.address,
                     withdrawal_vault_proxy.proxy_upgradeTo.encode_input(NEW_WITHDRAWAL_VAULT_IMPLEMENTATION, b""),
-                )
-            ]
-        ),
-        # 1.6. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE on StakingRouter to the new ValidatorExitDelayVerifier
-        agent_forward(
-            [
+                ),
+                # 1.6. Grant REPORT_VALIDATOR_EXITING_STATUS_ROLE on StakingRouter to the new ValidatorExitDelayVerifier
                 encode_oz_grant_role(
                     contract=staking_router,
                     role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
                     grant_to=NEW_VALIDATOR_EXIT_DELAY_VERIFIER,
-                )
-            ]
-        ),
-        # 1.7. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE on StakingRouter from the old ValidatorExitDelayVerifier
-        agent_forward(
-            [
+                ),
+                # 1.7. Revoke REPORT_VALIDATOR_EXITING_STATUS_ROLE on StakingRouter from the old ValidatorExitDelayVerifier
                 encode_oz_revoke_role(
                     contract=staking_router,
                     role_name="REPORT_VALIDATOR_EXITING_STATUS_ROLE",
                     revoke_from=OLD_VALIDATOR_EXIT_DELAY_VERIFIER,
-                )
-            ]
-        ),
-        # 1.8. Register the new ConsolidationGateway on CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.8. Register the new ConsolidationGateway on CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(NEW_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE),
-                )
-            ]
-        ),
-        # 1.9. Unregister the old ConsolidationGateway from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.9. Unregister the old ConsolidationGateway from CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CONSOLIDATION_GATEWAY, ZERO_ADDRESS),
-                )
-            ]
-        ),
-        # 1.10. Revoke PAUSE_ROLE on the old ConsolidationGateway from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.10. Revoke PAUSE_ROLE on the old ConsolidationGateway from CircuitBreaker
                 encode_oz_revoke_role(
                     contract=old_consolidation_gateway,
                     role_name="PAUSE_ROLE",
                     revoke_from=CIRCUIT_BREAKER,
-                )
-            ]
-        ),
-        # 1.11. Revoke PAUSE_ROLE on the old ConsolidationGateway from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.11. Revoke PAUSE_ROLE on the old ConsolidationGateway from ResealManager
                 encode_oz_revoke_role(
                     contract=old_consolidation_gateway,
                     role_name="PAUSE_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.12. Revoke RESUME_ROLE on the old ConsolidationGateway from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.12. Revoke RESUME_ROLE on the old ConsolidationGateway from ResealManager
                 encode_oz_revoke_role(
                     contract=old_consolidation_gateway,
                     role_name="RESUME_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.13. Revoke ADD_CONSOLIDATION_REQUEST_ROLE on the old ConsolidationGateway from ConsolidationBus
-        agent_forward(
-            [
+                ),
+                # 1.13. Revoke ADD_CONSOLIDATION_REQUEST_ROLE on the old ConsolidationGateway from ConsolidationBus
                 encode_oz_revoke_role(
                     contract=old_consolidation_gateway,
                     role_name="ADD_CONSOLIDATION_REQUEST_ROLE",
                     revoke_from=CONSOLIDATION_BUS,
-                )
-            ]
-        ),
-        # 1.14. Grant VERIFIER_ROLE on CSM to the new CSM Verifier
-        agent_forward(
-            [
+                ),
+                # 1.14. Grant VERIFIER_ROLE on CSM to the new CSM Verifier
                 encode_oz_grant_role(
                     contract=csm,
                     role_name="VERIFIER_ROLE",
                     grant_to=NEW_CSM_VERIFIER,
-                )
-            ]
-        ),
-        # 1.15. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM to the new CSM Verifier
-        agent_forward(
-            [
+                ),
+                # 1.15. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM to the new CSM Verifier
                 encode_oz_grant_role(
                     contract=csm,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     grant_to=NEW_CSM_VERIFIER,
-                )
-            ]
-        ),
-        # 1.16. Register the new CSM Verifier on CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.16. Register the new CSM Verifier on CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(NEW_CSM_VERIFIER, CSM_COMMITTEE_MS),
-                )
-            ]
-        ),
-        # 1.17. Revoke VERIFIER_ROLE on CSM from the old CSM Verifier
-        agent_forward(
-            [
+                ),
+                # 1.17. Revoke VERIFIER_ROLE on CSM from the old CSM Verifier
                 encode_oz_revoke_role(
                     contract=csm,
                     role_name="VERIFIER_ROLE",
                     revoke_from=OLD_CSM_VERIFIER,
-                )
-            ]
-        ),
-        # 1.18. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM from the old CSM Verifier
-        agent_forward(
-            [
+                ),
+                # 1.18. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM from the old CSM Verifier
                 encode_oz_revoke_role(
                     contract=csm,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     revoke_from=OLD_CSM_VERIFIER,
-                )
-            ]
-        ),
-        # 1.19. Unregister the old CSM Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.19. Unregister the old CSM Verifier from CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CSM_VERIFIER, ZERO_ADDRESS),
-                )
-            ]
-        ),
-        # 1.20. Revoke PAUSE_ROLE on the old CSM Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.20. Revoke PAUSE_ROLE on the old CSM Verifier from CircuitBreaker
                 encode_oz_revoke_role(
                     contract=old_csm_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=CIRCUIT_BREAKER,
-                )
-            ]
-        ),
-        # 1.21. Revoke PAUSE_ROLE on the old CSM Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.21. Revoke PAUSE_ROLE on the old CSM Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_csm_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.22. Revoke RESUME_ROLE on the old CSM Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.22. Revoke RESUME_ROLE on the old CSM Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_csm_verifier,
                     role_name="RESUME_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.23. Grant VERIFIER_ROLE on CSM 0x02 to the new CSM 0x02 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.23. Grant VERIFIER_ROLE on CSM 0x02 to the new CSM 0x02 Verifier
                 encode_oz_grant_role(
                     contract=csm0x02,
                     role_name="VERIFIER_ROLE",
                     grant_to=NEW_CSM0X02_VERIFIER,
-                )
-            ]
-        ),
-        # 1.24. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM 0x02 to the new CSM 0x02 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.24. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM 0x02 to the new CSM 0x02 Verifier
                 encode_oz_grant_role(
                     contract=csm0x02,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     grant_to=NEW_CSM0X02_VERIFIER,
-                )
-            ]
-        ),
-        # 1.25. Register the new CSM 0x02 Verifier on CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.25. Register the new CSM 0x02 Verifier on CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(NEW_CSM0X02_VERIFIER, CSM_COMMITTEE_MS),
-                )
-            ]
-        ),
-        # 1.26. Revoke VERIFIER_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.26. Revoke VERIFIER_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
                 encode_oz_revoke_role(
                     contract=csm0x02,
                     role_name="VERIFIER_ROLE",
                     revoke_from=OLD_CSM0X02_VERIFIER,
-                )
-            ]
-        ),
-        # 1.27. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.27. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
                 encode_oz_revoke_role(
                     contract=csm0x02,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     revoke_from=OLD_CSM0X02_VERIFIER,
-                )
-            ]
-        ),
-        # 1.28. Unregister the old CSM 0x02 Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.28. Unregister the old CSM 0x02 Verifier from CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CSM0X02_VERIFIER, ZERO_ADDRESS),
-                )
-            ]
-        ),
-        # 1.29. Revoke PAUSE_ROLE on the old CSM 0x02 Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.29. Revoke PAUSE_ROLE on the old CSM 0x02 Verifier from CircuitBreaker
                 encode_oz_revoke_role(
                     contract=old_csm0x02_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=CIRCUIT_BREAKER,
-                )
-            ]
-        ),
-        # 1.30. Revoke PAUSE_ROLE on the old CSM 0x02 Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.30. Revoke PAUSE_ROLE on the old CSM 0x02 Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_csm0x02_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.31. Revoke RESUME_ROLE on the old CSM 0x02 Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.31. Revoke RESUME_ROLE on the old CSM 0x02 Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_csm0x02_verifier,
                     role_name="RESUME_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.32. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.32. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
                 encode_oz_grant_role(
                     contract=cm_v2,
                     role_name="VERIFIER_ROLE",
                     grant_to=NEW_CM_V2_VERIFIER,
-                )
-            ]
-        ),
-        # 1.33. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.33. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
                 encode_oz_grant_role(
                     contract=cm_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     grant_to=NEW_CM_V2_VERIFIER,
-                )
-            ]
-        ),
-        # 1.34. Register the new Curated Module v2 Verifier on CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.34. Register the new Curated Module v2 Verifier on CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(NEW_CM_V2_VERIFIER, CM_COMMITTEE),
-                )
-            ]
-        ),
-        # 1.35. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.35. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
                 encode_oz_revoke_role(
                     contract=cm_v2,
                     role_name="VERIFIER_ROLE",
                     revoke_from=OLD_CM_V2_VERIFIER,
-                )
-            ]
-        ),
-        # 1.36. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
-        agent_forward(
-            [
+                ),
+                # 1.36. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
                 encode_oz_revoke_role(
                     contract=cm_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     revoke_from=OLD_CM_V2_VERIFIER,
-                )
-            ]
-        ),
-        # 1.37. Unregister the old Curated Module v2 Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.37. Unregister the old Curated Module v2 Verifier from CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CM_V2_VERIFIER, ZERO_ADDRESS),
-                )
-            ]
-        ),
-        # 1.38. Revoke PAUSE_ROLE on the old Curated Module v2 Verifier from CircuitBreaker
-        agent_forward(
-            [
+                ),
+                # 1.38. Revoke PAUSE_ROLE on the old Curated Module v2 Verifier from CircuitBreaker
                 encode_oz_revoke_role(
                     contract=old_cm_v2_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=CIRCUIT_BREAKER,
-                )
-            ]
-        ),
-        # 1.39. Revoke PAUSE_ROLE on the old Curated Module v2 Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.39. Revoke PAUSE_ROLE on the old Curated Module v2 Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_cm_v2_verifier,
                     role_name="PAUSE_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.40. Revoke RESUME_ROLE on the old Curated Module v2 Verifier from ResealManager
-        agent_forward(
-            [
+                ),
+                # 1.40. Revoke RESUME_ROLE on the old Curated Module v2 Verifier from ResealManager
                 encode_oz_revoke_role(
                     contract=old_cm_v2_verifier,
                     role_name="RESUME_ROLE",
                     revoke_from=RESEAL_MANAGER,
-                )
-            ]
-        ),
-        # 1.41. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.41. Grant CONFIG_MANAGER_ROLE on OracleDaemonConfig to Aragon Agent
                 encode_oz_grant_role(
                     contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.42. Set MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT on OracleDaemonConfig to 500
-        agent_forward(
-            [
+                ),
+                # 1.42. Set MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT on OracleDaemonConfig to 500
                 (
                     oracle_daemon_config.address,
                     oracle_daemon_config.set.encode_input(
                         "MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT",
                         convert.to_bytes(MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT, "bytes"),
                     ),
-                )
-            ]
-        ),
-        # 1.43. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.43. Revoke CONFIG_MANAGER_ROLE on OracleDaemonConfig from Aragon Agent
                 encode_oz_revoke_role(
                     contract=oracle_daemon_config,
                     role_name="CONFIG_MANAGER_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.44. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.44. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
                 encode_oz_grant_role(
                     contract=sanity_checker,
                     role_name="ALL_LIMITS_MANAGER_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.45. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
-        agent_forward(
-            [
+                ),
+                # 1.45. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
                 (
                     sanity_checker.address,
                     sanity_checker.setOracleReportLimits.encode_input(ORACLE_REPORT_LIMITS, SECOND_OPINION_ORACLE),
-                )
-            ]
-        ),
-        # 1.46. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.46. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
                 encode_oz_revoke_role(
                     contract=sanity_checker,
                     role_name="ALL_LIMITS_MANAGER_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.48. Set the AccountingOracle consensus version to 7
-        agent_forward(
-            [
+                ),
+                # 1.48. Set the AccountingOracle consensus version to 7
                 (
                     accounting_oracle.address,
                     accounting_oracle.setConsensusVersion.encode_input(ACCOUNTING_ORACLE_CONSENSUS_VERSION),
-                )
-            ]
-        ),
-        # 1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.50. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.50. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=validators_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.51. Set the ValidatorsExitBusOracle consensus version to 6
-        agent_forward(
-            [
+                ),
+                # 1.51. Set the ValidatorsExitBusOracle consensus version to 6
                 (
                     validators_exit_bus_oracle.address,
                     validators_exit_bus_oracle.setConsensusVersion.encode_input(
                         VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION
                     ),
-                )
-            ]
-        ),
-        # 1.52. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.52. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=validators_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.53. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.53. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=csm_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.54. Set the CSM FeeOracle consensus version to 5
-        agent_forward(
-            [
+                ),
+                # 1.54. Set the CSM FeeOracle consensus version to 5
                 (
                     csm_fee_oracle.address,
                     csm_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
-                )
-            ]
-        ),
-        # 1.55. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.55. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=csm_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.56. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.56. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=csm0x02_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.57. Set the CSM 0x02 FeeOracle consensus version to 5
-        agent_forward(
-            [
+                ),
+                # 1.57. Set the CSM 0x02 FeeOracle consensus version to 5
                 (
                     csm0x02_fee_oracle.address,
                     csm0x02_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
-                )
-            ]
-        ),
-        # 1.58. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.58. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=csm0x02_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
-                )
-            ]
-        ),
-        # 1.59. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.59. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=cm_v2_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
-                )
-            ]
-        ),
-        # 1.60. Set the Curated Module v2 FeeOracle consensus version to 5
-        agent_forward(
-            [
+                ),
+                # 1.60. Set the Curated Module v2 FeeOracle consensus version to 5
                 (
                     cm_v2_fee_oracle.address,
                     cm_v2_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
-                )
-            ]
-        ),
-        # 1.61. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
-        agent_forward(
-            [
+                ),
+                # 1.61. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=cm_v2_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
-                )
+                ),
             ]
         ),
     ]

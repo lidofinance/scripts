@@ -5,7 +5,9 @@ from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
 from utils.config import network_name
+from utils.tx_tracing import tx_events_from_receipt
 from utils.test.tx_tracing_helpers import (
+    add_event_emitter,
     count_vote_items_by_events,
     display_dg_events,
     display_voting_events,
@@ -150,7 +152,7 @@ EXPECTED_VOTE_EVENTS_COUNT = 1
 # 13 core items + 3 * 9 module Verifier items + 5 * 3 consensus version items
 # + 3 OracleDaemonConfig items + 3 OracleReportSanityChecker items
 EXPECTED_DG_EVENTS_FROM_AGENT = 61
-EXPECTED_DG_EVENTS_COUNT = 61
+EXPECTED_DG_EVENTS_COUNT = 1
 # TODO set after the vote is started
 IPFS_DESCRIPTION_HASH = None
 DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
@@ -186,6 +188,33 @@ def _assert_oz_role_members(contract_address: str, role: str, expected_members) 
 # ============================================================================
 # =========================== Event validators ===============================
 # ============================================================================
+def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str):
+    """Re-group a single-agent-forward DG proposal into one group per forwarded sub-call.
+
+    The default DG grouping yields one group. Here each sub-call is delimited by a LogScriptCall
+    emitted by the Agent while it runs the forwarded call script.
+    """
+    events = tx_events_from_receipt(receipt)
+    assert (
+        web3.to_checksum_address(events[-1]["address"]) == web3.to_checksum_address(timelock)
+        and events[-1]["name"] == "ProposalExecuted"
+    ), "Unexpected Dual Governance service event"
+
+    groups = []
+    current_group = None
+    for event in events[:-1]:
+        is_start_of_new_group = event["name"] == "LogScriptCall" and web3.to_checksum_address(
+            event["address"]
+        ) == web3.to_checksum_address(agent)
+        if is_start_of_new_group:
+            current_group = []
+            groups.append(current_group)
+        if current_group is not None:
+            current_group.append(add_event_emitter(event))
+
+    return [EventDict(group) for group in groups]
+
+
 def validate_circuit_breaker_unregistration_event(
     event: EventDict, pausable: str, previous_pauser: str, emitted_by: str
 ) -> None:
@@ -241,8 +270,6 @@ def validate_oracle_report_limits_event(
         "ExitedEthAmountPerDayLimitSet",
         "ConsolidationEthAmountPerDayLimitSet",
         "MaxBalanceExitRequestedPerReportInEthSet",
-        "ScriptResult",
-        "Executed",
     ]
 
     exited_event = _single_event(event, "ExitedEthAmountPerDayLimitSet")
@@ -445,35 +472,42 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
             display_dg_events(dg_tx)
 
-            dg_events = group_dg_events_from_receipt(
+            outer_dg_events = group_dg_events_from_receipt(
                 dg_tx,
                 timelock=EMERGENCY_PROTECTED_TIMELOCK,
                 admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             )
+            # Regroup by the Agent's sub-calls to validate each sub-calls events
+            agent_dg_events = _group_agent_dg_events_from_receipt(
+                dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, agent=AGENT
+            )
 
             assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
-            assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+            assert len(outer_dg_events) == EXPECTED_DG_EVENTS_COUNT
+            assert len(agent_dg_events) == EXPECTED_DG_EVENTS_FROM_AGENT
 
             # =======================================================================
             # ============================ DG events checks =========================
             # =======================================================================
             # 1.1-1.5. Upgrade the proxy implementations
-            validate_proxy_upgrade_event(dg_events[0], NEW_LIDO_LOCATOR_IMPLEMENTATION, LIDO_LOCATOR)
-            validate_proxy_upgrade_event(dg_events[1], NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION, PREDEPOSIT_GUARANTEE)
-            validate_proxy_upgrade_event(dg_events[2], NEW_TOP_UP_GATEWAY_IMPLEMENTATION, TOP_UP_GATEWAY)
-            validate_proxy_upgrade_event(dg_events[3], NEW_CONSOLIDATION_BUS_IMPLEMENTATION, CONSOLIDATION_BUS)
-            validate_proxy_upgrade_event(dg_events[4], NEW_WITHDRAWAL_VAULT_IMPLEMENTATION, WITHDRAWAL_VAULT)
+            validate_proxy_upgrade_event(agent_dg_events[0], NEW_LIDO_LOCATOR_IMPLEMENTATION, LIDO_LOCATOR)
+            validate_proxy_upgrade_event(
+                agent_dg_events[1], NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION, PREDEPOSIT_GUARANTEE
+            )
+            validate_proxy_upgrade_event(agent_dg_events[2], NEW_TOP_UP_GATEWAY_IMPLEMENTATION, TOP_UP_GATEWAY)
+            validate_proxy_upgrade_event(agent_dg_events[3], NEW_CONSOLIDATION_BUS_IMPLEMENTATION, CONSOLIDATION_BUS)
+            validate_proxy_upgrade_event(agent_dg_events[4], NEW_WITHDRAWAL_VAULT_IMPLEMENTATION, WITHDRAWAL_VAULT)
 
             # 1.6-1.7. Move REPORT_VALIDATOR_EXITING_STATUS_ROLE to the new ValidatorExitDelayVerifier
             validate_grant_role_event(
-                dg_events[5],
+                agent_dg_events[5],
                 REPORT_VALIDATOR_EXITING_STATUS_ROLE,
                 NEW_VALIDATOR_EXIT_DELAY_VERIFIER,
                 AGENT,
                 STAKING_ROUTER,
             )
             validate_revoke_role_event(
-                dg_events[6],
+                agent_dg_events[6],
                 REPORT_VALIDATOR_EXITING_STATUS_ROLE,
                 OLD_VALIDATOR_EXIT_DELAY_VERIFIER,
                 AGENT,
@@ -482,140 +516,158 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
             # 1.8-1.9. New ConsolidationGateway CircuitBreaker registration
             validate_register_pauser_event(
-                dg_events[7], NEW_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
+                agent_dg_events[7], NEW_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
             )
             validate_circuit_breaker_unregistration_event(
-                dg_events[8], OLD_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
+                agent_dg_events[8], OLD_CONSOLIDATION_GATEWAY, CIRCUIT_BREAKER_COMMITTEE, CIRCUIT_BREAKER
             )
 
             # 1.10-1.13. Old ConsolidationGateway roles
-            validate_revoke_role_event(dg_events[9], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CONSOLIDATION_GATEWAY)
-            validate_revoke_role_event(dg_events[10], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY)
-            validate_revoke_role_event(dg_events[11], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY)
             validate_revoke_role_event(
-                dg_events[12], ADD_CONSOLIDATION_REQUEST_ROLE, CONSOLIDATION_BUS, AGENT, OLD_CONSOLIDATION_GATEWAY
+                agent_dg_events[9], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CONSOLIDATION_GATEWAY
+            )
+            validate_revoke_role_event(
+                agent_dg_events[10], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY
+            )
+            validate_revoke_role_event(
+                agent_dg_events[11], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CONSOLIDATION_GATEWAY
+            )
+            validate_revoke_role_event(
+                agent_dg_events[12], ADD_CONSOLIDATION_REQUEST_ROLE, CONSOLIDATION_BUS, AGENT, OLD_CONSOLIDATION_GATEWAY
             )
 
             # 1.14-1.22. CSM Verifier
-            validate_grant_role_event(dg_events[13], VERIFIER_ROLE, NEW_CSM_VERIFIER, AGENT, CSM)
+            validate_grant_role_event(agent_dg_events[13], VERIFIER_ROLE, NEW_CSM_VERIFIER, AGENT, CSM)
             validate_grant_role_event(
-                dg_events[14], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM_VERIFIER, AGENT, CSM
+                agent_dg_events[14], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM_VERIFIER, AGENT, CSM
             )
-            validate_register_pauser_event(dg_events[15], NEW_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
-            validate_revoke_role_event(dg_events[16], VERIFIER_ROLE, OLD_CSM_VERIFIER, AGENT, CSM)
+            validate_register_pauser_event(agent_dg_events[15], NEW_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(agent_dg_events[16], VERIFIER_ROLE, OLD_CSM_VERIFIER, AGENT, CSM)
             validate_revoke_role_event(
-                dg_events[17], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM_VERIFIER, AGENT, CSM
+                agent_dg_events[17], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM_VERIFIER, AGENT, CSM
             )
             validate_circuit_breaker_unregistration_event(
-                dg_events[18], OLD_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
+                agent_dg_events[18], OLD_CSM_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
             )
-            validate_revoke_role_event(dg_events[19], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM_VERIFIER)
-            validate_revoke_role_event(dg_events[20], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
-            validate_revoke_role_event(dg_events[21], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[19], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[20], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[21], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM_VERIFIER)
 
             # 1.23-1.31. CSM 0x02 Verifier
-            validate_grant_role_event(dg_events[22], VERIFIER_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02)
+            validate_grant_role_event(agent_dg_events[22], VERIFIER_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02)
             validate_grant_role_event(
-                dg_events[23], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02
+                agent_dg_events[23], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CSM0X02_VERIFIER, AGENT, CSM0X02
             )
-            validate_register_pauser_event(dg_events[24], NEW_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
-            validate_revoke_role_event(dg_events[25], VERIFIER_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02)
+            validate_register_pauser_event(agent_dg_events[24], NEW_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(agent_dg_events[25], VERIFIER_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02)
             validate_revoke_role_event(
-                dg_events[26], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02
+                agent_dg_events[26], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CSM0X02_VERIFIER, AGENT, CSM0X02
             )
             validate_circuit_breaker_unregistration_event(
-                dg_events[27], OLD_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
+                agent_dg_events[27], OLD_CSM0X02_VERIFIER, CSM_COMMITTEE, CIRCUIT_BREAKER
             )
-            validate_revoke_role_event(dg_events[28], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM0X02_VERIFIER)
-            validate_revoke_role_event(dg_events[29], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
-            validate_revoke_role_event(dg_events[30], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[28], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CSM0X02_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[29], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[30], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CSM0X02_VERIFIER)
 
             # 1.32-1.40. Curated Module v2 Verifier
-            validate_grant_role_event(dg_events[31], VERIFIER_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2)
+            validate_grant_role_event(agent_dg_events[31], VERIFIER_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2)
             validate_grant_role_event(
-                dg_events[32], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2
+                agent_dg_events[32], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, NEW_CM_V2_VERIFIER, AGENT, CM_V2
             )
-            validate_register_pauser_event(dg_events[33], NEW_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER)
-            validate_revoke_role_event(dg_events[34], VERIFIER_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2)
+            validate_register_pauser_event(agent_dg_events[33], NEW_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER)
+            validate_revoke_role_event(agent_dg_events[34], VERIFIER_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2)
             validate_revoke_role_event(
-                dg_events[35], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2
+                agent_dg_events[35], REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE, OLD_CM_V2_VERIFIER, AGENT, CM_V2
             )
             validate_circuit_breaker_unregistration_event(
-                dg_events[36], OLD_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER
+                agent_dg_events[36], OLD_CM_V2_VERIFIER, CM_COMMITTEE, CIRCUIT_BREAKER
             )
-            validate_revoke_role_event(dg_events[37], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CM_V2_VERIFIER)
-            validate_revoke_role_event(dg_events[38], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
-            validate_revoke_role_event(dg_events[39], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[37], PAUSE_ROLE, CIRCUIT_BREAKER, AGENT, OLD_CM_V2_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[38], PAUSE_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
+            validate_revoke_role_event(agent_dg_events[39], RESUME_ROLE, RESEAL_MANAGER, AGENT, OLD_CM_V2_VERIFIER)
 
             # 1.41-1.43. OracleDaemonConfig MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT
-            validate_grant_role_event(dg_events[40], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
+            validate_grant_role_event(agent_dg_events[40], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
             validate_config_value_set_event(
-                dg_events[41],
+                agent_dg_events[41],
                 MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY,
                 MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT,
                 ORACLE_DAEMON_CONFIG,
             )
-            validate_revoke_role_event(dg_events[42], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
+            validate_revoke_role_event(agent_dg_events[42], CONFIG_MANAGER_ROLE, AGENT, AGENT, ORACLE_DAEMON_CONFIG)
 
             # 1.44-1.46. OracleReportSanityChecker limits
             validate_grant_role_event(
-                dg_events[43], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
+                agent_dg_events[43], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
             )
             validate_oracle_report_limits_event(
-                dg_events[44],
+                agent_dg_events[44],
                 EXITED_ETH_AMOUNT_PER_DAY_LIMIT,
                 CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT,
                 MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH,
                 ORACLE_REPORT_SANITY_CHECKER,
             )
             validate_revoke_role_event(
-                dg_events[45], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
+                agent_dg_events[45], ALL_LIMITS_MANAGER_ROLE, AGENT, AGENT, ORACLE_REPORT_SANITY_CHECKER
             )
 
             # 1.47-1.49. AccountingOracle consensus version
-            validate_grant_role_event(dg_events[46], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE)
+            validate_grant_role_event(
+                agent_dg_events[46], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE
+            )
             validate_consensus_version_set_event(
-                dg_events[47],
+                agent_dg_events[47],
                 ACCOUNTING_ORACLE_CONSENSUS_VERSION,
                 ACCOUNTING_ORACLE_CONSENSUS_VERSION - 1,
                 ACCOUNTING_ORACLE,
             )
-            validate_revoke_role_event(dg_events[48], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE)
+            validate_revoke_role_event(
+                agent_dg_events[48], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, ACCOUNTING_ORACLE
+            )
 
             # 1.50-1.52. ValidatorsExitBusOracle consensus version
             validate_grant_role_event(
-                dg_events[49], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
+                agent_dg_events[49], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
             )
             validate_consensus_version_set_event(
-                dg_events[50],
+                agent_dg_events[50],
                 VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION,
                 VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION - 1,
                 VALIDATORS_EXIT_BUS_ORACLE,
             )
             validate_revoke_role_event(
-                dg_events[51], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
+                agent_dg_events[51], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, VALIDATORS_EXIT_BUS_ORACLE
             )
 
             # 1.53-1.55. CSM FeeOracle consensus version
-            validate_grant_role_event(dg_events[52], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
+            validate_grant_role_event(agent_dg_events[52], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
             validate_consensus_version_set_event(
-                dg_events[53], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM_FEE_ORACLE
+                agent_dg_events[53], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM_FEE_ORACLE
             )
-            validate_revoke_role_event(dg_events[54], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
+            validate_revoke_role_event(agent_dg_events[54], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM_FEE_ORACLE)
 
             # 1.56-1.58. CSM 0x02 FeeOracle consensus version
-            validate_grant_role_event(dg_events[55], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE)
-            validate_consensus_version_set_event(
-                dg_events[56], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM0X02_FEE_ORACLE
+            validate_grant_role_event(
+                agent_dg_events[55], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE
             )
-            validate_revoke_role_event(dg_events[57], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE)
+            validate_consensus_version_set_event(
+                agent_dg_events[56], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CSM0X02_FEE_ORACLE
+            )
+            validate_revoke_role_event(
+                agent_dg_events[57], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CSM0X02_FEE_ORACLE
+            )
 
             # 1.59-1.61. Curated Module v2 FeeOracle consensus version
-            validate_grant_role_event(dg_events[58], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE)
-            validate_consensus_version_set_event(
-                dg_events[59], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CM_V2_FEE_ORACLE
+            validate_grant_role_event(
+                agent_dg_events[58], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE
             )
-            validate_revoke_role_event(dg_events[60], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE)
+            validate_consensus_version_set_event(
+                agent_dg_events[59], FEE_ORACLE_CONSENSUS_VERSION, FEE_ORACLE_CONSENSUS_VERSION - 1, CM_V2_FEE_ORACLE
+            )
+            validate_revoke_role_event(
+                agent_dg_events[60], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE
+            )
 
     # =========================================================================
     # ==================== After DG proposal executed checks ==================
