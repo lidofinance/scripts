@@ -23,7 +23,7 @@ from avotes_parser.core.ABI.utilities.exceptions import (
 )
 
 EMPTY_CALLSCRIPT = "0x00000001"
-ETHERSCAN_TOKEN = os.getenv("ETHERSCAN_TOKEN", "TGXU5WGVTVYRDDV2MY71R5JYB7147M13FC")
+ETHERSCAN_TOKEN = os.getenv("ETHERSCAN_TOKEN")
 
 
 def create_executor_id(id) -> str:
