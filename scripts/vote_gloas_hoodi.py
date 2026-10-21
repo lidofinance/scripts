@@ -111,8 +111,8 @@ NEW_CSM_VERIFIER = "0xb70fA371989d7C1FCb88d6Be10A83F286E8e3508"
 NEW_CSM0X02_VERIFIER = "0x3B30b0F9b4dEc685F79192fAa407898B20E5688c"
 # https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/curated/deploy-hoodi.json#L636
 NEW_CM_V2_VERIFIER = "0xda4e4a7F600bF6974e4837fBB0Caced8E9C8056D"
-# TODO set after the new Curated Module v2 implementation is deployed on Hoodi (lidofinance/staking-modules gloas)
-NEW_CURATED_MODULE_IMPLEMENTATION = None
+# https://github.com/lidofinance/staking-modules/blob/ce72d603f9460438d3c4544b7cc392758be16fdc/artifacts/hoodi/curated/deploy-hoodi.json#L611
+NEW_CURATED_MODULE_IMPLEMENTATION = "0x0d7cBAf91cc6cbfB72ea70ec09c04855A06ac7Ee"
 
 # https://github.com/lidofinance/core/blob/ab9a169759f28ffad0f618c7714e3bd24fa89782/deployed-hoodi.json#L345
 CIRCUIT_BREAKER = "0x44a5789dFeDa59cD176Ab5709ec2F4829dE4d555"
