@@ -1,0 +1,277 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_trustedCaller",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_lidoLendOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_irmRouter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_configurableIrm",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_lidoLendMarketFactory",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_circuitBreaker",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_riskStewardDashboard",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_lidoLendPreseeder",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "circuitBreaker",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "configurableIrm",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_evmScriptCallData",
+        "type": "bytes"
+      }
+    ],
+    "name": "createEVMScript",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_evmScriptCallData",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeEVMScriptCallData",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "loanToken",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "collateralToken",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "oracle",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "irm",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "lltv",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct MarketParams",
+            "name": "marketParams",
+            "type": "tuple"
+          },
+          {
+            "internalType": "address",
+            "name": "irmConfig",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "controller",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "enableSettlement",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "steward",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "pauserCommittee",
+            "type": "address"
+          },
+          {
+            "internalType": "contract ILidoLendERC4626",
+            "name": "preseedVault",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "fee",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LidoLendActivateMarket.ActivationParams",
+        "name": "params",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "irmRouter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLend",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLendMarketFactory",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLendOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLendPreseeder",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "riskStewardDashboard",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "trustedCaller",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
