@@ -58,6 +58,7 @@ Hoodi vote for the on-chain part of LIP-43 (Glamsterdam/Gloas compatibility).
 1.54. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
 1.55. Set the Curated Module v2 FeeOracle consensus version to 5
 1.56. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
+1.57. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -77,6 +78,7 @@ from utils.config import (
     ORACLE_DAEMON_CONFIG,
     RESEAL_MANAGER,
     STAKING_ROUTER,
+    TIME_CONSTRAINTS,
     VALIDATORS_EXIT_BUS_ORACLE,
     WITHDRAWAL_VAULT,
     get_deployer_account,
@@ -163,6 +165,12 @@ MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT = 500
 
 MAX_TOP_UP_PER_BLOCK_GWEI = 20_000 * 10**9
 
+# Execute only after the current AccountingOracle report is fully processed,
+# including all extra-data chunks, and before the next reference slot.
+# This daily window only checks time; report completion must be checked before enactment.
+TIME_WINDOW_FROM = 14 * 3600
+TIME_WINDOW_TO = 23 * 3600
+
 EXITED_ETH_AMOUNT_PER_DAY_LIMIT = 411_975
 CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT = 205_875
 MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH = 11_520
@@ -193,7 +201,7 @@ SECOND_OPINION_ORACLE = ZERO_ADDRESS
 DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
 DG_SUBMISSION_DESCRIPTION = "1. Submit the Gloas upgrade to Dual Governance"
 IPFS_DESCRIPTION = """
-1. **Submit the Gloas upgrade (LIP-43) to Dual Governance on Hoodi**: upgrade the LidoLocator, PredepositGuarantee, TopUpGateway, ConsolidationBus and WithdrawalVault implementations, switch the protocol to the fork-aware ValidatorExitDelayVerifier and ConsolidationGateway, upgrade the Curated Module v2 implementation, replace the CSM, CSM 0x02 and Curated Module v2 Verifiers, set the StakingRouter per-block top-up limit, bump the consensus versions of the AccountingOracle, ValidatorsExitBusOracle and the three FeeOracles, set the MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT value on OracleDaemonConfig and update the OracleReportSanityChecker limits. Items 1.1-1.56.
+1. **Submit the Gloas upgrade (LIP-43) to Dual Governance on Hoodi**: upgrade the LidoLocator, PredepositGuarantee, TopUpGateway, ConsolidationBus and WithdrawalVault implementations, switch the protocol to the fork-aware ValidatorExitDelayVerifier and ConsolidationGateway, upgrade the Curated Module v2 implementation, replace the CSM, CSM 0x02 and Curated Module v2 Verifiers, set the StakingRouter per-block top-up limit, bump the consensus versions of the AccountingOracle, ValidatorsExitBusOracle and the three FeeOracles, set the MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT value on OracleDaemonConfig and update the OracleReportSanityChecker limits. Items 1.1-1.57.
 """
 
 
@@ -542,6 +550,14 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     revoke_from=AGENT,
                 ),
             ]
+        ),
+        # 1.57. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
+        (
+            TIME_CONSTRAINTS,
+            interface.TimeConstraints(TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
+                TIME_WINDOW_FROM,
+                TIME_WINDOW_TO,
+            ),
         ),
     ]
 

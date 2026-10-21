@@ -15,12 +15,13 @@ from utils.test.tx_tracing_helpers import (
     group_voting_events_from_receipt,
 )
 from utils.evm_script import encode_call_script, encode_error
-from utils.dual_governance import PROPOSAL_STATUS
+from utils.dual_governance import PROPOSAL_STATUS, wait_for_time_window
 from utils.test.event_validators.circuit_breaker import validate_register_pauser_event
 from utils.test.event_validators.common import validate_events_chain
 from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.event_validators.proxy import validate_proxy_upgrade_event
+from utils.test.event_validators.time_constraints import validate_dg_time_constraints_executed_within_day_time_event
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_str
 
@@ -46,6 +47,7 @@ AGENT = "0x0534aA41907c9631fae990960bCC72d75fA7cfeD"
 EMERGENCY_PROTECTED_TIMELOCK = "0x0A5E22782C0Bd4AddF10D771f0bF0406B038282d"
 DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
+TIME_CONSTRAINTS = "0xB26Fd3b50280AbC55c572EE73071778A51088408"
 
 # Fill these independently from scripts/vote_gloas_hoodi.py (do not copy-paste from
 # the script)
@@ -136,6 +138,8 @@ MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT = 500
 # https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/scripts/upgrade/upgrade-params-hoodi.toml#L104
 OLD_MAX_TOP_UP_PER_BLOCK_GWEI = 3_200 * 10**9
 MAX_TOP_UP_PER_BLOCK_GWEI = 20_000 * 10**9
+TIME_WINDOW_FROM = 14 * 3600
+TIME_WINDOW_TO = 23 * 3600
 EXITED_ETH_AMOUNT_PER_DAY_LIMIT = 411_975
 CONSOLIDATION_ETH_AMOUNT_PER_DAY_LIMIT = 205_875
 MAX_BALANCE_EXIT_REQUESTED_PER_REPORT_IN_ETH = 11_520
@@ -171,7 +175,7 @@ EXPECTED_VOTE_EVENTS_COUNT = 1
 # 14 core items + 2 Curated Module v2 upgrade items + 3 * 6 module Verifier items + 5 * 3 consensus version items
 # + 3 OracleDaemonConfig items + 3 OracleReportSanityChecker items
 EXPECTED_DG_EVENTS_FROM_AGENT = 56
-EXPECTED_DG_EVENTS_COUNT = 1
+EXPECTED_DG_EVENTS_COUNT = 2
 # TODO set after the vote is started
 IPFS_DESCRIPTION_HASH = None
 DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
@@ -207,11 +211,12 @@ def _assert_oz_role_members(contract_address: str, role: str, expected_members) 
 # ============================================================================
 # =========================== Event validators ===============================
 # ============================================================================
-def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str):
+def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: str, agent: str, admin_executor: str):
     """Re-group a single-agent-forward DG proposal into one group per forwarded sub-call.
 
     The default DG grouping yields one group. Here each sub-call is delimited by a LogScriptCall
-    emitted by the Agent while it runs the forwarded call script.
+    emitted by the Agent while it runs the forwarded call script. Events after the Agent's forward
+    call is executed by the admin executor (the following DG calls) are not part of any group.
     """
     events = tx_events_from_receipt(receipt)
     assert (
@@ -230,6 +235,11 @@ def _group_agent_dg_events_from_receipt(receipt: TransactionReceipt, timelock: s
             groups.append(current_group)
         if current_group is not None:
             current_group.append(add_event_emitter(event))
+            is_end_of_agent_forward = event["name"] == "Executed" and web3.to_checksum_address(
+                event["address"]
+            ) == web3.to_checksum_address(admin_executor)
+            if is_end_of_agent_forward:
+                current_group = None
 
     return [EventDict(group) for group in groups]
 
@@ -518,6 +528,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
 
         if timelock.getProposalDetails(expected_dg_proposal_id)["status"] == PROPOSAL_STATUS["scheduled"]:
             chain.sleep(timelock.getAfterScheduleDelay() + 1)
+            # The DG proposal reverts outside the 14:00 - 23:00 UTC window set by the last DG call
+            wait_for_time_window(14, 23)
 
             dg_tx: TransactionReceipt = timelock.execute(expected_dg_proposal_id, {"from": stranger})
             display_dg_events(dg_tx)
@@ -529,7 +541,10 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
             # Regroup by the Agent's sub-calls to validate each sub-calls events
             agent_dg_events = _group_agent_dg_events_from_receipt(
-                dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, agent=AGENT
+                dg_tx,
+                timelock=EMERGENCY_PROTECTED_TIMELOCK,
+                agent=AGENT,
+                admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
             )
 
             assert count_vote_items_by_events(dg_tx, agent.address) == EXPECTED_DG_EVENTS_FROM_AGENT
@@ -724,6 +739,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
             )
             validate_revoke_role_event(
                 agent_dg_events[55], MANAGE_CONSENSUS_VERSION_ROLE, AGENT, AGENT, CM_V2_FEE_ORACLE
+            )
+
+            # 1.57. Time window constraint for Dual Governance Proposal execution
+            validate_dg_time_constraints_executed_within_day_time_event(
+                outer_dg_events[1],
+                TIME_WINDOW_FROM,
+                TIME_WINDOW_TO,
+                emitted_by=TIME_CONSTRAINTS,
             )
 
     # =========================================================================
