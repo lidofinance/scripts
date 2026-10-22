@@ -29,7 +29,7 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_gloas_hoodi import (
+from archive.scripts.vote_2026_10_21_hoodi_gloas import (
     IPFS_DESCRIPTION,
     get_dg_items,
     get_vote_items,
@@ -49,7 +49,7 @@ DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
 TIME_CONSTRAINTS = "0xB26Fd3b50280AbC55c572EE73071778A51088408"
 
-# Fill these independently from scripts/vote_gloas_hoodi.py (do not copy-paste from
+# Fill these independently from archive/scripts/vote_2026_10_21_hoodi_gloas.py (do not copy-paste from
 # the script)
 # https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L753
 NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x101430e537EFfA1385CC74838EbD43a91D58a722"
@@ -168,15 +168,13 @@ SECOND_OPINION_ORACLE = ZERO_ADDRESS
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-# TODO set after the vote is started
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 86
+EXPECTED_DG_PROPOSAL_ID = 44
 EXPECTED_VOTE_EVENTS_COUNT = 1
-# 10 core items + 2 Curated Module v2 upgrade items + 3 * 6 module Verifier items + 5 * 3 consensus version items
+# 10 core items + 3 Curated Module v2 upgrade items + 3 * 6 module Verifier items + 5 * 3 consensus version items
 # + 3 OracleDaemonConfig items + 3 OracleReportSanityChecker items
 EXPECTED_DG_EVENTS_FROM_AGENT = 52
 EXPECTED_DG_EVENTS_COUNT = 2
-# TODO set after the vote is started
 IPFS_DESCRIPTION_HASH = None
 DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
 

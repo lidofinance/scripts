@@ -56,7 +56,7 @@ Hoodi vote for the on-chain part of LIP-43 (Glamsterdam/Gloas compatibility).
 1.52. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
 1.53. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #86 passed & executed on Oct-21-2026 03:08:00 PM UTC, block 3860101.
 """
 
 from typing import Dict, List, Tuple
