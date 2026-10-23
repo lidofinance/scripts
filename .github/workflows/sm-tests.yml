@@ -97,9 +97,10 @@ jobs:
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
       - name: Run staking modules regression tests
-        uses: lidofinance/staking-modules/.github/actions/regression-tests@develop
+        # Keep the CSM 0x02 regression action separate until mainnet activation.
+        uses: lidofinance/staking-modules/.github/actions/regression-tests@codex/csm0x02-regression-action
         with:
           repository: lidofinance/staking-modules
-          ref: develop
+          ref: codex/csm0x02-regression-action
           path: staking-modules
           rpc_url: ${{ env.HARDHAT_NODE_URL }}

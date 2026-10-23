@@ -389,8 +389,7 @@ def oracle_report(
     validatorBalancesGweiByStakingModule=None,
     simulatedShareRate=None,
     dry_run: Literal[False] = False,
-) -> tuple[TransactionReceipt, TransactionReceipt]:
-    ...
+) -> tuple[TransactionReceipt, TransactionReceipt]: ...
 
 
 @overload
@@ -420,8 +419,7 @@ def oracle_report(
     simulatedShareRate=None,
     refSlot=None,
     dry_run: Literal[True],
-) -> AccountingReport:
-    ...
+) -> AccountingReport: ...
 
 
 def oracle_report(
@@ -451,8 +449,12 @@ def oracle_report(
     refSlot=None,
     dry_run=False,
 ):
+    """Build a synthetic SRv3 report with cl_diff as CL rewards/slashing, excluding withdrawals.
+
+    New withdrawals move ETH out of validators' balances; the previous untransferred
+    vault balance is already accounted for and must not be deducted again.
+    """
     if wait_to_next_report_time:
-        """fast forwards time to next report, compiles report, pushes through consensus and to AccountingOracle"""
         wait_to_next_available_report_time(contracts.hash_consensus_for_accounting_oracle)
     if refSlot is None:
         (refSlot, _) = contracts.hash_consensus_for_accounting_oracle.getCurrentFrame()
@@ -466,7 +468,6 @@ def oracle_report(
         deposited_for_current_report,
     ) = contracts.lido.getBalanceStats()
 
-    postCLBalance = clValidatorsBalance + cl_diff
     # deposits made since the last report and up to the refSlot surface as pending on the CL
     postCLPendingBalance = clPendingBalance + deposited_for_current_report
     if cl_appeared_validators:
@@ -483,8 +484,9 @@ def oracle_report(
         eth_balance(contracts.withdrawal_vault.address) if withdrawalVaultBalance is None else withdrawalVaultBalance
     )
 
-    # exclude_vaults_balances safely forces LIDO to see vault balances as empty allowing zero/negative rebase
-    # simulate_reports needs proper withdrawal and elRewards vaults balances
+    # SRv3 requires the reported withdrawal vault balance to cover the previously
+    # accounted residual. Excluding this vault means reporting no NEW withdrawals.
+    lastVaultBalanceAfterTransfer = contracts.oracle_report_sanity_checker.lastVaultBalanceAfterTransfer()
     if exclude_vaults_balances:
         if not report_withdrawals_vault or not report_el_vault:
             warnings.warn("exclude_vaults_balances overrides report_withdrawals_vault and report_el_vault")
@@ -493,9 +495,14 @@ def oracle_report(
         report_el_vault = False
 
     if not report_withdrawals_vault:
-        withdrawalVaultBalance = 0
+        withdrawalVaultBalance = lastVaultBalanceAfterTransfer
     if not report_el_vault:
         elRewardsVaultBalance = 0
+
+    # Match OracleReportSanityChecker._getCLWithdrawals: subtract only withdrawals
+    # since the last successful report, after resolving vault overrides/flags.
+    clWithdrawals = withdrawalVaultBalance - lastVaultBalanceAfterTransfer
+    postCLBalance = clValidatorsBalance + cl_diff - clWithdrawals
 
     if sharesRequestedToBurn is None:
         (coverShares, nonCoverShares) = contracts.burner.getSharesRequestedToBurn()
