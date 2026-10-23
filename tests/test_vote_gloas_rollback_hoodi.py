@@ -787,9 +787,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger, dual_g
     assert interface.BaseOracle(CSM0X02_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION
     assert interface.BaseOracle(CM_V2_FEE_ORACLE).getConsensusVersion() == FEE_ORACLE_CONSENSUS_VERSION
 
-    with pytest.raises(
-        VirtualMachineError, match=rf'ValueDoesntExist\("{MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY}"\)'
-    ):
+    with pytest.raises(VirtualMachineError, match=rf"ValueDoesntExist\W+{MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY}"):
         oracle_daemon_config.get.call(MAX_VALIDATOR_EXIT_REQUESTS_PER_REPORT_KEY)
 
     assert tuple(sanity_checker.getOracleReportLimits()) == ORACLE_REPORT_LIMITS
