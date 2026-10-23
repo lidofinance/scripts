@@ -34,6 +34,8 @@ Mainnet upgrade vote to activate 0x02 CSM, update curated module limits, and add
 4. Add UpdateStakingModuleShareLimits EVM script factory for 0x02 CSM to Easy Track
 5. Add LOL LDO TopUpAllowedRecipients EVM script factory to Easy Track
    for top-ups with a limit of 7.5M LDO per 12-month period
+
+Vote #206 passed & executed on Oct-19-2026 01:14:59 PM UTC, block 26226853.
 """
 
 from brownie import interface
