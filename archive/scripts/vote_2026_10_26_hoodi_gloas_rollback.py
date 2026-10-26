@@ -53,7 +53,7 @@ Hoodi vote: partial rollback of the Gloas upgrade (LIP-43), the Gloas fork on Ho
 1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
 1.50. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #87 passed & executed on Oct-26-2026 01:55:36 PM UTC, block 3891549.
 """
 
 from typing import Dict, List, Tuple

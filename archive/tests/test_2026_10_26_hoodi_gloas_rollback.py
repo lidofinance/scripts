@@ -30,7 +30,7 @@ from utils.ipfs import calculate_vote_ipfs_description, get_lido_vote_cid_from_s
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_gloas_rollback_hoodi import (
+from archive.scripts.vote_2026_10_26_hoodi_gloas_rollback import (
     IPFS_DESCRIPTION,
     get_dg_items,
     get_vote_items,
@@ -50,7 +50,7 @@ DUAL_GOVERNANCE = "0x9CAaCCc62c66d817CC59c44780D1b722359795bF"
 DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x0eCc17597D292271836691358B22340b78F3035B"
 TIME_CONSTRAINTS = "0xB26Fd3b50280AbC55c572EE73071778A51088408"
 
-# Fill these independently from scripts/vote_gloas_rollback_hoodi.py (do not copy-paste from
+# Fill these independently from archive/scripts/vote_2026_10_26_hoodi_gloas_rollback.py (do not copy-paste from
 # the script)
 # https://github.com/lidofinance/core/blob/2bd532298d85cdf520169fdc0c5fb0cc9baf03c3/deployed-hoodi.json#L755
 PREVIOUS_LIDO_LOCATOR_IMPLEMENTATION = "0x546d76dd8D4BC0c6a26Cb71a39De5d78E222Cbf8"
@@ -188,9 +188,8 @@ SECOND_OPINION_ORACLE = ZERO_ADDRESS
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-# TODO set after the vote is started
-EXPECTED_VOTE_ID = None
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_ID = 87
+EXPECTED_DG_PROPOSAL_ID = 45
 EXPECTED_VOTE_EVENTS_COUNT = 1
 # 10 core items + 3 * 6 module Verifier items + 5 * 3 consensus version items
 # + 3 OracleDaemonConfig items + 3 OracleReportSanityChecker items
