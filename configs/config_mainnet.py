@@ -95,6 +95,50 @@ EASYTRACK_UPDATE_STAKING_MODULE_SHARE_LIMITS_FACTORY = "0xde3e46E3129fA4e4e3f66c
 EASYTRACK_ALLOW_CONSOLIDATION_PAIR_FACTORY = "0x29e23B1EF0c9fffAc8330F9abaCebDDD827E4b5C"
 EASYTRACK_SET_DEPOSITS_RESERVE_TARGET_FACTORY = "0x62E9Dc68BDCBC46362f40e0bb9c154C9a42E62b0"
 
+# Lido Lend Easy Track factories (easy-track `et-lido-lend-deployed-mainnet-1-<block>.json`)
+EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY = "<ACTIVATE_MARKET_FACTORY>"
+EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY = "<CIRCUIT_BREAKER_ACTIONS_FACTORY>"
+EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY = "<GUARDIAN_ACTIONS_FACTORY>"
+EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY = "<MARKET_MANAGER_ACTIONS_FACTORY>"
+EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY = "<RISK_STEWARD_ACTIONS_FACTORY>"
+EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY = "<APPLY_IRM_CONFIG_FACTORY>"
+EASYTRACK_LIDO_LEND_EXIT_BOOK_ACTIONS_FACTORY = "<EXIT_BOOK_ACTIONS_FACTORY>"
+# Lido Lend committee, trusted caller of every Lido Lend factory
+EASYTRACK_LIDO_LEND_TRUSTED_CALLER = "<LIDO_LEND_COMMITTEE_MS>"
+
+# Lido Lend protocol (lend-markets `deployed/mainnet/`)
+LIDO_LEND = "<LIDO_LEND>"  # protocol.core
+LIDO_LEND_OWNER = "<LIDO_LEND_OWNER>"  # protocol.owner
+LIDO_LEND_IRM_ROUTER = "<IRM_ROUTER>"  # protocol.irm_router
+LIDO_LEND_ADAPTIVE_CURVE_IRM = "<ADAPTIVE_CURVE_IRM>"  # protocol.adaptive_curve_irm
+LIDO_LEND_MARKET_FACTORY = "<LIDO_LEND_MARKET_FACTORY>"  # protocol.factory
+LIDO_LEND_RISK_STEWARD_DASHBOARD = "<RISK_STEWARD_DASHBOARD>"  # protocol.risk_steward_dashboard
+LIDO_LEND_CIRCUIT_BREAKER = "<CIRCUIT_BREAKER>"  # circuit-breakers
+LIDO_LEND_MORPHO_EXIT_BOOK = "<MORPHO_EXIT_BOOK>"  # exit-books.morpho
+LIDO_LEND_ERC4626_EXIT_BOOK = "<ERC4626_EXIT_BOOK>"  # exit-books.erc4626
+LIDO_LEND_PRESEEDER = "<LIDO_LEND_PRESEEDER>"  # easy-track Preseeder
+LIDO_LEND_RISK_STEWARD_COMMITTEE_MS = "<RISK_STEWARD_COMMITTEE_MS>"  # exit book pauser
+LIDO_LEND_PAUSER_COMMITTEE_MS = "<PAUSER_COMMITTEE_MS>"  # market controller pauser registered at activation
+LIDO_LEND_DEPLOYED = not LIDO_LEND.startswith("<")
+
+# Lido Lend weth-wsteth market (lend-markets `deployed/mainnet/markets/weth-wsteth.toml`)
+LIDO_LEND_WETH_WSTETH_MARKET = {
+    "id": "<MARKET_ID>",
+    "loan_token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
+    "collateral_token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",  # wstETH
+    "oracle": "<ORACLE>",
+    "irm": "<IRM_ROUTER>",
+    "irm_config": "<IRM_CONFIG>",
+    "lltv": 0,  # <LLTV>
+    "supply_cap": 0,  # <SUPPLY_CAP>
+    "guardian_signals": "<GUARDIAN_SIGNALS>",
+    "controller": "<CONTROLLER>",
+    "vault": "<VAULT>",
+    "steward": "<RISK_STEWARD_COMMITTEE_MS>",
+    "fee": 0,  # <FEE>
+    "enable_settlement": True,
+}
+
 # Liquidity Observation Lab (LOL) stETH AllowedRecipientsRegistry
 LOL_ALLOWED_RECIPIENTS_REGISTRY = "0x48c4929630099b217136b64089E8543dB0E5163a"
 
