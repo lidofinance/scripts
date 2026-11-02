@@ -146,8 +146,9 @@ LIDO_IMPL = "0x028271E30a695c0527A0C50cA30603feD004cDb0"  # SRV3
 # see Lido's proxy appId()
 LIDO_ARAGON_APP_ID = "0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320"
 LIDO_MAX_STAKE_LIMIT_ETH = 150_000
-# Current mainnet reserve target; the initial 1500 ETH reserve has been disabled.
-LIDO_DEPOSITS_RESERVE_TARGET = 0
+# Current mainnet reserve target, set by the Easy Track motion in tx
+# 0xc805632cdde85fd40da430bf1e0a5e241b607b83f4d4d8ed0157440157865e6f (Oct-24-2026).
+LIDO_DEPOSITS_RESERVE_TARGET = 512 * 10**18
 
 # LegacyOracle (former LidoOracle)
 ## address is LIDO_LEGACY_ORACLE
