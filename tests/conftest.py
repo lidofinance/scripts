@@ -275,23 +275,27 @@ def preregister_unparseable_contracts():
     # `eth-brownie` pins `py-solc-ast==1.2.10` (its latest release), which crashes on the
     # contract-level function-list directive `using {func} for Type;` (valid since Solidity
     # 0.8.13) with `AttributeError: 'UsingForDirective' object has no attribute 'libraryName'`.
-    # CSVerifier's verified source has one (`using { amountWei } for Withdrawal;` inside
-    # `contract CSVerifier`), so resolving v2/v3 from Etherscan during event tracing
-    # (e.g. display_dg_events) crashes. Pre-registering it from a local ABI makes
+    # CSVerifier/Verifier sources have one (`using { amountWei } for Withdrawal;`),
+    # including the Verifiers deployed for CMv2 and CSM 0x02. Resolving them from
+    # Etherscan during event tracing (e.g. CB pause events) crashes. A local ABI makes
     # state._find_contract short-circuit before the Etherscan source fetch / solcast parse.
     #
     # Unlike `parse_events_from_local_abi`, this is unconditional: the crash occurs in CI,
     # where PARSE_EVENTS_FROM_LOCAL_ABI is not set.
     unparseable_contracts = {
-        "CSVerifierV2": globals().get("CS_VERIFIER_V2_ADDRESS"),
-        "Verifier": globals().get("CS_VERIFIER_V3_ADDRESS"),
+        "CSVerifierV2": [globals().get("CS_VERIFIER_V2_ADDRESS")],
+        "Verifier": [
+            globals().get("CS_VERIFIER_V3_ADDRESS"),
+            globals().get("CURATED_V2_VERIFIER"),
+            globals().get("CSM0X02_VERIFIER_ADDRESS"),
+        ],
     }
-    for contract_name, addr in unparseable_contracts.items():
-        if not addr:
-            continue
+    for contract_name, addresses in unparseable_contracts.items():
         with open(f"interfaces/{contract_name}.json") as fp:
             abi = json.load(fp)
-        state._add_contract(Contract.from_abi(contract_name, addr, abi))
+        for addr in addresses:
+            if addr:
+                state._add_contract(Contract.from_abi(contract_name, addr, abi))
 
 
 @pytest.fixture(scope="session", autouse=True)

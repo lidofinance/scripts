@@ -16,7 +16,7 @@ from utils.test.snapshot_helpers import _chain_snapshot
 from .utils import get_slot
 
 SLOTS_COUNT_TO_CHECK = 16
-MAX_ARRAY_SIZE = 2 ** 5
+MAX_ARRAY_SIZE = 2**5
 
 
 class Frame(TypedDict):

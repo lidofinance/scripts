@@ -11,6 +11,7 @@ on:
       - "feat/next-vote"
   schedule:
     - cron: "0 0 * * TUE"
+  workflow_dispatch:
 
 jobs:
   run-tests:

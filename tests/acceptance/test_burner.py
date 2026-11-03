@@ -5,6 +5,7 @@ from utils.config import (
     contracts,
     BURNER,
     CURATED_V2_ACCOUNTING,
+    CSM0X02_ACCOUNTING_ADDRESS,
     TOTAL_NON_COVER_SHARES_BURNT,
     TOTAL_COVER_SHARES_BURNT,
 )
@@ -31,3 +32,5 @@ def test_roles(contract):
 
     # Curated (CMv2) Accounting: REQUEST_BURN_MY_STETH_ROLE granted
     assert contract.hasRole(REQUEST_BURN_MY_STETH_ROLE, CURATED_V2_ACCOUNTING)
+
+    assert contract.hasRole(REQUEST_BURN_MY_STETH_ROLE, CSM0X02_ACCOUNTING_ADDRESS)
