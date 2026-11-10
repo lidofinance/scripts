@@ -9,7 +9,6 @@ from configs.config_mainnet import (
     LIDO_LEND_ADAPTIVE_CURVE_IRM,
     LIDO_LEND_IRM_ROUTER,
     LIDO_LEND_RISK_STEWARD_DASHBOARD,
-    LIDO_LEND_ERC4626_EXIT_BOOK,
     LIDO_LEND_PAUSER_COMMITTEE_MS,
     LIDO_LEND_WETH_WSTETH_MARKET,
     EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY,
@@ -18,7 +17,6 @@ from configs.config_mainnet import (
     EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY,
-    EASYTRACK_LIDO_LEND_EXIT_BOOK_ACTIONS_FACTORY,
 )
 from utils.test.easy_track_helpers import create_and_enact_motion
 
@@ -39,7 +37,6 @@ GUARDIAN_ADD, GUARDIAN_REMOVE, GUARDIAN_REPLACE, GUARDIAN_SET_QUORUM, GUARDIAN_S
     MARKET_SET_FEE,
 ) = range(6)
 RISK_STEWARD_ADD, RISK_STEWARD_REMOVE = range(2)
-EXIT_BOOK_SET_MORPHO_ALLOWED, EXIT_BOOK_SET_ERC4626_ALLOWED = range(2)
 
 
 def market_params(market=LIDO_LEND_WETH_WSTETH_MARKET):
@@ -182,18 +179,3 @@ def apply_irm_config_via_motion(easy_track, trusted_caller, stranger, irm_config
     )
 
     assert adaptive_curve_irm.marketCurveConfig(market_id(market)) == irm_config
-
-
-def allow_vault_in_erc4626_exit_book_via_motion(easy_track, trusted_caller, stranger, vault):
-    exit_book = interface.Erc4626ExitBook(LIDO_LEND_ERC4626_EXIT_BOOK)
-    assert not exit_book.isVaultAllowed(vault)
-
-    create_and_enact_motion(
-        easy_track,
-        trusted_caller,
-        EASYTRACK_LIDO_LEND_EXIT_BOOK_ACTIONS_FACTORY,
-        encode_action(EXIT_BOOK_SET_ERC4626_ALLOWED, ["address[]", "bool"], [[vault], True]),
-        stranger,
-    )
-
-    assert exit_book.isVaultAllowed(vault)

@@ -1,13 +1,12 @@
 """
 Vote 2026_MM_DD
 
-1. Add Lido Lend ActivateMarket EVM script factory <ACTIVATE_MARKET_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: AdaptiveCurveIrm.applyIrmConfig, IrmRouter.setMarketIrm, LidoLendOwner.createMarket, RiskStewardDashboard.addMarketSteward, CircuitBreaker.registerPauser, LidoLendPreseeder.preseedMarket, LidoLendOwner.setFee)
-2. Add Lido Lend CircuitBreakerActions EVM script factory <CIRCUIT_BREAKER_ACTIONS_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: CircuitBreaker.registerPauser, CircuitBreaker.setPauseDuration, CircuitBreaker.setHeartbeatInterval)
-3. Add Lido Lend GuardianActions EVM script factory <GUARDIAN_ACTIONS_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLendOwner.addGuardian, LidoLendOwner.setGuardiansQuorum, LidoLendOwner.removeGuardian, LidoLendOwner.replaceGuardian, LidoLendOwner.setGuardiansSuspectWindow, LidoLendOwner.unbanGuardianSignals)
-4. Add Lido Lend MarketManagerActions EVM script factory <MARKET_MANAGER_ACTIONS_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLendOwner.setInstantActivation, LidoLendOwner.setMarketCollateralActivationConfig, LidoLendOwner.setMarketSettlementConfig, LidoLendOwner.setMarketSupplyCap, LidoLendOwner.unfreezeMarket, LidoLendOwner.setFee)
-5. Add Lido Lend RiskStewardActions EVM script factory <RISK_STEWARD_ACTIONS_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: RiskStewardDashboard.addMarketSteward, RiskStewardDashboard.removeMarketSteward)
-6. Add Lido Lend ApplyIrmConfig EVM script factory <APPLY_IRM_CONFIG_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLend.accrueInterest, AdaptiveCurveIrm.applyIrmConfig)
-7. Add Lido Lend ExitBookActions EVM script factory <EXIT_BOOK_ACTIONS_FACTORY> to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: MorphoExitBook.setMarketAllowed, Erc4626ExitBook.setVaultAllowed)
+1. Add Lido Lend ActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: AdaptiveCurveIrm.applyIrmConfig, IrmRouter.setMarketIrm, LidoLendOwner.createMarket, RiskStewardDashboard.addMarketSteward, CircuitBreaker.registerPauser, LidoLendPreseeder.preseedMarket, LidoLendOwner.setFee)
+2. Add Lido Lend CircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: CircuitBreaker.registerPauser, CircuitBreaker.setPauseDuration, CircuitBreaker.setHeartbeatInterval)
+3. Add Lido Lend GuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLendOwner.addGuardian, LidoLendOwner.setGuardiansQuorum, LidoLendOwner.removeGuardian, LidoLendOwner.replaceGuardian, LidoLendOwner.setGuardiansSuspectWindow, LidoLendOwner.unbanGuardianSignals)
+4. Add Lido Lend MarketManagerActions EVM script factory 0x9D75EaE321976e85e472847AFD21246F1f87dC43 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLendOwner.setInstantActivation, LidoLendOwner.setMarketCollateralActivationConfig, LidoLendOwner.setMarketSettlementConfig, LidoLendOwner.setMarketSupplyCap, LidoLendOwner.unfreezeMarket, LidoLendOwner.setFee)
+5. Add Lido Lend RiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: RiskStewardDashboard.addMarketSteward, RiskStewardDashboard.removeMarketSteward)
+6. Add Lido Lend ApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLend.accrueInterest, AdaptiveCurveIrm.applyIrmConfig)
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -26,15 +25,12 @@ from utils.config import (
     EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY,
-    EASYTRACK_LIDO_LEND_EXIT_BOOK_ACTIONS_FACTORY,
     LIDO_LEND,
     LIDO_LEND_OWNER,
     LIDO_LEND_ADAPTIVE_CURVE_IRM,
     LIDO_LEND_IRM_ROUTER,
     LIDO_LEND_RISK_STEWARD_DASHBOARD,
     LIDO_LEND_CIRCUIT_BREAKER,
-    LIDO_LEND_MORPHO_EXIT_BOOK,
-    LIDO_LEND_ERC4626_EXIT_BOOK,
     LIDO_LEND_PRESEEDER,
 )
 from utils.mainnet_fork import pass_and_exec_dao_vote
@@ -44,22 +40,19 @@ from utils.easy_track import add_evmscript_factory
 # ============================== Constants ===================================
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 
-# Lido Lend EVM script factories (easy-track `et-lido-lend-deployed-mainnet-1-<block>.json`)
+# Lido Lend EVM script factories (easy-track `lido-lend-factories-mainnet.json`)
 ACTIVATE_MARKET_FACTORY = EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY
 CIRCUIT_BREAKER_ACTIONS_FACTORY = EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY
 GUARDIAN_ACTIONS_FACTORY = EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY
 MARKET_MANAGER_ACTIONS_FACTORY = EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY
 RISK_STEWARD_ACTIONS_FACTORY = EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY
 APPLY_IRM_CONFIG_FACTORY = EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY
-EXIT_BOOK_ACTIONS_FACTORY = EASYTRACK_LIDO_LEND_EXIT_BOOK_ACTIONS_FACTORY
 
 # Lido Lend permission targets (lend-markets `deployed/mainnet/`)
 ADAPTIVE_CURVE_IRM = LIDO_LEND_ADAPTIVE_CURVE_IRM
 IRM_ROUTER = LIDO_LEND_IRM_ROUTER
 RISK_STEWARD_DASHBOARD = LIDO_LEND_RISK_STEWARD_DASHBOARD
 CIRCUIT_BREAKER = LIDO_LEND_CIRCUIT_BREAKER
-MORPHO_EXIT_BOOK = LIDO_LEND_MORPHO_EXIT_BOOK
-ERC4626_EXIT_BOOK = LIDO_LEND_ERC4626_EXIT_BOOK
 
 # Function selectors for permissions
 LIDO_LEND_ACCRUE_INTEREST = "0x151c1ade"  # accrueInterest((address,address,address,address,uint256))
@@ -84,8 +77,6 @@ CIRCUIT_BREAKER_REGISTER_PAUSER = "0x338d93fc"  # registerPauser(address,address
 CIRCUIT_BREAKER_SET_PAUSE_DURATION = "0xc9387332"  # setPauseDuration(uint256)
 CIRCUIT_BREAKER_SET_HEARTBEAT_INTERVAL = "0x71a99c22"  # setHeartbeatInterval(uint256)
 PRESEEDER_PRESEED_MARKET = "0x9e90390c"  # preseedMarket((address,address,address,address,uint256),address)
-MORPHO_EXIT_BOOK_SET_MARKET_ALLOWED = "0xaf2a4133"  # setMarketAllowed((address,address,address,address,uint256),bool)
-ERC4626_EXIT_BOOK_SET_VAULT_ALLOWED = "0xab05a1e3"  # setVaultAllowed(address,bool)
 
 
 def permissions(*entries: Tuple[str, str]) -> str:
@@ -131,41 +122,47 @@ APPLY_IRM_CONFIG_PERMISSIONS = permissions(
     (LIDO_LEND, LIDO_LEND_ACCRUE_INTEREST),
     (ADAPTIVE_CURVE_IRM, IRM_APPLY_IRM_CONFIG),
 )
-EXIT_BOOK_ACTIONS_PERMISSIONS = permissions(
-    (MORPHO_EXIT_BOOK, MORPHO_EXIT_BOOK_SET_MARKET_ALLOWED),
-    (ERC4626_EXIT_BOOK, ERC4626_EXIT_BOOK_SET_VAULT_ALLOWED),
-)
-
-# (vote item name, factory, permissions) in vote order
-FACTORIES: List[Tuple[str, str, str]] = [
-    ("ActivateMarket", ACTIVATE_MARKET_FACTORY, ACTIVATE_MARKET_PERMISSIONS),
-    ("CircuitBreakerActions", CIRCUIT_BREAKER_ACTIONS_FACTORY, CIRCUIT_BREAKER_ACTIONS_PERMISSIONS),
-    ("GuardianActions", GUARDIAN_ACTIONS_FACTORY, GUARDIAN_ACTIONS_PERMISSIONS),
-    ("MarketManagerActions", MARKET_MANAGER_ACTIONS_FACTORY, MARKET_MANAGER_ACTIONS_PERMISSIONS),
-    ("RiskStewardActions", RISK_STEWARD_ACTIONS_FACTORY, RISK_STEWARD_ACTIONS_PERMISSIONS),
-    ("ApplyIrmConfig", APPLY_IRM_CONFIG_FACTORY, APPLY_IRM_CONFIG_PERMISSIONS),
-    ("ExitBookActions", EXIT_BOOK_ACTIONS_FACTORY, EXIT_BOOK_ACTIONS_PERMISSIONS),
-]
-
-
 # ============================= IPFS Description ==================================
 # TODO forum link
 IPFS_DESCRIPTION = """
-1. **Add Lido Lend Easy Track factories**, [as proposed on the forum](<FORUM_LINK>). Audit & deployment verification: TODO. Items 1-7.
+1. **Add Lido Lend Easy Track factories**, [as proposed on the forum](<FORUM_LINK>). Audit & deployment verification: TODO. Items 1-6.
 """
 
 
 # ================================ Main ======================================
 def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
-    vote_desc_items = []
-    call_script_items = []
-
-    for index, (name, factory, factory_permissions) in enumerate(FACTORIES, start=1):
-        vote_desc_items.append(
-            f"{index}. Add Lido Lend {name} EVM script factory {factory} to Easy Track {EASY_TRACK} "
-            f"(permissions: {factory_permissions})"
-        )
-        call_script_items.append(add_evmscript_factory(factory, factory_permissions))
+    vote_desc_items, call_script_items = zip(
+        (
+            f"1. Add Lido Lend ActivateMarket EVM script factory {ACTIVATE_MARKET_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {ACTIVATE_MARKET_PERMISSIONS})",
+            add_evmscript_factory(ACTIVATE_MARKET_FACTORY, ACTIVATE_MARKET_PERMISSIONS),
+        ),
+        (
+            f"2. Add Lido Lend CircuitBreakerActions EVM script factory {CIRCUIT_BREAKER_ACTIONS_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {CIRCUIT_BREAKER_ACTIONS_PERMISSIONS})",
+            add_evmscript_factory(CIRCUIT_BREAKER_ACTIONS_FACTORY, CIRCUIT_BREAKER_ACTIONS_PERMISSIONS),
+        ),
+        (
+            f"3. Add Lido Lend GuardianActions EVM script factory {GUARDIAN_ACTIONS_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {GUARDIAN_ACTIONS_PERMISSIONS})",
+            add_evmscript_factory(GUARDIAN_ACTIONS_FACTORY, GUARDIAN_ACTIONS_PERMISSIONS),
+        ),
+        (
+            f"4. Add Lido Lend MarketManagerActions EVM script factory {MARKET_MANAGER_ACTIONS_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {MARKET_MANAGER_ACTIONS_PERMISSIONS})",
+            add_evmscript_factory(MARKET_MANAGER_ACTIONS_FACTORY, MARKET_MANAGER_ACTIONS_PERMISSIONS),
+        ),
+        (
+            f"5. Add Lido Lend RiskStewardActions EVM script factory {RISK_STEWARD_ACTIONS_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {RISK_STEWARD_ACTIONS_PERMISSIONS})",
+            add_evmscript_factory(RISK_STEWARD_ACTIONS_FACTORY, RISK_STEWARD_ACTIONS_PERMISSIONS),
+        ),
+        (
+            f"6. Add Lido Lend ApplyIrmConfig EVM script factory {APPLY_IRM_CONFIG_FACTORY} to Easy Track {EASY_TRACK} "
+            f"(permissions: {APPLY_IRM_CONFIG_PERMISSIONS})",
+            add_evmscript_factory(APPLY_IRM_CONFIG_FACTORY, APPLY_IRM_CONFIG_PERMISSIONS),
+        ),
+    )
 
     return vote_desc_items, call_script_items
 
