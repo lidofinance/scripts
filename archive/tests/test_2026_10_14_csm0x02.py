@@ -38,7 +38,7 @@ from utils.voting import find_metadata_by_vote_id
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_csm0x02 import get_dg_items, get_vote_items, start_vote
+from archive.scripts.upgrade_2026_10_14_csm0x02 import get_dg_items, get_vote_items, start_vote
 
 
 # ============================================================================
