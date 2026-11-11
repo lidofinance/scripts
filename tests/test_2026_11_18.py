@@ -14,7 +14,6 @@ from utils.test.event_validators.easy_track import (
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.balance import set_balance
-from utils.config import LIDO_LEND_WETH_WSTETH_MARKET
 
 from utils.test.lido_lend_helpers import (
     activate_market_via_motion,
@@ -55,6 +54,23 @@ MARKET_MANAGER_ACTIONS_FACTORY = "0x9D75EaE321976e85e472847AFD21246F1f87dC43"
 RISK_STEWARD_ACTIONS_FACTORY = "0x7276CE5f92911216d41C7b0A9C3575DE873763E9"
 APPLY_IRM_CONFIG_FACTORY = "0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668"
 EXIT_BOOK_ACTIONS_FACTORY = "0xA30b212c3657fa745feaE4b48B7Eb0A8F429C604"
+
+LIDO_LEND_WETH_WSTETH_MARKET = {
+    "id": "<MARKET_ID>",
+    "loan_token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
+    "collateral_token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",  # wstETH
+    "oracle": "<ORACLE>",
+    "irm": "0x81B7cC9523B30429110282d90db2fa90ff443d91",
+    "irm_config": "<IRM_CONFIG>",
+    "lltv": 0,  # <LLTV>
+    "supply_cap": 0,  # <SUPPLY_CAP>
+    "guardian_signals": "<GUARDIAN_SIGNALS>",
+    "controller": "<CONTROLLER>",
+    "vault": "<VAULT>",
+    "steward": "0x1011E8a0668da8bbED925cB5A6DA5aa128C2BB5E",
+    "fee": 0,  # <FEE>
+    "enable_settlement": True,
+}
 
 ACTIVATE_MARKET_PERMISSIONS = (
     "0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f2078614b"

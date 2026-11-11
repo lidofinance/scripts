@@ -431,6 +431,54 @@ class ContractsLazyLoader:
         return interface.EasyTrack(EASYTRACK)
 
     @property
+    def lido_lend(self) -> interface.LidoLend:
+        return interface.LidoLend(LIDO_LEND)
+
+    @property
+    def lido_lend_owner(self) -> interface.LidoLendOwner:
+        return interface.LidoLendOwner(LIDO_LEND_OWNER)
+
+    @property
+    def lido_lend_irm_router(self) -> interface.IrmRouter:
+        return interface.IrmRouter(LIDO_LEND_IRM_ROUTER)
+
+    @property
+    def lido_lend_adaptive_curve_irm(self) -> interface.AdaptiveCurveIrm:
+        return interface.AdaptiveCurveIrm(LIDO_LEND_ADAPTIVE_CURVE_IRM)
+
+    @property
+    def lido_lend_risk_steward_dashboard(self) -> interface.RiskStewardDashboard:
+        return interface.RiskStewardDashboard(LIDO_LEND_RISK_STEWARD_DASHBOARD)
+
+    @property
+    def lido_lend_circuit_breaker(self) -> interface.CircuitBreaker:
+        return interface.CircuitBreaker(LIDO_LEND_CIRCUIT_BREAKER)
+
+    @property
+    def lido_lend_morpho_exit_book(self) -> interface.MorphoExitBook:
+        return interface.MorphoExitBook(LIDO_LEND_MORPHO_EXIT_BOOK)
+
+    @property
+    def lido_lend_erc4626_exit_book(self) -> interface.Erc4626ExitBook:
+        return interface.Erc4626ExitBook(LIDO_LEND_ERC4626_EXIT_BOOK)
+
+    @property
+    def lido_lend_weth_wsteth_controller(self) -> interface.LidoLendMarketController:
+        return interface.LidoLendMarketController(LIDO_LEND_WETH_WSTETH_MARKET["controller"])
+
+    @property
+    def lido_lend_weth_wsteth_guardian_signals(self) -> interface.GuardianSignals:
+        return interface.GuardianSignals(LIDO_LEND_WETH_WSTETH_MARKET["guardian_signals"])
+
+    @property
+    def lido_lend_weth_wsteth_vault(self) -> interface.LidoLendERC4626:
+        return interface.LidoLendERC4626(LIDO_LEND_WETH_WSTETH_MARKET["vault"])
+
+    @property
+    def lido_lend_weth_wsteth_price_feed(self) -> interface.OssifiableProxy:
+        return interface.OssifiableProxy(LIDO_LEND_WETH_WSTETH_MARKET["oracle"])
+
+    @property
     def relay_allowed_list(self) -> interface.MEVBoostRelayAllowedList:
         return interface.MEVBoostRelayAllowedList(RELAY_ALLOWED_LIST)
 
