@@ -128,13 +128,13 @@ LIDO_LEND_WETH_WSTETH_MARKET = {
     "oracle": "<ORACLE>",
     "irm": "0x81B7cC9523B30429110282d90db2fa90ff443d91",
     "irm_config": "<IRM_CONFIG>",
-    "lltv": 0,  # <LLTV>
-    "supply_cap": 0,  # <SUPPLY_CAP>
+    "lltv": 980000000000000000,
+    "supply_cap": 5000000000000000000000,
     "guardian_signals": "<GUARDIAN_SIGNALS>",
     "controller": "<CONTROLLER>",
     "vault": "<VAULT>",
     "steward": "0x1011E8a0668da8bbED925cB5A6DA5aa128C2BB5E",
-    "fee": 0,  # <FEE>
+    "fee": 100000000000000000,
     "enable_settlement": True,
 }
 
