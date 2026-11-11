@@ -10,7 +10,6 @@ from utils.dual_governance import process_pending_proposals
 from utils.evm_script import encode_call_script
 from utils.import_current_votes import get_vote_script_files, get_upgrade_script_files
 from utils.mainnet_fork import pass_and_exec_dao_vote
-from utils.ci_vote import select_vote_script
 
 def main():
     processed_proposal_ids = process_pending_proposals()
@@ -100,10 +99,13 @@ def retrieve_vote_script() -> Tuple[Callable, Callable, Callable | None] | None:
     vote_files = get_vote_script_files()
     vote_files.extend(get_upgrade_script_files())
 
-    script_path = select_vote_script(vote_files, os.environ.get("VOTE_SCRIPT", ""))
-    if script_path is None:
+    if not vote_files:
         return None
 
+    if len(vote_files) > 1:
+        raise RuntimeError("More than one vote script found.")
+
+    script_path = sorted(vote_files)[0] # the expectation is that the only voting exists at the same time
     print(f"Found vote script: {script_path}")
 
     script_name = os.path.splitext(os.path.basename(script_path))[0]

@@ -1,6 +1,5 @@
 name: Lido Lend tests
 
-# Same external-regression triggers as Core and Staking Modules.
 on:
   workflow_dispatch:
   push:
@@ -11,6 +10,7 @@ on:
       - "feat/rc2"
       - "feat/rc1"
       - "feat/next-vote"
+      - "feat/lido-lend-easy-track-factories"
   schedule:
     - cron: "0 0 * * TUE"
 
@@ -90,14 +90,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
-          VOTE_SCRIPT: vote_lido_lend_factories.py
 
       - name: Run Lido Lend external regression tests
-        uses: lidofinance/lend-markets/.github/actions/regression-tests@refactor/config-per-deployment
+        uses: lidofinance/lend-markets/.github/actions/regression-tests@refactor/solidity-deployment
         with:
           repository: lidofinance/lend-markets
-          ref: refactor/config-per-deployment
+          ref: refactor/solidity-deployment
           path: lend-markets
           rpc_url: ${{ env.HARDHAT_NODE_URL }}
-          config: mainnet
           run: mainnet

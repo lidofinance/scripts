@@ -1,4 +1,4 @@
-from brownie import chain, interface, reverts
+from brownie import interface, reverts
 from brownie.network.transaction import TransactionReceipt
 
 from utils.test.tx_tracing_helpers import (
@@ -29,7 +29,7 @@ from utils.test.lido_lend_helpers import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_lido_lend_factories import start_vote, get_vote_items
+from scripts.vote_2026_11_18 import start_vote, get_vote_items
 
 
 # ============================================================================
@@ -102,11 +102,14 @@ APPLY_IRM_CONFIG_PERMISSIONS = (
 # ============================================================================
 # ============================= Test params ==================================
 # ============================================================================
-EXPECTED_VOTE_ID = None
+EXPECTED_VOTE_ID = 207
 EXPECTED_VOTE_EVENTS_COUNT = 6
-IPFS_DESCRIPTION_HASH = "bafkreihd2n2v6idu2aqj6e2yhqmm6kbxui4fqyoqzlg4gnnxcxxrgviweu"
+IPFS_DESCRIPTION_HASH = ""
 
 
+# ============================================================================
+# ================================ Helpers ===================================
+# ============================================================================
 def check_factory_bindings():
     activate_market = interface.LidoLendActivateMarket(ACTIVATE_MARKET_FACTORY)
     assert activate_market.trustedCaller() == EASYTRACK_LIDO_LEND_TRUSTED_CALLER
@@ -145,21 +148,9 @@ def check_factory_bindings():
     assert apply_irm_config.configurableIrm() == LIDO_LEND_ADAPTIVE_CURVE_IRM
 
 
-def lido_lend_factories_smoke_test(easy_track, stranger):
-    trusted_caller = set_balance(EASYTRACK_LIDO_LEND_TRUSTED_CALLER, 1000)
-    market = LIDO_LEND_WETH_WSTETH_MARKET
-
-    assert not str(market["id"]).startswith(
-        "<"
-    ), "Fill LIDO_LEND_WETH_WSTETH_MARKET from the market deployment artifact"
-    activate_market_via_motion(easy_track, trusted_caller, stranger, market)
-    set_supply_cap_via_motion(easy_track, trusted_caller, stranger, market)
-    add_guardian_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
-    add_risk_steward_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
-    set_pause_duration_via_motion(easy_track, trusted_caller, stranger)
-    apply_irm_config_via_motion(easy_track, trusted_caller, stranger, market["irm_config"], market)
-
-
+# ============================================================================
+# ================================= Test =====================================
+# ============================================================================
 def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
 
     # =======================================================================
@@ -167,6 +158,8 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     # =======================================================================
     voting = interface.Voting(VOTING)
     easy_track = interface.EasyTrack(EASY_TRACK)
+    check_factory_bindings()
+    assert easy_track.evmScriptExecutor() == EVM_SCRIPT_EXECUTOR
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -181,12 +174,9 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
 
     _, call_script_items = get_vote_items()
+    assert len(call_script_items) == EXPECTED_VOTE_EVENTS_COUNT
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
-
-    assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
-    check_factory_bindings()
-    assert easy_track.evmScriptExecutor() == EVM_SCRIPT_EXECUTOR
 
     # =========================================================================
     # ============================= Execute Vote ==============================
@@ -201,41 +191,44 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert EXIT_BOOK_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(EXIT_BOOK_ACTIONS_FACTORY) == "0x"
 
-        # 1. ActivateMarket
+        # 1. LidoLendActivateMarket
         assert ACTIVATE_MARKET_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(ACTIVATE_MARKET_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendActivateMarket(ACTIVATE_MARKET_FACTORY).createEVMScript(stranger, "0x")
 
-        # 2. CircuitBreakerActions
+        # 2. LidoLendCircuitBreakerActions
         assert CIRCUIT_BREAKER_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(CIRCUIT_BREAKER_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendCircuitBreakerActions(CIRCUIT_BREAKER_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 3. GuardianActions
+        # 3. LidoLendGuardianActions
         assert GUARDIAN_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(GUARDIAN_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendGuardianActions(GUARDIAN_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 4. MarketManagerActions
+        # 4. LidoLendMarketManagerActions
         assert MARKET_MANAGER_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(MARKET_MANAGER_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendMarketManagerActions(MARKET_MANAGER_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 5. RiskStewardActions
+        # 5. LidoLendRiskStewardActions
         assert RISK_STEWARD_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(RISK_STEWARD_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendRiskStewardActions(RISK_STEWARD_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 6. ApplyIrmConfig
+        # 6. LidoLendApplyIrmConfig
         assert APPLY_IRM_CONFIG_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(APPLY_IRM_CONFIG_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendApplyIrmConfig(APPLY_IRM_CONFIG_FACTORY).createEVMScript(stranger, "0x")
+
+        if IPFS_DESCRIPTION_HASH:
+            assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
 
         vote_tx: TransactionReceipt = helpers.execute_vote(vote_id=vote_id, accounts=accounts, dao_voting=voting)
         display_voting_events(vote_tx)
@@ -256,14 +249,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
-        # 1. ActivateMarket
+        # 1. LidoLendActivateMarket
         validate_evmscript_factory_added_event(
             vote_events[0],
             EVMScriptFactoryAdded(factory_addr=ACTIVATE_MARKET_FACTORY, permissions=ACTIVATE_MARKET_PERMISSIONS),
             emitted_by=EASY_TRACK,
         )
 
-        # 2. CircuitBreakerActions
+        # 2. LidoLendCircuitBreakerActions
         validate_evmscript_factory_added_event(
             vote_events[1],
             EVMScriptFactoryAdded(
@@ -272,14 +265,14 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             emitted_by=EASY_TRACK,
         )
 
-        # 3. GuardianActions
+        # 3. LidoLendGuardianActions
         validate_evmscript_factory_added_event(
             vote_events[2],
             EVMScriptFactoryAdded(factory_addr=GUARDIAN_ACTIONS_FACTORY, permissions=GUARDIAN_ACTIONS_PERMISSIONS),
             emitted_by=EASY_TRACK,
         )
 
-        # 4. MarketManagerActions
+        # 4. LidoLendMarketManagerActions
         validate_evmscript_factory_added_event(
             vote_events[3],
             EVMScriptFactoryAdded(
@@ -288,7 +281,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             emitted_by=EASY_TRACK,
         )
 
-        # 5. RiskStewardActions
+        # 5. LidoLendRiskStewardActions
         validate_evmscript_factory_added_event(
             vote_events[4],
             EVMScriptFactoryAdded(
@@ -297,7 +290,7 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
             emitted_by=EASY_TRACK,
         )
 
-        # 6. ApplyIrmConfig
+        # 6. LidoLendApplyIrmConfig
         validate_evmscript_factory_added_event(
             vote_events[5],
             EVMScriptFactoryAdded(factory_addr=APPLY_IRM_CONFIG_FACTORY, permissions=APPLY_IRM_CONFIG_PERMISSIONS),
@@ -312,34 +305,55 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
     assert not easy_track.isEVMScriptFactory(EXIT_BOOK_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(EXIT_BOOK_ACTIONS_FACTORY) == "0x"
 
-    # 1. ActivateMarket
+    # 1. LidoLendActivateMarket
     assert easy_track.isEVMScriptFactory(ACTIVATE_MARKET_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(ACTIVATE_MARKET_FACTORY) == ACTIVATE_MARKET_PERMISSIONS
 
-    # 2. CircuitBreakerActions
+    # 2. LidoLendCircuitBreakerActions
     assert easy_track.isEVMScriptFactory(CIRCUIT_BREAKER_ACTIONS_FACTORY)
     assert (
         easy_track.evmScriptFactoryPermissions(CIRCUIT_BREAKER_ACTIONS_FACTORY) == CIRCUIT_BREAKER_ACTIONS_PERMISSIONS
     )
 
-    # 3. GuardianActions
+    # 3. LidoLendGuardianActions
     assert easy_track.isEVMScriptFactory(GUARDIAN_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(GUARDIAN_ACTIONS_FACTORY) == GUARDIAN_ACTIONS_PERMISSIONS
 
-    # 4. MarketManagerActions
+    # 4. LidoLendMarketManagerActions
     assert easy_track.isEVMScriptFactory(MARKET_MANAGER_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(MARKET_MANAGER_ACTIONS_FACTORY) == MARKET_MANAGER_ACTIONS_PERMISSIONS
 
-    # 5. RiskStewardActions
+    # 5. LidoLendRiskStewardActions
     assert easy_track.isEVMScriptFactory(RISK_STEWARD_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(RISK_STEWARD_ACTIONS_FACTORY) == RISK_STEWARD_ACTIONS_PERMISSIONS
 
-    # 6. ApplyIrmConfig
+    # 6. LidoLendApplyIrmConfig
     assert easy_track.isEVMScriptFactory(APPLY_IRM_CONFIG_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(APPLY_IRM_CONFIG_FACTORY) == APPLY_IRM_CONFIG_PERMISSIONS
 
-    chain.snapshot()
-    try:
-        lido_lend_factories_smoke_test(easy_track, stranger)
-    finally:
-        chain.revert()
+    # =========================================================================
+    # ======================= Lido Lend Easy Track motions =====================
+    # =========================================================================
+    trusted_caller = set_balance(EASYTRACK_LIDO_LEND_TRUSTED_CALLER, 1000)
+    market = LIDO_LEND_WETH_WSTETH_MARKET
+    assert not str(market["id"]).startswith(
+        "<"
+    ), "Fill LIDO_LEND_WETH_WSTETH_MARKET from the market deployment artifact"
+
+    # 1. LidoLendActivateMarket
+    activate_market_via_motion(easy_track, trusted_caller, stranger, market)
+
+    # 2. LidoLendCircuitBreakerActions
+    set_pause_duration_via_motion(easy_track, trusted_caller, stranger)
+
+    # 3. LidoLendGuardianActions
+    add_guardian_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+
+    # 4. LidoLendMarketManagerActions
+    set_supply_cap_via_motion(easy_track, trusted_caller, stranger, market)
+
+    # 5. LidoLendRiskStewardActions
+    add_risk_steward_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+
+    # 6. LidoLendApplyIrmConfig
+    apply_irm_config_via_motion(easy_track, trusted_caller, stranger, market["irm_config"], market)

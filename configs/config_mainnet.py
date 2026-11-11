@@ -119,7 +119,6 @@ LIDO_LEND_ERC4626_EXIT_BOOK = "0x0d2580e4c9b20507eDFAeFC7777d760F12Ad55D4"  # ex
 LIDO_LEND_PRESEEDER = "0x3F107d1fbCA49F425321Cb27f6Ef5CbB94a72c41"  # easy-track Preseeder
 LIDO_LEND_RISK_STEWARD_COMMITTEE_MS = "0x1011E8a0668da8bbED925cB5A6DA5aa128C2BB5E"  # exit book pauser
 LIDO_LEND_PAUSER_COMMITTEE_MS = "0x604B13eD638663AA0C1eEF0c3482e51f228BA2E1"  # market controller pauser registered at activation
-LIDO_LEND_DEPLOYED = not LIDO_LEND.startswith("<")
 
 # Lido Lend weth-wsteth market (lend-markets `deployed/mainnet/markets/weth-wsteth.toml`)
 LIDO_LEND_WETH_WSTETH_MARKET = {
