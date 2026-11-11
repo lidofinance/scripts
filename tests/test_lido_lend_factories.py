@@ -1,16 +1,27 @@
-from brownie import chain, interface, reverts
+import pytest
+from brownie import chain, convert, history, interface, reverts
+from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
 from utils.test.tx_tracing_helpers import (
+    add_event_emitter,
+    tx_events_from_receipt,
     group_voting_events_from_receipt,
+    group_dg_events_from_receipt,
     count_vote_items_by_events,
     display_voting_events,
+    display_dg_events,
 )
-from utils.evm_script import encode_call_script
+from utils.dual_governance import PROPOSAL_STATUS, process_proposals
+from utils.evm_script import encode_call_script, encode_error
+from utils.test.event_validators.common import validate_events_chain
+from utils.test.event_validators.dual_governance import validate_dual_governance_submit_event
 from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
+from utils.test.event_validators.permission import validate_grant_role_event
+from utils.test.helpers import access_control_unauthorized
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
 from utils.balance import set_balance
@@ -29,14 +40,28 @@ from utils.test.lido_lend_helpers import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_lido_lend_factories import start_vote, get_vote_items
+from scripts.vote_lido_lend_factories import start_vote, get_vote_items, get_dg_items
 
 
 # ============================================================================
 # ============================== Constants ===================================
 # ============================================================================
 VOTING = "0x2e59A20f205bB85a89C53f1936454680651E618e"
+AGENT = "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
 EVM_SCRIPT_EXECUTOR = "0xFE5986E06210aC1eCC1aDCafc0cc7f8D63B3F977"
+EMERGENCY_PROTECTED_TIMELOCK = "0xCE0425301C85c5Ea2A0873A2dEe44d78E02D2316"
+DUAL_GOVERNANCE_ADMIN_EXECUTOR = "0x23E0B465633FF5178808F4A75186E2F2F9537021"
+
+# https://github.com/lidofinance/staking-modules/pull/918
+CURATED_V2 = "0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1"
+CURATED_V2_OLD_IMPL = "0x959fC67FE53c8A6C7a1AEd73430Aa07a36eD9337"
+CURATED_V2_NEW_IMPL = "0x02bEFd784c6C382a021774472563671Ae23980C0"
+CURATED_V2_PRE_UPGRADE_VERSION = 1
+CURATED_V2_VERSION = 2
+# https://docs.lido.fi/multisigs/committees#220-curated-module-committee-cmc
+CURATED_MODULE_COMMITTEE = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"
+ENABLE_TOP_UP_ALLOCATION_ROLE_NAME = "ENABLE_TOP_UP_ALLOCATION_ROLE"
+ENABLE_TOP_UP_ALLOCATION_ROLE = "0xf541c17eb0542b50d1f6df03622f7d9ab80d01dffb50bbd033a4dd4c57f09889"
 
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_LIDO_LEND_TRUSTED_CALLER = "0x4f29aA4c299e17176b48c41D67ee97aE673d29bC"
@@ -103,8 +128,52 @@ APPLY_IRM_CONFIG_PERMISSIONS = (
 # ============================= Test params ==================================
 # ============================================================================
 EXPECTED_VOTE_ID = None
-EXPECTED_VOTE_EVENTS_COUNT = 6
-IPFS_DESCRIPTION_HASH = "bafkreihd2n2v6idu2aqj6e2yhqmm6kbxui4fqyoqzlg4gnnxcxxrgviweu"
+EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_VOTE_EVENTS_COUNT = 7
+EXPECTED_DG_EVENTS_FROM_AGENT = 2
+EXPECTED_DG_EVENTS_COUNT = 2
+IPFS_DESCRIPTION_HASH = "bafkreidd6tbexskyovsvkjiqtybyqkrqp6dogyvshe23yjeqomhkafobqm"
+DG_PROPOSAL_METADATA = "Upgrade CMv2 to the implementation with top-up allocation controls"
+
+
+def _event(events, name: str, emitted_by: str):
+    assert events.count(name) == 1
+    event = events[name]
+    assert convert.to_address(event["_emitted_by"]) == convert.to_address(emitted_by)
+    return event
+
+
+def _top_up_allocation_eligible(operators) -> list:
+    # CuratedModule.finalizeUpgradeV2 enables top-up allocation only for operators with non-withdrawn deposits.
+    return [
+        operator_id
+        for operator_id, operator in enumerate(operators)
+        if operator["totalDepositedKeys"] > operator["totalWithdrawnKeys"]
+    ]
+
+
+def curated_v2_top_up_allocation_smoke_test(curated_v2, stranger):
+    committee = set_balance(CURATED_MODULE_COMMITTEE, 1000)
+    operators_count = curated_v2.getNodeOperatorsCount()
+    disabled = [
+        operator_id for operator_id in range(operators_count) if not curated_v2.isTopUpAllocationEnabled(operator_id)
+    ]
+    assert disabled, "Expected at least one CMv2 operator with top-up allocation disabled"
+    operator_id = disabled[0]
+
+    with reverts(access_control_unauthorized(stranger, ENABLE_TOP_UP_ALLOCATION_ROLE_NAME)):
+        curated_v2.enableTopUpAllocation(operator_id, {"from": stranger})
+
+    tx = curated_v2.enableTopUpAllocation(operator_id, {"from": committee})
+    # Brownie's tx.events leaves the proxied CMv2 event undecoded, so decode the receipt with the project ABIs.
+    tx_events = EventDict([add_event_emitter(event) for event in tx_events_from_receipt(tx)])
+    assert _event(tx_events, "TopUpAllocationEnabled", CURATED_V2)["nodeOperatorId"] == operator_id
+    assert curated_v2.isTopUpAllocationEnabled(operator_id)
+
+    with reverts(encode_error("TopUpAllocationStateUnchanged()")):
+        curated_v2.enableTopUpAllocation(operator_id, {"from": committee})
+    with reverts(encode_error("NodeOperatorDoesNotExist()")):
+        curated_v2.enableTopUpAllocation(operators_count, {"from": committee})
 
 
 def check_factory_bindings():
@@ -160,13 +229,23 @@ def lido_lend_factories_smoke_test(easy_track, stranger):
     apply_irm_config_via_motion(easy_track, trusted_caller, stranger, market["irm_config"], market)
 
 
-def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
+@pytest.fixture(scope="module")
+def dual_governance_proposal_calls():
+    return [{"target": target, "value": 0, "data": data} for target, data in get_dg_items()]
+
+
+def test_vote(
+    helpers, accounts, ldo_holder, vote_ids_from_env, dg_proposal_ids_from_env, stranger, dual_governance_proposal_calls
+):
 
     # =======================================================================
     # ========================= Arrange variables ===========================
     # =======================================================================
     voting = interface.Voting(VOTING)
     easy_track = interface.EasyTrack(EASY_TRACK)
+    timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
+    curated_v2 = interface.CuratedModule(CURATED_V2)
+    curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -181,8 +260,17 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         vote_id, _ = start_vote({"from": ldo_holder}, silent=True)
 
     _, call_script_items = get_vote_items()
+    assert len(call_script_items) == EXPECTED_VOTE_EVENTS_COUNT
+    assert len(dual_governance_proposal_calls) == EXPECTED_DG_EVENTS_COUNT
     onchain_script = voting.getVote(vote_id)["script"]
     assert str(onchain_script).lower() == encode_call_script(call_script_items).lower()
+
+    proposal_id = EXPECTED_DG_PROPOSAL_ID
+    if dg_proposal_ids_from_env:
+        assert len(dg_proposal_ids_from_env) == 1
+        if proposal_id is not None:
+            assert dg_proposal_ids_from_env[0] == proposal_id
+        proposal_id = dg_proposal_ids_from_env[0]
 
     assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
     check_factory_bindings()
@@ -201,37 +289,37 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert EXIT_BOOK_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(EXIT_BOOK_ACTIONS_FACTORY) == "0x"
 
-        # 1. ActivateMarket
+        # 2. ActivateMarket
         assert ACTIVATE_MARKET_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(ACTIVATE_MARKET_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendActivateMarket(ACTIVATE_MARKET_FACTORY).createEVMScript(stranger, "0x")
 
-        # 2. CircuitBreakerActions
+        # 3. CircuitBreakerActions
         assert CIRCUIT_BREAKER_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(CIRCUIT_BREAKER_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendCircuitBreakerActions(CIRCUIT_BREAKER_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 3. GuardianActions
+        # 4. GuardianActions
         assert GUARDIAN_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(GUARDIAN_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendGuardianActions(GUARDIAN_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 4. MarketManagerActions
+        # 5. MarketManagerActions
         assert MARKET_MANAGER_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(MARKET_MANAGER_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendMarketManagerActions(MARKET_MANAGER_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 5. RiskStewardActions
+        # 6. RiskStewardActions
         assert RISK_STEWARD_ACTIONS_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(RISK_STEWARD_ACTIONS_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
             interface.LidoLendRiskStewardActions(RISK_STEWARD_ACTIONS_FACTORY).createEVMScript(stranger, "0x")
 
-        # 6. ApplyIrmConfig
+        # 7. ApplyIrmConfig
         assert APPLY_IRM_CONFIG_FACTORY not in initial_factories
         assert easy_track.evmScriptFactoryPermissions(APPLY_IRM_CONFIG_FACTORY) == "0x"
         with reverts("CALLER_IS_FORBIDDEN"):
@@ -256,87 +344,183 @@ def test_vote(helpers, accounts, ldo_holder, vote_ids_from_env, stranger):
         assert len(vote_events) == EXPECTED_VOTE_EVENTS_COUNT
         assert count_vote_items_by_events(vote_tx, voting.address) == EXPECTED_VOTE_EVENTS_COUNT
 
-        # 1. ActivateMarket
-        validate_evmscript_factory_added_event(
+        # 1. Submit the CMv2 upgrade Dual Governance proposal
+        submitted_id = vote_events[0]["ProposalSubmitted"][0]["id"]
+        if proposal_id is not None:
+            assert submitted_id == proposal_id
+        proposal_id = submitted_id
+        assert proposal_id == timelock.getProposalsCount()
+        validate_dual_governance_submit_event(
             vote_events[0],
+            proposal_id=proposal_id,
+            proposer=VOTING,
+            executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR,
+            metadata=DG_PROPOSAL_METADATA,
+            proposal_calls=dual_governance_proposal_calls,
+        )
+
+        # 2. ActivateMarket
+        validate_evmscript_factory_added_event(
+            vote_events[1],
             EVMScriptFactoryAdded(factory_addr=ACTIVATE_MARKET_FACTORY, permissions=ACTIVATE_MARKET_PERMISSIONS),
             emitted_by=EASY_TRACK,
         )
 
-        # 2. CircuitBreakerActions
+        # 3. CircuitBreakerActions
         validate_evmscript_factory_added_event(
-            vote_events[1],
+            vote_events[2],
             EVMScriptFactoryAdded(
                 factory_addr=CIRCUIT_BREAKER_ACTIONS_FACTORY, permissions=CIRCUIT_BREAKER_ACTIONS_PERMISSIONS
             ),
             emitted_by=EASY_TRACK,
         )
 
-        # 3. GuardianActions
+        # 4. GuardianActions
         validate_evmscript_factory_added_event(
-            vote_events[2],
+            vote_events[3],
             EVMScriptFactoryAdded(factory_addr=GUARDIAN_ACTIONS_FACTORY, permissions=GUARDIAN_ACTIONS_PERMISSIONS),
             emitted_by=EASY_TRACK,
         )
 
-        # 4. MarketManagerActions
+        # 5. MarketManagerActions
         validate_evmscript_factory_added_event(
-            vote_events[3],
+            vote_events[4],
             EVMScriptFactoryAdded(
                 factory_addr=MARKET_MANAGER_ACTIONS_FACTORY, permissions=MARKET_MANAGER_ACTIONS_PERMISSIONS
             ),
             emitted_by=EASY_TRACK,
         )
 
-        # 5. RiskStewardActions
+        # 6. RiskStewardActions
         validate_evmscript_factory_added_event(
-            vote_events[4],
+            vote_events[5],
             EVMScriptFactoryAdded(
                 factory_addr=RISK_STEWARD_ACTIONS_FACTORY, permissions=RISK_STEWARD_ACTIONS_PERMISSIONS
             ),
             emitted_by=EASY_TRACK,
         )
 
-        # 6. ApplyIrmConfig
+        # 7. ApplyIrmConfig
         validate_evmscript_factory_added_event(
-            vote_events[5],
+            vote_events[6],
             EVMScriptFactoryAdded(factory_addr=APPLY_IRM_CONFIG_FACTORY, permissions=APPLY_IRM_CONFIG_PERMISSIONS),
             emitted_by=EASY_TRACK,
         )
+
+    assert proposal_id is not None, "Set EXPECTED_DG_PROPOSAL_ID or DG_PROPOSAL_IDS for the already-executed vote."
+
+    # =========================================================================
+    # ======================= Execute DG Proposal =============================
+    # =========================================================================
+    if timelock.getProposalDetails(proposal_id)["status"] != PROPOSAL_STATUS["executed"]:
+        # =========================================================================
+        # ================== DG before proposal executed checks ===================
+        # =========================================================================
+        assert curated_v2_proxy.proxy__getImplementation() == CURATED_V2_OLD_IMPL
+        assert curated_v2_proxy.proxy__getAdmin() == AGENT
+        assert curated_v2.getInitializedVersion() == CURATED_V2_PRE_UPGRADE_VERSION
+        assert curated_v2.getRoleMemberCount(ENABLE_TOP_UP_ALLOCATION_ROLE) == 0
+        nonce_before = curated_v2.getNonce()
+        operators = [curated_v2.getNodeOperator(i) for i in range(curated_v2.getNodeOperatorsCount())]
+        eligible_operators = _top_up_allocation_eligible(operators)
+        assert eligible_operators, "Expected CMv2 operators with active validators"
+
+        process_proposals([proposal_id])
+        dg_tx: TransactionReceipt = history[-1]
+        display_dg_events(dg_tx)
+        dg_events = group_dg_events_from_receipt(
+            dg_tx, timelock=EMERGENCY_PROTECTED_TIMELOCK, admin_executor=DUAL_GOVERNANCE_ADMIN_EXECUTOR
+        )
+        assert count_vote_items_by_events(dg_tx, AGENT) == EXPECTED_DG_EVENTS_FROM_AGENT
+        assert len(dg_events) == EXPECTED_DG_EVENTS_COUNT
+
+        # 1.1.1. Upgrade CMv2 and call finalizeUpgradeV2() atomically.
+        validate_events_chain(
+            [event.name for event in dg_events[0]],
+            [
+                "LogScriptCall",
+                "Upgraded",
+                *["TopUpAllocationEnabled"] * len(eligible_operators),
+                "NonceChanged",
+                "Initialized",
+                "ScriptResult",
+                "Executed",
+            ],
+        )
+        assert _event(dg_events[0], "Upgraded", CURATED_V2)["implementation"] == CURATED_V2_NEW_IMPL
+        top_up_enabled_events = dg_events[0]["TopUpAllocationEnabled"]
+        assert [event["nodeOperatorId"] for event in top_up_enabled_events] == eligible_operators
+        for event in top_up_enabled_events:
+            assert convert.to_address(event["_emitted_by"]) == CURATED_V2
+        assert _event(dg_events[0], "NonceChanged", CURATED_V2)["nonce"] == nonce_before + 1
+        assert _event(dg_events[0], "Initialized", CURATED_V2)["version"] == CURATED_V2_VERSION
+
+        # 1.2.1. Grant ENABLE_TOP_UP_ALLOCATION_ROLE to the Curated Module Committee.
+        validate_grant_role_event(
+            dg_events[1],
+            ENABLE_TOP_UP_ALLOCATION_ROLE,
+            CURATED_MODULE_COMMITTEE,
+            sender=AGENT,
+            emitted_by=CURATED_V2,
+            event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
+        )
+
+        # =========================================================================
+        # ================== DG after proposal executed checks ====================
+        # =========================================================================
+        assert curated_v2.getNonce() == nonce_before + 1
+        for operator_id in range(len(operators)):
+            assert curated_v2.isTopUpAllocationEnabled(operator_id) == (operator_id in eligible_operators)
 
     # =========================================================================
     # ======================= After vote executed checks ======================
     # =========================================================================
     assert voting.getVote(vote_id)["executed"]
+    assert timelock.getProposalDetails(proposal_id)["status"] == PROPOSAL_STATUS["executed"]
     assert easy_track.evmScriptExecutor() == EVM_SCRIPT_EXECUTOR
     assert not easy_track.isEVMScriptFactory(EXIT_BOOK_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(EXIT_BOOK_ACTIONS_FACTORY) == "0x"
 
-    # 1. ActivateMarket
+    # 1.1.1. CMv2 runs the new implementation under the same proxy admin.
+    assert curated_v2_proxy.proxy__getImplementation() == CURATED_V2_NEW_IMPL
+    assert curated_v2_proxy.proxy__getAdmin() == AGENT
+    assert curated_v2.getInitializedVersion() == CURATED_V2_VERSION
+
+    # 1.2.1. Only the Curated Module Committee holds ENABLE_TOP_UP_ALLOCATION_ROLE.
+    assert curated_v2.getRoleMemberCount(ENABLE_TOP_UP_ALLOCATION_ROLE) == 1
+    assert curated_v2.hasRole(ENABLE_TOP_UP_ALLOCATION_ROLE, CURATED_MODULE_COMMITTEE)
+
+    # 2. ActivateMarket
     assert easy_track.isEVMScriptFactory(ACTIVATE_MARKET_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(ACTIVATE_MARKET_FACTORY) == ACTIVATE_MARKET_PERMISSIONS
 
-    # 2. CircuitBreakerActions
+    # 3. CircuitBreakerActions
     assert easy_track.isEVMScriptFactory(CIRCUIT_BREAKER_ACTIONS_FACTORY)
     assert (
         easy_track.evmScriptFactoryPermissions(CIRCUIT_BREAKER_ACTIONS_FACTORY) == CIRCUIT_BREAKER_ACTIONS_PERMISSIONS
     )
 
-    # 3. GuardianActions
+    # 4. GuardianActions
     assert easy_track.isEVMScriptFactory(GUARDIAN_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(GUARDIAN_ACTIONS_FACTORY) == GUARDIAN_ACTIONS_PERMISSIONS
 
-    # 4. MarketManagerActions
+    # 5. MarketManagerActions
     assert easy_track.isEVMScriptFactory(MARKET_MANAGER_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(MARKET_MANAGER_ACTIONS_FACTORY) == MARKET_MANAGER_ACTIONS_PERMISSIONS
 
-    # 5. RiskStewardActions
+    # 6. RiskStewardActions
     assert easy_track.isEVMScriptFactory(RISK_STEWARD_ACTIONS_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(RISK_STEWARD_ACTIONS_FACTORY) == RISK_STEWARD_ACTIONS_PERMISSIONS
 
-    # 6. ApplyIrmConfig
+    # 7. ApplyIrmConfig
     assert easy_track.isEVMScriptFactory(APPLY_IRM_CONFIG_FACTORY)
     assert easy_track.evmScriptFactoryPermissions(APPLY_IRM_CONFIG_FACTORY) == APPLY_IRM_CONFIG_PERMISSIONS
+
+    chain.snapshot()
+    try:
+        curated_v2_top_up_allocation_smoke_test(curated_v2, stranger)
+    finally:
+        chain.revert()
 
     chain.snapshot()
     try:
