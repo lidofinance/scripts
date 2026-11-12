@@ -1,9 +1,10 @@
 """
 Vote 2026_MM_DD
 
-1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls
+1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls and connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus
     1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation 0x02bEFd784c6C382a021774472563671Ae23980C0 and call finalizeUpgradeV2()
     1.2.1. Grant ENABLE_TOP_UP_ALLOCATION_ROLE 0xf541c17eb0542b50d1f6df03622f7d9ab80d01dffb50bbd033a4dd4c57f09889 to Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
+    1.3.1. Grant PUBLISH_ROLE 0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e to CMv2 internal ConsolidationMigrator 0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7 on ConsolidationBus 0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8
 2. Add Lido Lend ActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: AdaptiveCurveIrm.applyIrmConfig, IrmRouter.setMarketIrm, LidoLendOwner.createMarket, RiskStewardDashboard.addMarketSteward, CircuitBreaker.registerPauser, LidoLendPreseeder.preseedMarket, LidoLendOwner.setFee)
 3. Add Lido Lend CircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: CircuitBreaker.registerPauser, CircuitBreaker.setPauseDuration, CircuitBreaker.setHeartbeatInterval)
 4. Add Lido Lend GuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: LidoLendOwner.addGuardian, LidoLendOwner.setGuardiansQuorum, LidoLendOwner.removeGuardian, LidoLendOwner.replaceGuardian, LidoLendOwner.setGuardiansSuspectWindow, LidoLendOwner.unbanGuardianSignals)
@@ -29,6 +30,8 @@ from utils.config import (
     get_priority_fee,
     CURATED_V2_STAKING_MODULE_ADDRESS,
     CURATED_V2_COMMITTEE_MS,
+    CONSOLIDATION_BUS,
+    CONSOLIDATION_MIGRATOR_CMV2,
     EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY,
     EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
@@ -54,6 +57,9 @@ EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 CURATED_V2 = CURATED_V2_STAKING_MODULE_ADDRESS
 CURATED_V2_NEW_IMPL = "0x02bEFd784c6C382a021774472563671Ae23980C0"
 CURATED_V2_TOP_UP_ALLOCATION_ENABLER = CURATED_V2_COMMITTEE_MS
+
+# ConsolidationMigrator with CMv2 as both the source and the target module
+CMV2_INTERNAL_MIGRATOR = CONSOLIDATION_MIGRATOR_CMV2
 
 # Lido Lend EVM script factories (easy-track `lido-lend-factories-mainnet.json`)
 ACTIVATE_MARKET_FACTORY = EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY
@@ -140,17 +146,22 @@ APPLY_IRM_CONFIG_PERMISSIONS = permissions(
 # ============================= IPFS Description ==================================
 # TODO forum link
 IPFS_DESCRIPTION = """
-# CMv2 top-up allocation controls, Lido Lend Easy Track factories
+# CMv2 top-up allocation controls, CMv2 internal consolidation, Lido Lend Easy Track factories
 
 1. **Upgrade CMv2 to the implementation with top-up allocation controls**, [as proposed on the forum](<FORUM_LINK>). Audit & deployment verification: TODO. Items 1.1.1, 1.2.1.
     - Upgrade CMv2 and enable top-up allocation for node operators with active validators. Item 1.1.1.
     - Allow the [Curated Module Committee](https://docs.lido.fi/multisigs/committees#220-curated-module-committee-cmc) to enable top-up allocation for node operators. Item 1.2.1.
-2. **Add Lido Lend Easy Track factories**, [as proposed on the forum](<FORUM_LINK>). Audit & deployment verification: TODO. Items 2-7.
+2. **Connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus**, so that Curated Module v2 node operators can consolidate validators inside CMv2, [as proposed on the forum](<FORUM_LINK>). Deployment verification: TODO. Item 1.3.1.
+3. **Add Lido Lend Easy Track factories**, [as proposed on the forum](<FORUM_LINK>). Audit & deployment verification: TODO. Items 2-7.
 """
 
-DG_PROPOSAL_METADATA = "Upgrade CMv2 to the implementation with top-up allocation controls"
+DG_PROPOSAL_METADATA = (
+    "Upgrade CMv2 to the implementation with top-up allocation controls, "
+    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
+)
 DG_SUBMISSION_DESCRIPTION = (
-    "1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls"
+    "1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls "
+    "and connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
 )
 
 
@@ -159,6 +170,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
     # staking-modules OssifiableProxy (OZ v5): proxy__upgradeToAndCall(address,bytes), without forceCall_.
     curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
     curated_v2 = interface.CuratedModule(CURATED_V2)
+    consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
 
     return [
         # 1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation
@@ -184,6 +196,18 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     contract=curated_v2,
                     role_name="ENABLE_TOP_UP_ALLOCATION_ROLE",
                     grant_to=CURATED_V2_TOP_UP_ALLOCATION_ENABLER,
+                )
+            ]
+        ),
+        # 1.3.1. Grant PUBLISH_ROLE 0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e
+        # to CMv2 internal ConsolidationMigrator 0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7
+        # on ConsolidationBus 0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8.
+        agent_forward(
+            [
+                encode_oz_grant_role(
+                    contract=consolidation_bus,
+                    role_name="PUBLISH_ROLE",
+                    grant_to=CMV2_INTERNAL_MIGRATOR,
                 )
             ]
         ),
