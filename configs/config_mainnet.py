@@ -118,21 +118,23 @@ LIDO_LEND_MORPHO_EXIT_BOOK = "0xAd28EFa8f2ef56a68b0Eb6836f4aE1d2D6459Ecd"  # exi
 LIDO_LEND_ERC4626_EXIT_BOOK = "0x0d2580e4c9b20507eDFAeFC7777d760F12Ad55D4"  # exit-books.erc4626
 LIDO_LEND_PRESEEDER = "0x3F107d1fbCA49F425321Cb27f6Ef5CbB94a72c41"  # easy-track Preseeder
 LIDO_LEND_RISK_STEWARD_COMMITTEE_MS = "0x1011E8a0668da8bbED925cB5A6DA5aa128C2BB5E"  # exit book pauser
-LIDO_LEND_PAUSER_COMMITTEE_MS = "0x604B13eD638663AA0C1eEF0c3482e51f228BA2E1"  # market controller pauser registered at activation
+LIDO_LEND_PAUSER_COMMITTEE_MS = (
+    "0x604B13eD638663AA0C1eEF0c3482e51f228BA2E1"  # market controller pauser registered at activation
+)
 
 # Lido Lend weth-wsteth market (lend-markets `deployed/mainnet/markets/weth-wsteth.toml`)
 LIDO_LEND_WETH_WSTETH_MARKET = {
-    "id": "<MARKET_ID>",
+    "id": "0xe4af8961b4e5a779b85d8c461be1007e4b78a7933976e0a5f23121682020de29",
     "loan_token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",  # WETH
     "collateral_token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",  # wstETH
-    "oracle": "<ORACLE>",
+    "oracle": "0x20a078F9940dC05C46De4153D1bCbd54D2b5b151",
     "irm": "0x81B7cC9523B30429110282d90db2fa90ff443d91",
-    "irm_config": "<IRM_CONFIG>",
+    "irm_config": "0x6076f89f5Cd68c526C73eA1F730d9ce8f05301a6",
     "lltv": 980000000000000000,
     "supply_cap": 5000000000000000000000,
-    "guardian_signals": "<GUARDIAN_SIGNALS>",
-    "controller": "<CONTROLLER>",
-    "vault": "<VAULT>",
+    "guardian_signals": "0xc8a8CBBF4c55980F85332fD8470DF0fC52d690aC",
+    "controller": "0xCF1B266d320CA9c0d4e13eF2C46465962F040e88",
+    "vault": "0xd8765FA896be3D30A49B9a7d95453E34E2c7A056",
     "steward": "0x1011E8a0668da8bbED925cB5A6DA5aa128C2BB5E",
     "fee": 100000000000000000,
     "enable_settlement": True,
