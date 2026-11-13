@@ -105,6 +105,16 @@ from utils.config import (
     L1_TOKEN_RATE_NOTIFIER,
     STAKING_VAULT_BEACON,
     TWO_PHASE_FRAME_CONFIG_UPDATE,
+    LIDO_LEND,
+    LIDO_LEND_OWNER,
+    LIDO_LEND_IRM_ROUTER,
+    LIDO_LEND_ADAPTIVE_CURVE_IRM,
+    LIDO_LEND_RISK_STEWARD_DASHBOARD,
+    LIDO_LEND_CIRCUIT_BREAKER,
+    LIDO_LEND_MORPHO_EXIT_BOOK,
+    LIDO_LEND_ERC4626_EXIT_BOOK,
+    LIDO_LEND_RISK_STEWARD_COMMITTEE_MS,
+    LIDO_LEND_WETH_WSTETH_MARKET,
 )
 
 
@@ -995,9 +1005,166 @@ def protocol_permissions():
     }
 
 
-def test_protocol_permissions(protocol_permissions):
-    aragon_acl_active_permissions = active_aragon_roles(protocol_permissions)
+@pytest.fixture(
+    params=[
+        {
+            "contract_name": "LidoLend",
+            "address": LIDO_LEND,
+            "contract": "lido_lend",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "state": {"owner": LIDO_LEND_OWNER, "feeRecipient": AGENT},
+            "roles": {},
+        },
+        {
+            "contract_name": "LidoLendOwner",
+            "address": LIDO_LEND_OWNER,
+            "contract": "lido_lend_owner",
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "MARKET_CREATOR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "FEE_MANAGER_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "MARKET_MANAGER_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "GUARDIAN_MANAGER_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+            },
+        },
+        {
+            "contract_name": "LidoLendIrmRouter",
+            "address": LIDO_LEND_IRM_ROUTER,
+            "contract": "lido_lend_irm_router",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "state": {"owner": AGENT, "manager": EASYTRACK_EVMSCRIPT_EXECUTOR},
+            "roles": {},
+        },
+        {
+            "contract_name": "LidoLendAdaptiveCurveIrm",
+            "address": LIDO_LEND_ADAPTIVE_CURVE_IRM,
+            "contract": "lido_lend_adaptive_curve_irm",
+            "type": "CustomApp",
+            "state": {"owner": AGENT, "manager": EASYTRACK_EVMSCRIPT_EXECUTOR},
+            "roles": {},
+        },
+        {
+            "contract_name": "LidoLendRiskStewardDashboard",
+            "address": LIDO_LEND_RISK_STEWARD_DASHBOARD,
+            "contract": "lido_lend_risk_steward_dashboard",
+            "type": "CustomApp",
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "STEWARD_ADMIN_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+            },
+        },
+        {
+            "contract_name": "LidoLendCircuitBreaker",
+            "address": LIDO_LEND_CIRCUIT_BREAKER,
+            "contract": "lido_lend_circuit_breaker",
+            "type": "CustomApp",
+            "state": {"ADMIN": EASYTRACK_EVMSCRIPT_EXECUTOR},
+            "roles": {},
+        },
+        {
+            "contract_name": "LidoLendMorphoExitBook",
+            "address": LIDO_LEND_MORPHO_EXIT_BOOK,
+            "contract": "lido_lend_morpho_exit_book",
+            "type": "CustomApp",
+            "state": {"feeRecipient": AGENT, "serviceFee": 0},
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "ALLOWLIST_MANAGER_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "FEE_MANAGER_ROLE": [],
+                "RECOVERER_ROLE": [],
+                "PAUSER_ROLE": [LIDO_LEND_RISK_STEWARD_COMMITTEE_MS],
+                "RESUMER_ROLE": [],
+            },
+        },
+        {
+            "contract_name": "LidoLendErc4626ExitBook",
+            "address": LIDO_LEND_ERC4626_EXIT_BOOK,
+            "contract": "lido_lend_erc4626_exit_book",
+            "type": "CustomApp",
+            "state": {"feeRecipient": AGENT, "serviceFee": 0},
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "ALLOWLIST_MANAGER_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "FEE_MANAGER_ROLE": [],
+                "RECOVERER_ROLE": [],
+                "PAUSER_ROLE": [LIDO_LEND_RISK_STEWARD_COMMITTEE_MS],
+                "RESUMER_ROLE": [],
+            },
+        },
+        {
+            "contract_name": "LidoLendWethWstethController",
+            "address": LIDO_LEND_WETH_WSTETH_MARKET["controller"],
+            "contract": "lido_lend_weth_wsteth_controller",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "MANAGER_ROLE": [LIDO_LEND_OWNER, LIDO_LEND_RISK_STEWARD_DASHBOARD],
+                "FREEZER_ROLE": [LIDO_LEND_RISK_STEWARD_DASHBOARD],
+                "UNFREEZER_ROLE": [LIDO_LEND_OWNER],
+                "PAUSER_ROLE": [LIDO_LEND_CIRCUIT_BREAKER, RESEAL_MANAGER],
+                "RESUMER_ROLE": [RESEAL_MANAGER],
+            },
+        },
+        {
+            "contract_name": "LidoLendWethWstethGuardianSignals",
+            "address": LIDO_LEND_WETH_WSTETH_MARKET["guardian_signals"],
+            "contract": "lido_lend_weth_wsteth_guardian_signals",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "MANAGER_ROLE": [LIDO_LEND_OWNER],
+                "ACCESS_LIMITER_ROLE": [],
+                "ACCESS_RESTORER_ROLE": [LIDO_LEND_OWNER],
+            },
+        },
+        {
+            "contract_name": "LidoLendWethWstethVault",
+            "address": LIDO_LEND_WETH_WSTETH_MARKET["vault"],
+            "contract": "lido_lend_weth_wsteth_vault",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "roles": {},
+        },
+        {
+            "contract_name": "LidoLendWethWstethPriceFeed",
+            "address": LIDO_LEND_WETH_WSTETH_MARKET["oracle"],
+            "contract": "lido_lend_weth_wsteth_price_feed",
+            "type": "CustomApp",
+            "proxy_owner": AGENT,
+            "roles": {},
+        },
+    ],
+    ids=lambda config: config["contract_name"],
+)
+def lido_lend_permissions(request):
+    config = request.param.copy()
+    address = config.pop("address")
+    assert web3.is_address(
+        address
+    ), f"Fill {config['contract_name']} address from the market deployment artifact: {address}"
+    config["contract"] = getattr(contracts, config["contract"])
+    return {address: config}
 
+
+def test_lido_lend_permissions(lido_lend_permissions):
+    assert_protocol_permissions(lido_lend_permissions, {})
+    for config in lido_lend_permissions.values():
+        for role, holders in config["roles"].items():
+            role_id = ZERO_BYTES32.hex() if role == "DEFAULT_ADMIN_ROLE" else web3.keccak(text=role).hex()
+            assert config["contract"].getRoleAdmin(role_id) == ZERO_BYTES32.hex()
+            assert config["contract"].getRoleMemberCount(role_id) == len(holders)
+
+
+def test_protocol_permissions(protocol_permissions):
+    assert_protocol_permissions(protocol_permissions, active_aragon_roles(protocol_permissions))
+
+
+def assert_protocol_permissions(protocol_permissions, aragon_acl_active_permissions):
     for contract_address, permissions_config in protocol_permissions.items():
         print("Contract: {0} {1}".format(contract_address, permissions_config["contract_name"]))
 

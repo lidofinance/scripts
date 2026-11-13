@@ -1,0 +1,318 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_trustedCaller",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_lidoLendOwner",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creator",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_evmScriptCallData",
+        "type": "bytes"
+      }
+    ],
+    "name": "createEVMScript",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_evmScriptCallData",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeEVMScriptCallData",
+    "outputs": [
+      {
+        "internalType": "enum LidoLendMarketManagerActions.Action",
+        "name": "action",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes",
+        "name": "payload",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeSetCollateralActivationConfigPayload",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "marketId",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint40",
+            "name": "minActivationDelay",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "maxActivationDelay",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint128",
+            "name": "maxDelayInflow",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minDepositAmount",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint40",
+            "name": "activatingLockDuration",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minActivationAmount",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint40",
+            "name": "maxGuardiansQuorumDelay",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "delayPerStrike",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "delayPerSuspect",
+            "type": "uint40"
+          }
+        ],
+        "internalType": "struct ILidoLendMarketController.CollateralActivationConfig",
+        "name": "newCfg",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeSetFeePayload",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "marketId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newFee",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeSetInstantActivationPayload",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "marketId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "enabled",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeSetSettlementConfigPayload",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "marketId",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "sliceFloorBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint96",
+            "name": "sliceFloorAssets",
+            "type": "uint96"
+          },
+          {
+            "internalType": "uint96",
+            "name": "fullCutBelowCollateral",
+            "type": "uint96"
+          },
+          {
+            "internalType": "uint16",
+            "name": "ltvStepBps",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct ILidoLendMarketController.SettlementConfig",
+        "name": "newConfig",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeSetSupplyCapPayload",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "marketId",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newCap",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "_payload",
+        "type": "bytes"
+      }
+    ],
+    "name": "decodeUnfreezeMarketsPayload",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "marketIds",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLend",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lidoLendOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "trustedCaller",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

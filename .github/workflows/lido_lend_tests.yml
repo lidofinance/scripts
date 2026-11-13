@@ -1,0 +1,101 @@
+name: Lido Lend tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+      - "feat/tests"
+      - "feat/rc3"
+      - "feat/rc2"
+      - "feat/rc1"
+      - "feat/next-vote"
+      - "feat/lido-lend-easy-track-factories"
+  schedule:
+    - cron: "0 0 * * TUE"
+
+permissions:
+  contents: read
+
+jobs:
+  lido-lend-regression:
+    name: Lido Lend fork tests after vote
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    concurrency:
+      group: lido-lend-regression-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      NODE_VERSION: "20"
+      PYTHON_VERSION: "3.10"
+      POETRY_VERSION: "1.8.2"
+      HARDHAT_NODE_URL: http://127.0.0.1:8545
+
+    steps:
+      - name: Checkout scripts
+        uses: actions/checkout@v4
+        with:
+          path: scripts
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: scripts/yarn.lock
+
+      - name: Install Poetry
+        shell: bash
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: poetry
+          cache-dependency-path: scripts/poetry.lock
+
+      - name: Install scripts dependencies
+        working-directory: scripts
+        run: |
+          poetry install
+          yarn install --frozen-lockfile
+          poetry run brownie networks import network-config.yaml True
+
+      - name: Start Hardhat node
+        working-directory: scripts
+        shell: bash
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+        run: |
+          test -n "$ETH_RPC_URL" || { echo "::error::ETH_RPC_URL is required"; exit 1; }
+          npx hardhat node --fork "$ETH_RPC_URL" > "$RUNNER_TEMP/lido-lend-hardhat.log" 2>&1 &
+          for i in {1..60}; do
+            if curl -sf "$HARDHAT_NODE_URL" -H 'Content-Type: application/json' \
+              --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
+              | python3 -c 'import json,sys; sys.exit(json.load(sys.stdin).get("result") != "0x1")'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Mainnet fork was not ready after 60 seconds"
+          exit 1
+
+      - name: Prepare test environment with Brownie
+        working-directory: scripts
+        run: PYTHONPATH=$PWD poetry run brownie run scripts/ci/prepare_environment --network mfh-1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+
+      - name: Run Lido Lend external regression tests
+        uses: lidofinance/lend-markets/.github/actions/regression-tests@refactor/solidity-deployment
+        with:
+          repository: lidofinance/lend-markets
+          ref: refactor/solidity-deployment
+          path: lend-markets
+          rpc_url: ${{ env.HARDHAT_NODE_URL }}
+          run: mainnet
