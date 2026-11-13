@@ -56,9 +56,6 @@ CURATED_V2 = CURATED_V2_STAKING_MODULE_ADDRESS
 CURATED_V2_NEW_IMPL = "0x02bEFd784c6C382a021774472563671Ae23980C0"
 CURATED_V2_TOP_UP_ALLOCATION_ENABLER = CURATED_V2_COMMITTEE_MS
 
-# ConsolidationMigrator with CMv2 as both the source and the target module
-CMV2_INTERNAL_MIGRATOR = CONSOLIDATION_MIGRATOR_CMV2
-
 # Function selectors for permissions
 LIDO_LEND_ACCRUE_INTEREST = "0x151c1ade"  # accrueInterest((address,address,address,address,uint256))
 OWNER_CREATE_MARKET = "0xbee60e2e"  # createMarket((address,address,address,address,uint256),address,bool)
@@ -190,7 +187,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_grant_role(
                     contract=consolidation_bus,
                     role_name="PUBLISH_ROLE",
-                    grant_to=CMV2_INTERNAL_MIGRATOR,
+                    grant_to=CONSOLIDATION_MIGRATOR_CMV2,
                 )
             ]
         ),
