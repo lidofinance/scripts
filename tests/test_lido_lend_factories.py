@@ -63,6 +63,18 @@ CURATED_MODULE_COMMITTEE = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"
 ENABLE_TOP_UP_ALLOCATION_ROLE_NAME = "ENABLE_TOP_UP_ALLOCATION_ROLE"
 ENABLE_TOP_UP_ALLOCATION_ROLE = "0xf541c17eb0542b50d1f6df03622f7d9ab80d01dffb50bbd033a4dd4c57f09889"
 
+# https://github.com/lidofinance/core/pull/2028: ConsolidationMigrator with CMv2 as both the source and the target module
+STAKING_ROUTER = "0xFdDf38947aFB03C621C71b06C9C70bce73f12999"
+CONSOLIDATION_BUS = "0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8"
+CMV1_CMV2_MIGRATOR = "0x9Dc70b5A4f4F5E4AF9058C983D560564F031f1D7"
+CMV2_INTERNAL_MIGRATOR = "0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7"
+CMV2_INTERNAL_MIGRATOR_IMPL = "0x5D2DDD6817180c2135b4652503bD555c2d3Bb392"
+CURATED_V2_MODULE_ID = 4
+DEFAULT_ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000"
+PUBLISH_ROLE = "0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e"
+ALLOW_PAIR_ROLE = "0x11b7ee1b50f8c4aefc7ba573dc738d6c20f03c1869ff81aa1d8be99ab7cfd7c1"
+DISALLOW_PAIR_ROLE = "0x4638c3377b40c5fdb49ab3032cbb02972024761b03e6a0d7dcf113f5673c03a8"
+
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_LIDO_LEND_TRUSTED_CALLER = "0x4f29aA4c299e17176b48c41D67ee97aE673d29bC"
 LIDO_LEND = "0x026a770badc7126c7252Ef8d407E5b9C56147491"
@@ -130,10 +142,13 @@ APPLY_IRM_CONFIG_PERMISSIONS = (
 EXPECTED_VOTE_ID = None
 EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 7
-EXPECTED_DG_EVENTS_FROM_AGENT = 2
-EXPECTED_DG_EVENTS_COUNT = 2
-IPFS_DESCRIPTION_HASH = "bafkreidd6tbexskyovsvkjiqtybyqkrqp6dogyvshe23yjeqomhkafobqm"
-DG_PROPOSAL_METADATA = "Upgrade CMv2 to the implementation with top-up allocation controls"
+EXPECTED_DG_EVENTS_FROM_AGENT = 3
+EXPECTED_DG_EVENTS_COUNT = 3
+IPFS_DESCRIPTION_HASH = "bafkreifcp6547twyyavxx5ddd3mnimfxuxmiiio72yucvy5uroxx77hezi"
+DG_PROPOSAL_METADATA = (
+    "Upgrade CMv2 to the implementation with top-up allocation controls, "
+    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
+)
 
 
 def _event(events, name: str, emitted_by: str):
@@ -174,6 +189,62 @@ def curated_v2_top_up_allocation_smoke_test(curated_v2, stranger):
         curated_v2.enableTopUpAllocation(operator_id, {"from": committee})
     with reverts(encode_error("NodeOperatorDoesNotExist()")):
         curated_v2.enableTopUpAllocation(operators_count, {"from": committee})
+
+
+def bus_publishers(bus) -> list:
+    return [bus.getRoleMember(PUBLISH_ROLE, i) for i in range(bus.getRoleMemberCount(PUBLISH_ROLE))]
+
+
+def role_holders(contract, role: str) -> list:
+    return [contract.getRoleMember(role, i) for i in range(contract.getRoleMemberCount(role))]
+
+
+def check_cmv2_internal_migrator_setup():
+    # The deploy left the final setup; the vote does not change it.
+    migrator = interface.ConsolidationMigrator(CMV2_INTERNAL_MIGRATOR)
+    proxy = interface.OssifiableProxy(CMV2_INTERNAL_MIGRATOR)
+    assert proxy.proxy__getImplementation() == CMV2_INTERNAL_MIGRATOR_IMPL
+    assert proxy.proxy__getAdmin() == AGENT
+    assert not proxy.proxy__getIsOssified()
+
+    for contract in (migrator, interface.ConsolidationMigrator(CMV2_INTERNAL_MIGRATOR_IMPL)):
+        assert contract.sourceModuleId() == CURATED_V2_MODULE_ID
+        assert contract.targetModuleId() == CURATED_V2_MODULE_ID
+        assert contract.getStakingRouter() == STAKING_ROUTER
+        assert contract.getConsolidationBus() == CONSOLIDATION_BUS
+        with reverts(encode_error("InvalidInitialization()")):
+            contract.initialize.call(AGENT, {"from": VOTING})
+
+    assert role_holders(migrator, DEFAULT_ADMIN_ROLE) == [AGENT]
+    assert role_holders(migrator, ALLOW_PAIR_ROLE) == [CURATED_MODULE_COMMITTEE]
+    assert role_holders(migrator, DISALLOW_PAIR_ROLE) == [CURATED_MODULE_COMMITTEE]
+
+
+def cmv2_internal_consolidation_smoke_test(curated_v2, stranger):
+    # The committee allows a pair (N, N); the submitter publishes a CMv2 -> CMv2 batch to the bus.
+    migrator = interface.ConsolidationMigrator(CMV2_INTERNAL_MIGRATOR)
+    committee = set_balance(CURATED_MODULE_COMMITTEE, 1000)
+    operator_id = next(
+        i for i in range(curated_v2.getNodeOperatorsCount()) if curated_v2.getNodeOperator(i)["totalDepositedKeys"] >= 2
+    )
+    deposited = curated_v2.getNodeOperator(operator_id)["totalDepositedKeys"]
+    source_key, target_key = deposited - 2, deposited - 1
+
+    with reverts(access_control_unauthorized(stranger, "ALLOW_PAIR_ROLE")):
+        migrator.allowPair(operator_id, operator_id, stranger, {"from": stranger})
+    migrator.allowPair(operator_id, operator_id, stranger, {"from": committee})
+    assert migrator.isPairAllowed(operator_id, operator_id)
+
+    # A key cannot be its own target: the bus rejects the group
+    with reverts(encode_error("SourceEqualsTarget(uint256,uint256)", [0, 0])):
+        migrator.submitConsolidationBatch(operator_id, operator_id, [([target_key], target_key)], {"from": stranger})
+
+    tx = migrator.submitConsolidationBatch(operator_id, operator_id, [([source_key], target_key)], {"from": stranger})
+    tx_events = EventDict([add_event_emitter(event) for event in tx_events_from_receipt(tx)])
+    submitted = _event(tx_events, "ConsolidationSubmitted", CMV2_INTERNAL_MIGRATOR)
+    assert submitted["sourceOperatorId"] == operator_id
+    assert submitted["targetOperatorId"] == operator_id
+    assert _event(tx_events, "RequestsAdded", CONSOLIDATION_BUS)["publisher"] == CMV2_INTERNAL_MIGRATOR
 
 
 def check_factory_bindings():
@@ -246,6 +317,7 @@ def test_vote(
     timelock = interface.EmergencyProtectedTimelock(EMERGENCY_PROTECTED_TIMELOCK)
     curated_v2 = interface.CuratedModule(CURATED_V2)
     curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
+    consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
 
     # =========================================================================
     # ======================== Identify or Create vote ========================
@@ -274,6 +346,7 @@ def test_vote(
 
     assert get_lido_vote_cid_from_str(find_metadata_by_vote_id(vote_id)) == IPFS_DESCRIPTION_HASH
     check_factory_bindings()
+    check_cmv2_internal_migrator_setup()
     assert easy_track.evmScriptExecutor() == EVM_SCRIPT_EXECUTOR
 
     # =========================================================================
@@ -424,6 +497,7 @@ def test_vote(
         operators = [curated_v2.getNodeOperator(i) for i in range(curated_v2.getNodeOperatorsCount())]
         eligible_operators = _top_up_allocation_eligible(operators)
         assert eligible_operators, "Expected CMv2 operators with active validators"
+        assert bus_publishers(consolidation_bus) == [CMV1_CMV2_MIGRATOR]
 
         process_proposals([proposal_id])
         dg_tx: TransactionReceipt = history[-1]
@@ -465,6 +539,16 @@ def test_vote(
             event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
         )
 
+        # 1.3.1. Grant PUBLISH_ROLE on the ConsolidationBus to the CMv2 internal ConsolidationMigrator.
+        validate_grant_role_event(
+            dg_events[2],
+            PUBLISH_ROLE,
+            CMV2_INTERNAL_MIGRATOR,
+            sender=AGENT,
+            emitted_by=CONSOLIDATION_BUS,
+            event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
+        )
+
         # =========================================================================
         # ================== DG after proposal executed checks ====================
         # =========================================================================
@@ -489,6 +573,10 @@ def test_vote(
     # 1.2.1. Only the Curated Module Committee holds ENABLE_TOP_UP_ALLOCATION_ROLE.
     assert curated_v2.getRoleMemberCount(ENABLE_TOP_UP_ALLOCATION_ROLE) == 1
     assert curated_v2.hasRole(ENABLE_TOP_UP_ALLOCATION_ROLE, CURATED_MODULE_COMMITTEE)
+
+    # 1.3.1. Both migrators publish to the ConsolidationBus; the CMv2 internal migrator keeps its deploy setup.
+    assert bus_publishers(consolidation_bus) == [CMV1_CMV2_MIGRATOR, CMV2_INTERNAL_MIGRATOR]
+    check_cmv2_internal_migrator_setup()
 
     # 2. ActivateMarket
     assert easy_track.isEVMScriptFactory(ACTIVATE_MARKET_FACTORY)
@@ -519,6 +607,12 @@ def test_vote(
     chain.snapshot()
     try:
         curated_v2_top_up_allocation_smoke_test(curated_v2, stranger)
+    finally:
+        chain.revert()
+
+    chain.snapshot()
+    try:
+        cmv2_internal_consolidation_smoke_test(curated_v2, stranger)
     finally:
         chain.revert()
 

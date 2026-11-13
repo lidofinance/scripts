@@ -64,6 +64,7 @@ from utils.config import (
     CONSOLIDATION_GATEWAY,
     CONSOLIDATION_BUS,
     CONSOLIDATION_MIGRATOR,
+    CONSOLIDATION_MIGRATOR_CMV2,
     CONSOLIDATION_COMMITTEE,
     VEB_TWG_GATE_SEAL,
     CS_VETTED_GATE_ADDRESS,
@@ -855,7 +856,7 @@ def protocol_permissions():
             "proxy_owner": contracts.agent,
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
-                "PUBLISH_ROLE": [CONSOLIDATION_MIGRATOR],
+                "PUBLISH_ROLE": [CONSOLIDATION_MIGRATOR, CONSOLIDATION_MIGRATOR_CMV2],
                 "REMOVE_ROLE": [CONSOLIDATION_COMMITTEE],
                 "MANAGE_ROLE": [],
             },
@@ -868,6 +869,17 @@ def protocol_permissions():
             "roles": {
                 "DEFAULT_ADMIN_ROLE": [contracts.agent],
                 "ALLOW_PAIR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "DISALLOW_PAIR_ROLE": [CONSOLIDATION_COMMITTEE],
+            },
+        },
+        CONSOLIDATION_MIGRATOR_CMV2: {
+            "contract_name": "ConsolidationMigrator (CMv2 -> CMv2)",
+            "contract": interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR_CMV2),
+            "type": "CustomApp",
+            "proxy_owner": contracts.agent,
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [contracts.agent],
+                "ALLOW_PAIR_ROLE": [CONSOLIDATION_COMMITTEE],
                 "DISALLOW_PAIR_ROLE": [CONSOLIDATION_COMMITTEE],
             },
         },

@@ -477,6 +477,10 @@ CONSOLIDATION_TARGET_MODULE_ID = 4  # SRV3 == CURATED_V2_STAKING_MODULE_ID
 # Curated Module Committee (CMC) multisig — stable deploy input from the toml
 CONSOLIDATION_COMMITTEE = "0x2570e0b22AD904501dfB0d49575991ACB801dD91"  # SRV3
 
+# ConsolidationMigrator — Curated Module v2 (id 4) -> Curated Module v2 (id 4), consolidation inside CMv2
+CONSOLIDATION_MIGRATOR_CMV2 = "0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7"
+CONSOLIDATION_MIGRATOR_CMV2_IMPL = "0x5D2DDD6817180c2135b4652503bD555c2d3Bb392"
+
 # Approximate fee distribution: CMv1, SimpleDVT and both CSMs at their target shares,
 # with the remaining share in CMv2. CMv2's 100% target is a ceiling, not an additive share.
 # These acceptance bounds are not an exact calculation from current validator balances.

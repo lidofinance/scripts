@@ -25,6 +25,8 @@ from utils.config import (
     CONSOLIDATION_SOURCE_MODULE_ID,
     CONSOLIDATION_TARGET_MODULE_ID,
     CONSOLIDATION_COMMITTEE,
+    CONSOLIDATION_MIGRATOR_CMV2,
+    CONSOLIDATION_MIGRATOR_CMV2_IMPL,
 )
 from utils.evm_script import encode_error
 from utils.test.helpers import access_control_unauthorized as unauthorized
@@ -46,6 +48,11 @@ def bus() -> interface.ConsolidationBus:
 @pytest.fixture(scope="module")
 def migrator() -> interface.ConsolidationMigrator:
     return interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR)
+
+
+@pytest.fixture(scope="module")
+def cmv2_migrator() -> interface.ConsolidationMigrator:
+    return interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR_CMV2)
 
 
 class TestConsolidationGateway:
@@ -166,9 +173,10 @@ class TestConsolidationBus:
         assert bus.getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1
         assert bus.getRoleMember(DEFAULT_ADMIN_ROLE, 0) == AGENT
 
-        # PUBLISH_ROLE: only the ConsolidationMigrator
-        assert bus.getRoleMemberCount(publish_role) == 1
+        # PUBLISH_ROLE: the CMv1 -> CMv2 migrator and the CMv2 internal migrator
+        assert bus.getRoleMemberCount(publish_role) == 2
         assert bus.getRoleMember(publish_role, 0) == CONSOLIDATION_MIGRATOR
+        assert bus.getRoleMember(publish_role, 1) == CONSOLIDATION_MIGRATOR_CMV2
 
         # REMOVE_ROLE: only the CMC committee
         assert bus.getRoleMemberCount(remove_role) == 1
@@ -244,3 +252,49 @@ class TestConsolidationMigrator:
         # granted to the CMC committee only
         with reverts(unauthorized(stranger, "DISALLOW_PAIR_ROLE")):
             migrator.disallowPair.call(1, 1, {"from": stranger})
+
+
+class TestConsolidationMigratorCMv2Internal:
+    """ConsolidationMigrator with CMv2 as both the source and the target module (lidofinance/core#2028)."""
+
+    def test_proxy(self, cmv2_migrator):
+        proxy = interface.OssifiableProxy(cmv2_migrator)
+        assert proxy.proxy__getImplementation() == CONSOLIDATION_MIGRATOR_CMV2_IMPL
+        assert proxy.proxy__getAdmin() == AGENT
+        assert not proxy.proxy__getIsOssified()
+
+    def test_state(self, cmv2_migrator):
+        assert cmv2_migrator.getStakingRouter() == STAKING_ROUTER
+        assert cmv2_migrator.getConsolidationBus() == CONSOLIDATION_BUS
+        assert cmv2_migrator.sourceModuleId() == CURATED_V2_STAKING_MODULE_ID
+        assert cmv2_migrator.targetModuleId() == CURATED_V2_STAKING_MODULE_ID
+
+    def test_initialize(self, cmv2_migrator):
+        with reverts(encode_error("InvalidInitialization()")):
+            cmv2_migrator.initialize.call(AGENT, {"from": contracts.voting})
+
+    def test_petrified(self):
+        impl = interface.ConsolidationMigrator(CONSOLIDATION_MIGRATOR_CMV2_IMPL)
+        assert impl.sourceModuleId() == CURATED_V2_STAKING_MODULE_ID
+        assert impl.targetModuleId() == CURATED_V2_STAKING_MODULE_ID
+        with reverts(encode_error("InvalidInitialization()")):
+            impl.initialize.call(AGENT, {"from": contracts.voting})
+
+    def test_roles(self, cmv2_migrator):
+        allow_pair_role = web3.keccak(text="ALLOW_PAIR_ROLE")
+        disallow_pair_role = web3.keccak(text="DISALLOW_PAIR_ROLE")
+
+        assert cmv2_migrator.getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 1
+        assert cmv2_migrator.getRoleMember(DEFAULT_ADMIN_ROLE, 0) == AGENT
+
+        # both pair roles: only the CMC committee, which allows (N, N) pairs directly
+        assert cmv2_migrator.getRoleMemberCount(allow_pair_role) == 1
+        assert cmv2_migrator.getRoleMember(allow_pair_role, 0) == CONSOLIDATION_COMMITTEE
+        assert cmv2_migrator.getRoleMemberCount(disallow_pair_role) == 1
+        assert cmv2_migrator.getRoleMember(disallow_pair_role, 0) == CONSOLIDATION_COMMITTEE
+
+    def test_acl(self, cmv2_migrator, stranger):
+        with reverts(unauthorized(stranger, "ALLOW_PAIR_ROLE")):
+            cmv2_migrator.allowPair.call(1, 1, stranger, {"from": stranger})
+        with reverts(unauthorized(stranger, "DISALLOW_PAIR_ROLE")):
+            cmv2_migrator.disallowPair.call(1, 1, {"from": stranger})
