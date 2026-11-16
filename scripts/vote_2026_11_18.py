@@ -1,10 +1,16 @@
 """
 Vote 2026_11_18
 
-1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls and connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus
+1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls, connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus and replace the CMv2 Verifier with CuratedVerifier
     1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation 0x02bEFd784c6C382a021774472563671Ae23980C0 and call finalizeUpgradeV2()
     1.2.1. Grant ENABLE_TOP_UP_ALLOCATION_ROLE 0xf541c17eb0542b50d1f6df03622f7d9ab80d01dffb50bbd033a4dd4c57f09889 to Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
     1.3.1. Grant PUBLISH_ROLE 0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e to CMv2 internal ConsolidationMigrator 0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7 on ConsolidationBus 0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8
+    1.4.1. Revoke VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09 from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
+    1.5.1. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094 from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
+    1.6.1. Grant VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09 to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
+    1.7.1. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094 to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
+    1.8.1. Unregister Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 from CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7
+    1.9.1. Register CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 with pauser Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91
 2. Add LidoLendActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 with applyIrmConfig permission on AdaptiveCurveIrm 0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f, setMarketIrm permission on IrmRouter 0x81B7cC9523B30429110282d90db2fa90ff443d91, createMarket and setFee permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a, addMarketSteward permission on RiskStewardDashboard 0xC3C241bC213EF3ba16234A7c689999209cE515D7, registerPauser permission on CircuitBreaker 0xd0A81A130a303237d338A0b5835edcB011Ab3afd, and preseedMarket permission on LidoLendPreseeder 0x3F107d1fbCA49F425321Cb27f6Ef5CbB94a72c41 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
 3. Add LidoLendCircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 with registerPauser, setPauseDuration and setHeartbeatInterval permissions on CircuitBreaker 0xd0A81A130a303237d338A0b5835edcB011Ab3afd to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
 4. Add LidoLendGuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 with addGuardian, setGuardiansQuorum, removeGuardian, replaceGuardian, setGuardiansSuspectWindow and unbanGuardianSignals permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
@@ -17,19 +23,23 @@ TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {b
 
 from typing import Dict, List, Tuple
 
-from brownie import interface
+from brownie import ZERO_ADDRESS, interface
 
 from utils.agent import agent_forward
 from utils.dual_governance import submit_proposals
-from utils.permissions import encode_oz_grant_role
+from utils.permissions import encode_oz_grant_role, encode_oz_revoke_role
 from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 from utils.ipfs import upload_vote_ipfs_description, calculate_vote_ipfs_description
 from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
+    CIRCUIT_BREAKER as PROTOCOL_CIRCUIT_BREAKER,
     CURATED_V2_STAKING_MODULE_ADDRESS,
     CURATED_V2_COMMITTEE_MS,
+    CURATED_V2_CIRCUIT_BREAKER_PAUSER,
+    CURATED_V2_VERIFIER,
+    CURATED_V2_VERIFIER_OLD,
     CONSOLIDATION_BUS,
     CONSOLIDATION_MIGRATOR_CMV2,
     EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY,
@@ -55,6 +65,10 @@ from utils.easy_track import add_evmscript_factory
 CURATED_V2 = CURATED_V2_STAKING_MODULE_ADDRESS
 CURATED_V2_NEW_IMPL = "0x02bEFd784c6C382a021774472563671Ae23980C0"
 CURATED_V2_TOP_UP_ALLOCATION_ENABLER = CURATED_V2_COMMITTEE_MS
+
+# CMv2 Verifier replacement (staking-modules `artifacts/mainnet/curated/deploy-mainnet.json`)
+CURATED_V2_PREVIOUS_VERIFIER = CURATED_V2_VERIFIER_OLD
+CURATED_VERIFIER = CURATED_V2_VERIFIER
 
 # Function selectors for permissions
 LIDO_LEND_ACCRUE_INTEREST = "0x151c1ade"  # accrueInterest((address,address,address,address,uint256))
@@ -126,22 +140,27 @@ APPLY_IRM_CONFIG_PERMISSIONS = permissions(
 )
 # ============================= IPFS Description ==================================
 IPFS_DESCRIPTION = """
-# CMv2 top-up allocation controls, CMv2 internal consolidation, Lido Lend Easy Track factories
+# CMv2 top-up allocation controls, CMv2 internal consolidation, CuratedVerifier, Lido Lend Easy Track factories
 
 1. **Upgrade CMv2 to the implementation with top-up allocation controls**, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 1.1.1, 1.2.1.
     - Upgrade CMv2 and enable top-up allocation for node operators with active validators. Item 1.1.1.
     - Allow the [Curated Module Committee](https://docs.lido.fi/multisigs/committees#220-curated-module-committee-cmc) to enable top-up allocation for node operators. Item 1.2.1.
 2. **Connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus**, so that Curated Module v2 node operators can consolidate validators inside CMv2, [as proposed on the forum](<FORUM_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Item 1.3.1.
-3. **Add Lido Lend Easy Track factories for market activation and management, Guardian and Risk Steward management, Circuit Breaker configuration, and IRM updates**, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 2–7.
+3. **Replace the CMv2 Verifier with CuratedVerifier**, which supports withdrawable-epoch exit proofs, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 1.4.1 - 1.9.1.
+    - Move the CMv2 verifier roles from the previous Verifier to CuratedVerifier. Items 1.4.1 - 1.7.1.
+    - Move the CircuitBreaker registration from the previous Verifier to CuratedVerifier, keeping the Curated Module Committee as pauser. Items 1.8.1, 1.9.1.
+4. **Add Lido Lend Easy Track factories for market activation and management, Guardian and Risk Steward management, Circuit Breaker configuration, and IRM updates**, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 2–7.
 """
 
 DG_PROPOSAL_METADATA = (
     "Upgrade CMv2 to the implementation with top-up allocation controls, "
-    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
+    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus, "
+    "replace the CMv2 Verifier with CuratedVerifier"
 )
 DG_SUBMISSION_DESCRIPTION = (
-    "1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls "
-    "and connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
+    "1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls, "
+    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus "
+    "and replace the CMv2 Verifier with CuratedVerifier"
 )
 
 
@@ -151,6 +170,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
     curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
     curated_v2 = interface.CuratedModule(CURATED_V2)
     consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
+    circuit_breaker = interface.CircuitBreaker(PROTOCOL_CIRCUIT_BREAKER)
 
     return [
         # 1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation
@@ -188,6 +208,70 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     contract=consolidation_bus,
                     role_name="PUBLISH_ROLE",
                     grant_to=CONSOLIDATION_MIGRATOR_CMV2,
+                )
+            ]
+        ),
+        # 1.4.1. Revoke VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09
+        # from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1.
+        agent_forward(
+            [
+                encode_oz_revoke_role(
+                    contract=curated_v2,
+                    role_name="VERIFIER_ROLE",
+                    revoke_from=CURATED_V2_PREVIOUS_VERIFIER,
+                )
+            ]
+        ),
+        # 1.5.1. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094
+        # from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1.
+        agent_forward(
+            [
+                encode_oz_revoke_role(
+                    contract=curated_v2,
+                    role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
+                    revoke_from=CURATED_V2_PREVIOUS_VERIFIER,
+                )
+            ]
+        ),
+        # 1.6.1. Grant VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09
+        # to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1.
+        agent_forward(
+            [
+                encode_oz_grant_role(
+                    contract=curated_v2,
+                    role_name="VERIFIER_ROLE",
+                    grant_to=CURATED_VERIFIER,
+                )
+            ]
+        ),
+        # 1.7.1. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094
+        # to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1.
+        agent_forward(
+            [
+                encode_oz_grant_role(
+                    contract=curated_v2,
+                    role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
+                    grant_to=CURATED_VERIFIER,
+                )
+            ]
+        ),
+        # 1.8.1. Unregister Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3
+        # from CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 (a zero pauser removes the pausable).
+        agent_forward(
+            [
+                (
+                    circuit_breaker.address,
+                    circuit_breaker.registerPauser.encode_input(CURATED_V2_PREVIOUS_VERIFIER, ZERO_ADDRESS),
+                )
+            ]
+        ),
+        # 1.9.1. Register CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CircuitBreaker
+        # 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 with pauser Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91.
+        agent_forward(
+            [
+                (
+                    circuit_breaker.address,
+                    circuit_breaker.registerPauser.encode_input(CURATED_VERIFIER, CURATED_V2_CIRCUIT_BREAKER_PAUSER),
                 )
             ]
         ),

@@ -1,5 +1,5 @@
 import pytest
-from brownie import chain, convert, history, interface, reverts
+from brownie import ZERO_ADDRESS, chain, convert, history, interface, reverts
 from brownie.network.event import EventDict
 from brownie.network.transaction import TransactionReceipt
 
@@ -20,7 +20,8 @@ from utils.test.event_validators.easy_track import (
     validate_evmscript_factory_added_event,
     EVMScriptFactoryAdded,
 )
-from utils.test.event_validators.permission import validate_grant_role_event
+from utils.test.event_validators.circuit_breaker import validate_register_pauser_event
+from utils.test.event_validators.permission import validate_grant_role_event, validate_revoke_role_event
 from utils.test.helpers import access_control_unauthorized
 from utils.voting import find_metadata_by_vote_id
 from utils.ipfs import get_lido_vote_cid_from_str
@@ -73,6 +74,15 @@ DEFAULT_ADMIN_ROLE = "0x00000000000000000000000000000000000000000000000000000000
 PUBLISH_ROLE = "0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e"
 ALLOW_PAIR_ROLE = "0x11b7ee1b50f8c4aefc7ba573dc738d6c20f03c1869ff81aa1d8be99ab7cfd7c1"
 DISALLOW_PAIR_ROLE = "0x4638c3377b40c5fdb49ab3032cbb02972024761b03e6a0d7dcf113f5673c03a8"
+
+# https://github.com/lidofinance/staking-modules/pull/925
+CURATED_V2_PREVIOUS_VERIFIER = "0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3"
+CURATED_VERIFIER = "0x8c9C8c8C91D6de09D256264B33E7C54794feb033"
+VERIFIER_ROLE = "0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09"
+REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE = "0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094"
+PROTOCOL_CIRCUIT_BREAKER = "0x6019CB557978296BA3C08a7B73225C0975DFB2F7"
+RESEAL_MANAGER = "0x7914b5a1539b97Bd0bbd155757F25FD79A522d24"
+WITHDRAWAL_VAULT = "0xB9D7934878B5FB9610B3fE8A5e441e8fad7E293f"
 
 EASY_TRACK = "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea"
 EASYTRACK_LIDO_LEND_TRUSTED_CALLER = "0x4f29aA4c299e17176b48c41D67ee97aE673d29bC"
@@ -158,12 +168,13 @@ APPLY_IRM_CONFIG_PERMISSIONS = (
 EXPECTED_VOTE_ID = 207
 EXPECTED_DG_PROPOSAL_ID = None
 EXPECTED_VOTE_EVENTS_COUNT = 7
-EXPECTED_DG_EVENTS_FROM_AGENT = 3
-EXPECTED_DG_EVENTS_COUNT = 3
+EXPECTED_DG_EVENTS_FROM_AGENT = 9
+EXPECTED_DG_EVENTS_COUNT = 9
 IPFS_DESCRIPTION_HASH = ""
 DG_PROPOSAL_METADATA = (
     "Upgrade CMv2 to the implementation with top-up allocation controls, "
-    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus"
+    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus, "
+    "replace the CMv2 Verifier with CuratedVerifier"
 )
 
 
@@ -172,6 +183,25 @@ def _event(events, name: str, emitted_by: str):
     event = events[name]
     assert convert.to_address(event["_emitted_by"]) == convert.to_address(emitted_by)
     return event
+
+
+def check_curated_verifier_deployment(curated_verifier):
+    assert curated_verifier.MODULE() == CURATED_V2
+    assert curated_verifier.WITHDRAWAL_ADDRESS() == WITHDRAWAL_VAULT
+    assert not curated_verifier.isPaused()
+    assert role_holders(curated_verifier, curated_verifier.DEFAULT_ADMIN_ROLE()) == [AGENT]
+    assert sorted(role_holders(curated_verifier, curated_verifier.PAUSE_ROLE())) == sorted(
+        [PROTOCOL_CIRCUIT_BREAKER, RESEAL_MANAGER]
+    )
+    assert role_holders(curated_verifier, curated_verifier.RESUME_ROLE()) == [RESEAL_MANAGER]
+
+
+def curated_verifier_circuit_breaker_smoke_test(circuit_breaker, curated_verifier):
+    committee = set_balance(CURATED_MODULE_COMMITTEE, 1000)
+    assert circuit_breaker.isPauserLive(CURATED_MODULE_COMMITTEE)
+
+    circuit_breaker.pause(CURATED_VERIFIER, {"from": committee})
+    assert curated_verifier.isPaused()
 
 
 def _top_up_allocation_eligible(operators) -> list:
@@ -325,6 +355,8 @@ def test_vote(
     curated_v2 = interface.CuratedModule(CURATED_V2)
     curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
     consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
+    curated_verifier = interface.CuratedVerifier(CURATED_VERIFIER)
+    circuit_breaker = interface.CircuitBreaker(PROTOCOL_CIRCUIT_BREAKER)
     check_factory_bindings()
     assert easy_track.evmScriptExecutor() == EVM_SCRIPT_EXECUTOR
 
@@ -354,6 +386,7 @@ def test_vote(
         proposal_id = dg_proposal_ids_from_env[0]
 
     check_cmv2_internal_migrator_setup()
+    check_curated_verifier_deployment(curated_verifier)
 
     # =========================================================================
     # ============================= Execute Vote ==============================
@@ -507,6 +540,11 @@ def test_vote(
         eligible_operators = _top_up_allocation_eligible(operators)
         assert eligible_operators, "Expected CMv2 operators with active validators"
         assert bus_publishers(consolidation_bus) == [CMV1_CMV2_MIGRATOR]
+        for role in (VERIFIER_ROLE, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE):
+            assert role_holders(curated_v2, role) == [CURATED_V2_PREVIOUS_VERIFIER]
+        assert circuit_breaker.getPauser(CURATED_V2_PREVIOUS_VERIFIER) == CURATED_MODULE_COMMITTEE
+        assert circuit_breaker.getPauser(CURATED_VERIFIER) == ZERO_ADDRESS
+        pausables_before = list(circuit_breaker.getPausables())
 
         process_proposals([proposal_id])
         dg_tx: TransactionReceipt = history[-1]
@@ -558,12 +596,53 @@ def test_vote(
             event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
         )
 
+        # 1.4.1 - 1.5.1. Revoke the CMv2 verifier roles from the previous Verifier.
+        for index, role in ((3, VERIFIER_ROLE), (4, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE)):
+            validate_revoke_role_event(
+                dg_events[index], role, CURATED_V2_PREVIOUS_VERIFIER, sender=AGENT, emitted_by=CURATED_V2
+            )
+
+        # 1.6.1 - 1.7.1. Grant the CMv2 verifier roles to CuratedVerifier.
+        for index, role in ((5, VERIFIER_ROLE), (6, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE)):
+            validate_grant_role_event(
+                dg_events[index],
+                role,
+                CURATED_VERIFIER,
+                sender=AGENT,
+                emitted_by=CURATED_V2,
+                event_chain=["LogScriptCall", "RoleGranted", "ScriptResult", "Executed"],
+            )
+
+        # 1.8.1. Unregister the previous Verifier. The committee still guards the other CMv2 pausables,
+        # so its heartbeat is kept and only PauserSet is emitted.
+        validate_events_chain(
+            [event.name for event in dg_events[7]], ["LogScriptCall", "PauserSet", "ScriptResult", "Executed"]
+        )
+        pauser_unset = _event(dg_events[7], "PauserSet", PROTOCOL_CIRCUIT_BREAKER)
+        assert pauser_unset["pausable"] == CURATED_V2_PREVIOUS_VERIFIER
+        assert pauser_unset["previousPauser"] == CURATED_MODULE_COMMITTEE
+        assert pauser_unset["newPauser"] == ZERO_ADDRESS
+
+        # 1.9.1. Register CuratedVerifier with the committee as pauser.
+        validate_events_chain(
+            [event.name for event in dg_events[8]],
+            ["LogScriptCall", "PauserSet", "HeartbeatUpdated", "ScriptResult", "Executed"],
+        )
+        validate_register_pauser_event(
+            dg_events[8], CURATED_VERIFIER, CURATED_MODULE_COMMITTEE, emitted_by=PROTOCOL_CIRCUIT_BREAKER
+        )
+        heartbeat = _event(dg_events[8], "HeartbeatUpdated", PROTOCOL_CIRCUIT_BREAKER)
+        assert heartbeat["newHeartbeatExpiry"] == dg_tx.timestamp + circuit_breaker.heartbeatInterval()
+
         # =========================================================================
         # ================== DG after proposal executed checks ====================
         # =========================================================================
         assert curated_v2.getNonce() == nonce_before + 1
         for operator_id in range(len(operators)):
             assert curated_v2.isTopUpAllocationEnabled(operator_id) == (operator_id in eligible_operators)
+        assert sorted(circuit_breaker.getPausables()) == sorted(
+            [pausable for pausable in pausables_before if pausable != CURATED_V2_PREVIOUS_VERIFIER] + [CURATED_VERIFIER]
+        )
 
     # =========================================================================
     # ======================= After vote executed checks ======================
@@ -586,6 +665,17 @@ def test_vote(
     # 1.3.1. Both migrators publish to the ConsolidationBus; the CMv2 internal migrator keeps its deploy setup.
     assert bus_publishers(consolidation_bus) == [CMV1_CMV2_MIGRATOR, CMV2_INTERNAL_MIGRATOR]
     check_cmv2_internal_migrator_setup()
+
+    # 1.4.1 - 1.7.1. Only CuratedVerifier holds the CMv2 verifier roles.
+    for role in (VERIFIER_ROLE, REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE):
+        assert role_holders(curated_v2, role) == [CURATED_VERIFIER]
+
+    # 1.8.1 - 1.9.1. CuratedVerifier replaced the previous Verifier on CircuitBreaker.
+    assert circuit_breaker.getPauser(CURATED_V2_PREVIOUS_VERIFIER) == ZERO_ADDRESS
+    assert circuit_breaker.getPauser(CURATED_VERIFIER) == CURATED_MODULE_COMMITTEE
+    pausables = list(circuit_breaker.getPausables())
+    assert CURATED_V2_PREVIOUS_VERIFIER not in pausables
+    assert CURATED_VERIFIER in pausables
 
     # 2. LidoLendActivateMarket
     assert easy_track.isEVMScriptFactory(ACTIVATE_MARKET_FACTORY)
@@ -622,6 +712,12 @@ def test_vote(
     chain.snapshot()
     try:
         cmv2_internal_consolidation_smoke_test(curated_v2, stranger)
+    finally:
+        chain.revert()
+
+    chain.snapshot()
+    try:
+        curated_verifier_circuit_breaker_smoke_test(circuit_breaker, curated_verifier)
     finally:
         chain.revert()
 
