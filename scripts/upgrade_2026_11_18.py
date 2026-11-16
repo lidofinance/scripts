@@ -34,7 +34,7 @@ from utils.config import (
     get_deployer_account,
     get_is_live,
     get_priority_fee,
-    CIRCUIT_BREAKER as PROTOCOL_CIRCUIT_BREAKER,
+    CIRCUIT_BREAKER,
     CURATED_V2_STAKING_MODULE_ADDRESS,
     CURATED_V2_COMMITTEE_MS,
     CURATED_V2_CIRCUIT_BREAKER_PAUSER,
@@ -62,13 +62,7 @@ from utils.easy_track import add_evmscript_factory
 
 # ============================== Constants ===================================
 # CMv2 implementation with top-up allocation controls
-CURATED_V2 = CURATED_V2_STAKING_MODULE_ADDRESS
 CURATED_V2_NEW_IMPL = "0x02bEFd784c6C382a021774472563671Ae23980C0"
-CURATED_V2_TOP_UP_ALLOCATION_ENABLER = CURATED_V2_COMMITTEE_MS
-
-# CMv2 Verifier replacement (staking-modules `artifacts/mainnet/curated/deploy-mainnet.json`)
-CURATED_V2_PREVIOUS_VERIFIER = CURATED_V2_VERIFIER_OLD
-CURATED_VERIFIER = CURATED_V2_VERIFIER
 
 # Function selectors for permissions
 LIDO_LEND_ACCRUE_INTEREST = "0x151c1ade"  # accrueInterest((address,address,address,address,uint256))
@@ -167,10 +161,10 @@ DG_SUBMISSION_DESCRIPTION = (
 # ================================ Main ======================================
 def get_dg_items() -> List[Tuple[str, str]]:
     # staking-modules OssifiableProxy (OZ v5): proxy__upgradeToAndCall(address,bytes), without forceCall_.
-    curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2)
-    curated_v2 = interface.CuratedModule(CURATED_V2)
+    curated_v2_proxy = interface.StakingModulesOssifiableProxy(CURATED_V2_STAKING_MODULE_ADDRESS)
+    curated_v2 = interface.CuratedModule(CURATED_V2_STAKING_MODULE_ADDRESS)
     consolidation_bus = interface.ConsolidationBus(CONSOLIDATION_BUS)
-    circuit_breaker = interface.CircuitBreaker(PROTOCOL_CIRCUIT_BREAKER)
+    circuit_breaker = interface.CircuitBreaker(CIRCUIT_BREAKER)
 
     return [
         # 1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation
@@ -195,7 +189,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_grant_role(
                     contract=curated_v2,
                     role_name="ENABLE_TOP_UP_ALLOCATION_ROLE",
-                    grant_to=CURATED_V2_TOP_UP_ALLOCATION_ENABLER,
+                    grant_to=CURATED_V2_COMMITTEE_MS,
                 )
             ]
         ),
@@ -218,7 +212,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_revoke_role(
                     contract=curated_v2,
                     role_name="VERIFIER_ROLE",
-                    revoke_from=CURATED_V2_PREVIOUS_VERIFIER,
+                    revoke_from=CURATED_V2_VERIFIER_OLD,
                 )
             ]
         ),
@@ -229,7 +223,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_revoke_role(
                     contract=curated_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
-                    revoke_from=CURATED_V2_PREVIOUS_VERIFIER,
+                    revoke_from=CURATED_V2_VERIFIER_OLD,
                 )
             ]
         ),
@@ -240,7 +234,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_grant_role(
                     contract=curated_v2,
                     role_name="VERIFIER_ROLE",
-                    grant_to=CURATED_VERIFIER,
+                    grant_to=CURATED_V2_VERIFIER,
                 )
             ]
         ),
@@ -251,7 +245,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 encode_oz_grant_role(
                     contract=curated_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
-                    grant_to=CURATED_VERIFIER,
+                    grant_to=CURATED_V2_VERIFIER,
                 )
             ]
         ),
@@ -261,7 +255,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             [
                 (
                     circuit_breaker.address,
-                    circuit_breaker.registerPauser.encode_input(CURATED_V2_PREVIOUS_VERIFIER, ZERO_ADDRESS),
+                    circuit_breaker.registerPauser.encode_input(CURATED_V2_VERIFIER_OLD, ZERO_ADDRESS),
                 )
             ]
         ),
@@ -271,7 +265,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
             [
                 (
                     circuit_breaker.address,
-                    circuit_breaker.registerPauser.encode_input(CURATED_VERIFIER, CURATED_V2_CIRCUIT_BREAKER_PAUSER),
+                    circuit_breaker.registerPauser.encode_input(CURATED_V2_VERIFIER, CURATED_V2_CIRCUIT_BREAKER_PAUSER),
                 )
             ]
         ),

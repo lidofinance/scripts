@@ -40,7 +40,7 @@ from utils.test.lido_lend_helpers import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.vote_2026_11_18 import start_vote, get_vote_items, get_dg_items
+from scripts.upgrade_2026_11_18 import start_vote, get_vote_items, get_dg_items
 
 
 # ============================================================================
@@ -166,7 +166,7 @@ APPLY_IRM_CONFIG_PERMISSIONS = (
 # ============================= Test params ==================================
 # ============================================================================
 EXPECTED_VOTE_ID = 207
-EXPECTED_DG_PROPOSAL_ID = None
+EXPECTED_DG_PROPOSAL_ID = 16
 EXPECTED_VOTE_EVENTS_COUNT = 7
 EXPECTED_DG_EVENTS_FROM_AGENT = 9
 EXPECTED_DG_EVENTS_COUNT = 9
