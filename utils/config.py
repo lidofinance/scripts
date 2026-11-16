@@ -243,8 +243,8 @@ class ContractsLazyLoader:
         return interface.ValidatorStrikes(CURATED_V2_STRIKES)
 
     @property
-    def cm_verifier(self) -> interface.Verifier:
-        return interface.Verifier(CURATED_V2_VERIFIER)
+    def cm_verifier(self) -> interface.CuratedVerifier:
+        return interface.CuratedVerifier(CURATED_V2_VERIFIER)
 
     @property
     def cm_ejector(self) -> interface.Ejector:
