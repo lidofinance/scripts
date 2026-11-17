@@ -170,11 +170,9 @@ EXPECTED_DG_PROPOSAL_ID = 16
 EXPECTED_VOTE_EVENTS_COUNT = 7
 EXPECTED_DG_EVENTS_FROM_AGENT = 9
 EXPECTED_DG_EVENTS_COUNT = 9
-IPFS_DESCRIPTION_HASH = ""
+IPFS_DESCRIPTION_HASH = "bafkreigsx7mduqogfe2mxoky6ktbfpzsovodzyxaj2efc3w5pt3javadnu"
 DG_PROPOSAL_METADATA = (
-    "Upgrade CMv2 to the implementation with top-up allocation controls, "
-    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus, "
-    "replace the CMv2 Verifier with CuratedVerifier"
+    "Enable CMv2 top-up allocation controls, consolidation migration and Curated Verifier for consolidated validators"
 )
 
 

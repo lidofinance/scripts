@@ -1,22 +1,22 @@
 """
 Vote 2026_11_18
 
-1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls, connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus and replace the CMv2 Verifier with CuratedVerifier
-    1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation 0x02bEFd784c6C382a021774472563671Ae23980C0 and call finalizeUpgradeV2()
+1. Submit a proposal to Dual Governance 0xc1db28b3301331277e307fdcff8de28242a4486e
+    1.1.1. Upgrade CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1 to implementation 0x02bEFd784c6C382a021774472563671Ae23980C0 and call finalizeUpgradeV2() with setupCalldata_ = 0x88984a97
     1.2.1. Grant ENABLE_TOP_UP_ALLOCATION_ROLE 0xf541c17eb0542b50d1f6df03622f7d9ab80d01dffb50bbd033a4dd4c57f09889 to Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
-    1.3.1. Grant PUBLISH_ROLE 0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e to CMv2 internal ConsolidationMigrator 0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7 on ConsolidationBus 0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8
+    1.3.1. Grant PUBLISH_ROLE 0xf3156f38966c62e303ac6c7519c63e00636409e3b3ca4abecd13cd0092fee53e to CMv2 ConsolidationMigrator 0xc8a7F4917cA03FDCD24a5E11A48Ab448318976e7 on ConsolidationBus 0xd907CE33B4Be423823d1CFFe80BD147E8b8554C8
     1.4.1. Revoke VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09 from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
     1.5.1. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094 from Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
     1.6.1. Grant VERIFIER_ROLE 0x0ce23c3e399818cfee81a7ab0880f714e53d7672b08df0fa62f2843416e1ea09 to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
     1.7.1. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE 0xb169cb0459e6d91326174ff566a2fcc3c7bb31ef3d4d83bec1d5679c611ab094 to CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CMv2 0xDa5F930cE326EB5205085D66c72A4E79d60cB8C1
     1.8.1. Unregister Verifier 0xC392F457960f1B13Ebaf1aa6C065479dD507E1E3 from CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7
     1.9.1. Register CuratedVerifier 0x8c9C8c8C91D6de09D256264B33E7C54794feb033 on CircuitBreaker 0x6019CB557978296BA3C08a7B73225C0975DFB2F7 with pauser Curated Module Committee 0x2570e0b22AD904501dfB0d49575991ACB801dD91
-2. Add LidoLendActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 with applyIrmConfig permission on AdaptiveCurveIrm 0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f, setMarketIrm permission on IrmRouter 0x81B7cC9523B30429110282d90db2fa90ff443d91, createMarket and setFee permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a, addMarketSteward permission on RiskStewardDashboard 0xC3C241bC213EF3ba16234A7c689999209cE515D7, registerPauser permission on CircuitBreaker 0xd0A81A130a303237d338A0b5835edcB011Ab3afd, and preseedMarket permission on LidoLendPreseeder 0x3F107d1fbCA49F425321Cb27f6Ef5CbB94a72c41 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
-3. Add LidoLendCircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 with registerPauser, setPauseDuration and setHeartbeatInterval permissions on CircuitBreaker 0xd0A81A130a303237d338A0b5835edcB011Ab3afd to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
-4. Add LidoLendGuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 with addGuardian, setGuardiansQuorum, removeGuardian, replaceGuardian, setGuardiansSuspectWindow and unbanGuardianSignals permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
-5. Add LidoLendMarketManagerActions EVM script factory 0x9D75EaE321976e85e472847AFD21246F1f87dC43 with setInstantActivation, setMarketCollateralActivationConfig, setMarketSettlementConfig, setMarketSupplyCap, unfreezeMarket and setFee permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
-6. Add LidoLendRiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 with addMarketSteward and removeMarketSteward permissions on RiskStewardDashboard 0xC3C241bC213EF3ba16234A7c689999209cE515D7 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
-7. Add LidoLendApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 with accrueInterest permission on LidoLend 0x026a770badc7126c7252Ef8d407E5b9C56147491 and applyIrmConfig permission on AdaptiveCurveIrm 0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.
+2. Add LidoLendActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xf6f1565f4fd3d29e6bdab86764a50bcde381422f2078614b81b7cc9523b30429110282d90db2fa90ff443d914451cfc585378a1073e8f338e11a97e090e47e2f0fdd3d5abee60e2ec3c241bc213ef3ba16234a7c689999209ce515d7182d4cbbd0a81a130a303237d338a0b5835edcb011ab3afd338d93fc3f107d1fbca49f425321cb27f6ef5cbb94a72c419e90390c85378a1073e8f338e11a97e090e47e2f0fdd3d5a2b4f013c)
+3. Add LidoLendCircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xd0a81a130a303237d338a0b5835edcb011ab3afd338d93fcd0a81a130a303237d338a0b5835edcb011ab3afdc9387332d0a81a130a303237d338a0b5835edcb011ab3afd71a99c22)
+4. Add LidoLendGuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x85378a1073e8f338e11a97e090e47e2f0fdd3d5a8543159685378a1073e8f338e11a97e090e47e2f0fdd3d5af3ad2cac85378a1073e8f338e11a97e090e47e2f0fdd3d5a3cab947d85378a1073e8f338e11a97e090e47e2f0fdd3d5ad9101d1785378a1073e8f338e11a97e090e47e2f0fdd3d5adf03d75d85378a1073e8f338e11a97e090e47e2f0fdd3d5a42abe0fd)
+5. Add LidoLendMarketManagerActions EVM script factory 0x9D75EaE321976e85e472847AFD21246F1f87dC43 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x85378a1073e8f338e11a97e090e47e2f0fdd3d5a6835da9685378a1073e8f338e11a97e090e47e2f0fdd3d5a084f4e3f85378a1073e8f338e11a97e090e47e2f0fdd3d5a3d15094a85378a1073e8f338e11a97e090e47e2f0fdd3d5abf96eb0185378a1073e8f338e11a97e090e47e2f0fdd3d5ac49495df85378a1073e8f338e11a97e090e47e2f0fdd3d5a2b4f013c)
+6. Add LidoLendRiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xc3c241bc213ef3ba16234a7c689999209ce515d7182d4cbbc3c241bc213ef3ba16234a7c689999209ce515d79fdcc880)
+7. Add LidoLendApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x026a770badc7126c7252ef8d407e5b9c56147491151c1adef6f1565f4fd3d29e6bdab86764a50bcde381422f2078614b)
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -134,28 +134,24 @@ APPLY_IRM_CONFIG_PERMISSIONS = permissions(
 )
 # ============================= IPFS Description ==================================
 IPFS_DESCRIPTION = """
-# CMv2 top-up allocation controls, CMv2 internal consolidation, CuratedVerifier, Lido Lend Easy Track factories
+# Lido Lend, CMv2 Top-Up Allocation Controls, Consolidation Migration & Curated Verifier
 
-1. **Upgrade CMv2 to the implementation with top-up allocation controls**, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 1.1.1, 1.2.1.
-    - Upgrade CMv2 and enable top-up allocation for node operators with active validators. Item 1.1.1.
-    - Allow the [Curated Module Committee](https://docs.lido.fi/multisigs/committees#220-curated-module-committee-cmc) to enable top-up allocation for node operators. Item 1.2.1.
-2. **Connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus**, so that Curated Module v2 node operators can consolidate validators inside CMv2, [as proposed on the forum](<FORUM_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Item 1.3.1.
-3. **Replace the CMv2 Verifier with CuratedVerifier**, which supports withdrawable-epoch exit proofs, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 1.4.1 - 1.9.1.
-    - Move the CMv2 verifier roles from the previous Verifier to CuratedVerifier. Items 1.4.1 - 1.7.1.
-    - Move the CircuitBreaker registration from the previous Verifier to CuratedVerifier, keeping the Curated Module Committee as pauser. Items 1.8.1, 1.9.1.
-4. **Add Lido Lend Easy Track factories for market activation and management, Guardian and Risk Steward management, Circuit Breaker configuration, and IRM updates**, [as proposed on the forum](<FORUM_URL>). Audits: [report](<AUDIT_URL>). Deployment verification: [report](<DEPLOYMENT_VERIFICATION_URL>). Items 2–7.
+1. **Lido Lend: Accept Admin Roles and Approve Committee Mandates** | [Full proposal on IPFS](https://ipfs.filebase.io/ipfs/QmanvVjB7LBcRHGaZpnaA4saPucZePCUBN8x3u3quGVRym) | [Forum discussion](https://research.lido.fi/t/unveiling-lido-lend-security-first-lending/11987) | Audits: [Lido Lend - Cyfrin](https://github.com/lidofinance/audits/blob/main/lend/2026-10-26_Cyfrin_Lido-Lend.pdf), [Easy Track factories - MixBytes](https://github.com/lidofinance/audits/blob/main/lend/2026-11-10-mixbytes-lido-lend-easy-track-factories-audit-report.pdf), [Guardian Daemon SDK - MixBytes](https://github.com/lidofinance/audits/blob/main/lend/2026-11-9-mixbytes-lido-lend-guardian-daemon-sdk.pdf) | Deployment verification: [Lido Lend - Cyfrin](https://github.com/lidofinance/audits/blob/main/lend/2026-11-11-cyfrin-lido-lend-core-deployment-verification.pdf), [Easy Track factories - MixBytes](https://github.com/lidofinance/audits/blob/main/lend/2026-11-10-mixbytes-lido-lend-easy-track-factories-audit-report.pdf) | On-chain items register 6 Lido Lend Easy Track factories to:
+    - create and activate markets (item 2)
+    - configure CircuitBreaker for markets (item 3)
+    - configure Guardians and unban accounts (item 4)
+    - configure collateral activation, settlement parameters, supply caps, market fees, and unfreeze markets (item 5)
+    - add/remove Risk Stewards for markets (item 6)
+    - update market interest-rate model (IRM) configuration (item 7)
+2. **Upgrade CMv2 to enable top-up allocation controls**, as [proposed on the forum](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/52) | Audits & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CMv2%20Top-Up%20Control%20Security%20Audit%20Report%2011-2026.pdf) | On-chain items 1.1.1, 1.2.1.
+3. **Enable CMv2 Consolidation Migrator**, as [proposed on the forum](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/53) | Audits: [Certora](https://github.com/lidofinance/audits/blob/main/Certora%20Staking%20Router%20v3%20Audit%20Report%2007-2026.pdf), [Statemind](https://github.com/lidofinance/audits/blob/main/Statemind%20Staking%20Router%20v3%20Audit%20Report%2007-2026.pdf) | Deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CMv2%20ConsolidationMigrator%20Deployment%20Verification%20Report%2011-2026.pdf) | On-chain item 1.3.1.
+4. **Replace CMv2 Verifier with CuratedVerifier** and update CircuitBreaker registration, as [proposed on the forum](https://research.lido.fi/t/future-of-the-curated-module-cmv2-landscape/10929/52) | Audits & deployment verification: [MixBytes](https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20CuratedVerifier%20%28CMv2%29%20Security%20Audit%20Report%2011-2026.pdf) | On-chain items 1.4.1 - 1.9.1.
 """
 
 DG_PROPOSAL_METADATA = (
-    "Upgrade CMv2 to the implementation with top-up allocation controls, "
-    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus, "
-    "replace the CMv2 Verifier with CuratedVerifier"
+    "Enable CMv2 top-up allocation controls, consolidation migration and Curated Verifier for consolidated validators"
 )
-DG_SUBMISSION_DESCRIPTION = (
-    "1. Submit a Dual Governance proposal to upgrade CMv2 to the implementation with top-up allocation controls, "
-    "connect the CMv2 internal ConsolidationMigrator to the ConsolidationBus "
-    "and replace the CMv2 Verifier with CuratedVerifier"
-)
+DG_SUBMISSION_DESCRIPTION = "1. Submit a Dual Governance proposal to enable CMv2 top-up allocation controls, consolidation migration and Curated Verifier for consolidated validators"
 
 
 # ================================ Main ======================================
@@ -281,51 +277,31 @@ def get_vote_items() -> Tuple[List[str], List[Tuple[str, str]]]:
             dg_call_script,
         ),
         (
-            "2. Add LidoLendActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 with "
-            "applyIrmConfig permission on AdaptiveCurveIrm 0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f, setMarketIrm "
-            "permission on IrmRouter 0x81B7cC9523B30429110282d90db2fa90ff443d91, createMarket and setFee permissions "
-            "on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a, addMarketSteward permission on "
-            "RiskStewardDashboard 0xC3C241bC213EF3ba16234A7c689999209cE515D7, registerPauser permission on "
-            "CircuitBreaker 0xd0A81A130a303237d338A0b5835edcB011Ab3afd, and preseedMarket permission on "
-            "LidoLendPreseeder 0x3F107d1fbCA49F425321Cb27f6Ef5CbB94a72c41 to Easy Track "
-            "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "2. Add LidoLendActivateMarket EVM script factory 0x17bb2A2B5983D29392A5d31D627D4C8B13383fe6 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xf6f1565f4fd3d29e6bdab86764a50bcde381422f2078614b81b7cc9523b30429110282d90db2fa90ff443d914451cfc585378a1073e8f338e11a97e090e47e2f0fdd3d5abee60e2ec3c241bc213ef3ba16234a7c689999209ce515d7182d4cbbd0a81a130a303237d338a0b5835edcb011ab3afd338d93fc3f107d1fbca49f425321cb27f6ef5cbb94a72c419e90390c85378a1073e8f338e11a97e090e47e2f0fdd3d5a2b4f013c)",
             add_evmscript_factory(EASYTRACK_LIDO_LEND_ACTIVATE_MARKET_FACTORY, ACTIVATE_MARKET_PERMISSIONS),
         ),
         (
-            "3. Add LidoLendCircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 with "
-            "registerPauser, setPauseDuration and setHeartbeatInterval permissions on CircuitBreaker "
-            "0xd0A81A130a303237d338A0b5835edcB011Ab3afd to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "3. Add LidoLendCircuitBreakerActions EVM script factory 0x4e89cc970F0DBAE2f8C38C083D5D345B4F9e76b8 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xd0a81a130a303237d338a0b5835edcb011ab3afd338d93fcd0a81a130a303237d338a0b5835edcb011ab3afdc9387332d0a81a130a303237d338a0b5835edcb011ab3afd71a99c22)",
             add_evmscript_factory(
                 EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY, CIRCUIT_BREAKER_ACTIONS_PERMISSIONS
             ),
         ),
         (
-            "4. Add LidoLendGuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 with "
-            "addGuardian, setGuardiansQuorum, removeGuardian, replaceGuardian, setGuardiansSuspectWindow and "
-            "unbanGuardianSignals permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a to Easy "
-            "Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "4. Add LidoLendGuardianActions EVM script factory 0x9fE41afb2114bF9430D7f9B1Fb65f0a4B9DeF779 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x85378a1073e8f338e11a97e090e47e2f0fdd3d5a8543159685378a1073e8f338e11a97e090e47e2f0fdd3d5af3ad2cac85378a1073e8f338e11a97e090e47e2f0fdd3d5a3cab947d85378a1073e8f338e11a97e090e47e2f0fdd3d5ad9101d1785378a1073e8f338e11a97e090e47e2f0fdd3d5adf03d75d85378a1073e8f338e11a97e090e47e2f0fdd3d5a42abe0fd)",
             add_evmscript_factory(EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY, GUARDIAN_ACTIONS_PERMISSIONS),
         ),
         (
-            "5. Add LidoLendMarketManagerActions EVM script factory 0x9D75EaE321976e85e472847AFD21246F1f87dC43 with "
-            "setInstantActivation, setMarketCollateralActivationConfig, setMarketSettlementConfig, setMarketSupplyCap, "
-            "unfreezeMarket and setFee permissions on LidoLendOwner 0x85378a1073E8f338e11A97E090E47e2F0FdD3D5a to Easy "
-            "Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "5. Add LidoLendMarketManagerActions EVM script factory 0x9D75EaE321976e85e472847AFD21246F1f87dC43 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x85378a1073e8f338e11a97e090e47e2f0fdd3d5a6835da9685378a1073e8f338e11a97e090e47e2f0fdd3d5a084f4e3f85378a1073e8f338e11a97e090e47e2f0fdd3d5a3d15094a85378a1073e8f338e11a97e090e47e2f0fdd3d5abf96eb0185378a1073e8f338e11a97e090e47e2f0fdd3d5ac49495df85378a1073e8f338e11a97e090e47e2f0fdd3d5a2b4f013c)",
             add_evmscript_factory(
                 EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY, MARKET_MANAGER_ACTIONS_PERMISSIONS
             ),
         ),
         (
-            "6. Add LidoLendRiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 with "
-            "addMarketSteward and removeMarketSteward permissions on RiskStewardDashboard "
-            "0xC3C241bC213EF3ba16234A7c689999209cE515D7 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "6. Add LidoLendRiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xc3c241bc213ef3ba16234a7c689999209ce515d7182d4cbbc3c241bc213ef3ba16234a7c689999209ce515d79fdcc880)",
             add_evmscript_factory(EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY, RISK_STEWARD_ACTIONS_PERMISSIONS),
         ),
         (
-            "7. Add LidoLendApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 with "
-            "accrueInterest permission on LidoLend 0x026a770badc7126c7252Ef8d407E5b9C56147491 and applyIrmConfig "
-            "permission on AdaptiveCurveIrm 0xf6f1565F4fD3d29E6bDAb86764A50BCde381422f to Easy Track "
-            "0xF0211b7660680B49De1A7E9f25C65660F0a13Fea.",
+            "7. Add LidoLendApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x026a770badc7126c7252ef8d407e5b9c56147491151c1adef6f1565f4fd3d29e6bdab86764a50bcde381422f2078614b)",
             add_evmscript_factory(EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY, APPLY_IRM_CONFIG_PERMISSIONS),
         ),
     )
