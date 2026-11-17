@@ -1,6 +1,6 @@
 """Lido Lend Easy Track motion scenarios shared by the vote test and the regression suite."""
 
-from brownie import interface, web3
+from brownie import convert, history, interface, web3
 from eth_abi.abi import encode
 
 from configs.config_mainnet import (
@@ -178,4 +178,9 @@ def apply_irm_config_via_motion(easy_track, trusted_caller, stranger, irm_config
         stranger,
     )
 
+    events = history[-1].events["IrmConfigApplied"]
+    assert len(events) == 1
+    assert convert.to_address(events[0]["_emitted_by"]) == adaptive_curve_irm.address
+    assert events[0]["marketId"] == market_id(market)
+    assert events[0]["config"] == irm_config
     assert adaptive_curve_irm.marketCurveConfig(market_id(market)) == irm_config
