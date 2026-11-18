@@ -1,10 +1,12 @@
 """Lido Lend Easy Track motion scenarios shared by the vote test and the regression suite."""
 
-from brownie import convert, history, interface, web3
+from brownie import InvalidAdaptiveCurveConfigStub, chain, convert, history, interface, reverts, web3
 from eth_abi.abi import encode
 
 from configs.config_mainnet import (
+    AGENT,
     LIDO_LEND,
+    LIDO_LEND_IRM_CONFIG_FACTORY,
     LIDO_LEND_CIRCUIT_BREAKER,
     LIDO_LEND_ADAPTIVE_CURVE_IRM,
     LIDO_LEND_IRM_ROUTER,
@@ -18,6 +20,7 @@ from configs.config_mainnet import (
     EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY,
     EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY,
 )
+from utils.balance import set_balance
 from utils.test.easy_track_helpers import create_and_enact_motion
 
 MARKET_PARAMS_TYPE = "(address,address,address,address,uint256)"
@@ -184,6 +187,130 @@ def apply_irm_config_via_motion(easy_track, trusted_caller, stranger, irm_config
     assert events[0]["marketId"] == market_id(market)
     assert events[0]["config"] == irm_config
     assert adaptive_curve_irm.marketCurveConfig(market_id(market)) == irm_config
+
+
+def apply_new_irm_config_with_accrual(easy_track, trusted_caller, borrower, market=LIDO_LEND_WETH_WSTETH_MARKET):
+    core = interface.LidoLend(LIDO_LEND)
+    irm = interface.AdaptiveCurveIrm(LIDO_LEND_ADAPTIVE_CURVE_IRM)
+    mid = market_id(market)
+    params = market_params(market)
+    old_config = irm.marketCurveConfig(mid)
+    old_curve = interface.AdaptiveCurveConfig(old_config).getCurveParams()
+    new_curve = list(old_curve)
+    new_curve[2] = 8 * 10**17  # Move target utilization from 90% to 80%.
+    assert old_curve[2] == 9 * 10**17
+    factory = interface.IrmConfigFactory(LIDO_LEND_IRM_CONFIG_FACTORY)
+    factory.getOrDeployAdaptiveCurveConfig(new_curve, {"from": borrower})
+    new_config = factory.getAdaptiveCurveConfig(new_curve)
+    assert new_config != old_config
+    assert list(interface.AdaptiveCurveConfig(new_config).getCurveParams()) == new_curve
+
+    # At exactly the old target, adaptation is zero and the old rate stays constant.
+    # This gives an independent interest expectation for the entire motion delay.
+    assert core.market(mid)["totalBorrowAssets"] == 0
+    assert interface.LidoLendMarketController(market["controller"]).hasInstantActivation(borrower)
+    weth = interface.WethToken(market["loan_token"])
+    collateral = interface.WstETH(market["collateral_token"])
+    top_up = 100 * 10**18 - core.market(mid)["totalSupplyAssets"]
+    weth.deposit({"from": borrower, "value": top_up})
+    weth.approve(core, top_up, {"from": borrower})
+    core.supply(params, top_up, 0, borrower, b"", {"from": borrower})
+    collateral_before = collateral.balanceOf(borrower)
+    borrower.transfer(collateral, 200 * 10**18)
+    collateral_amount = collateral.balanceOf(borrower) - collateral_before
+    collateral.approve(core, collateral_amount, {"from": borrower})
+    core.supplyCollateral(params, collateral_amount, borrower, b"", {"from": borrower})
+    core.borrow(params, 90 * 10**18, 0, borrower, borrower, {"from": borrower})
+    before = core.market(mid)
+    assert before["totalBorrowAssets"] * 10**18 // before["totalSupplyAssets"] == old_curve[2]
+    expected_rate = irm.rateAtTarget(mid)
+    if old_curve[6]:
+        expected_rate = min(expected_rate, old_curve[6])
+    assert expected_rate > 0
+    assert irm.borrowRateView(params, before) == expected_rate
+
+    apply_irm_config_via_motion(easy_track, trusted_caller, borrower, new_config, market)
+    tx = history[-1]
+    elapsed = tx.timestamp - before["lastUpdate"]
+    assert elapsed > 0
+    first = expected_rate * elapsed
+    second = first * first // (2 * 10**18)
+    third = second * first // (3 * 10**18)
+    expected_interest = before["totalBorrowAssets"] * (first + second + third) // 10**18
+    assert expected_interest > 0
+    accruals = tx.events["AccrueInterest"]
+    assert len(accruals) == 1
+    accrual = accruals[0]
+    assert convert.to_address(accrual.address) == core.address
+    assert accrual["id"] == mid
+    assert accrual["prevBorrowRate"] == expected_rate
+    assert accrual["interest"] == expected_interest
+    assert accrual.pos < tx.events["IrmConfigApplied"][0].pos
+    after = core.market(mid)
+    assert after["totalBorrowAssets"] == before["totalBorrowAssets"] + expected_interest
+    assert after["totalSupplyAssets"] == before["totalSupplyAssets"] + expected_interest
+    assert after["totalBorrowShares"] == before["totalBorrowShares"]
+    assert after["lastUpdate"] == tx.timestamp
+    assert list(interface.AdaptiveCurveConfig(irm.marketCurveConfig(mid)).getCurveParams()) == new_curve
+    assert irm.borrowRateView(params, after) != expected_rate
+
+
+def _assert_division_by_zero(contract, calldata, caller):
+    # Brownie's Hardhat middleware drops panic return data; inspect the raw RPC response.
+    response = web3.provider.make_request(
+        "eth_call", [{"from": caller.address, "to": contract.address, "data": calldata}, "latest"]
+    )
+    assert "error" in response, response
+    data = response["error"]["data"]
+    if isinstance(data, dict):
+        data = data.get("data", data.get("result"))
+    assert data == "0x4e487b71" + encode(["uint256"], [0x12]).hex()
+
+
+def invalid_irm_config_and_owner_recovery(easy_track, trusted_caller, stranger, market=LIDO_LEND_WETH_WSTETH_MARKET):
+    core = interface.LidoLend(LIDO_LEND)
+    irm = interface.AdaptiveCurveIrm(LIDO_LEND_ADAPTIVE_CURVE_IRM)
+    mid = market_id(market)
+    params = market_params(market)
+    good_config = irm.marketCurveConfig(mid)
+    assert core.market(mid)["totalBorrowAssets"] == 0
+    invalid = InvalidAdaptiveCurveConfigStub.deploy({"from": stranger})
+    assert list(interface.AdaptiveCurveConfig(invalid).getCurveParams()) == [0] * 7
+
+    # Real factory motion accepts the ABI-compatible but invalid configuration.
+    apply_irm_config_via_motion(easy_track, trusted_caller, stranger, invalid.address, market)
+    chain.mine(1, chain.time() + 1)
+    _assert_division_by_zero(core, core.accrueInterest.encode_input(params), stranger)
+    _assert_division_by_zero(irm, irm.borrowRateView.encode_input(params, core.market(mid)), stranger)
+
+    # The same factory cannot repair it: it accrues using the broken old config first.
+    calldata = "0x" + encode(["bytes32", "address"], [market_id_bytes(market), good_config]).hex()
+    created = easy_track.createMotion(EASYTRACK_LIDO_LEND_APPLY_IRM_CONFIG_FACTORY, calldata, {"from": trusted_caller})
+    motion = easy_track.getMotions()[-1]
+    chain.mine(1, motion[4] + motion[3] + 1)
+    before = core.market(mid)
+    _assert_division_by_zero(
+        easy_track,
+        easy_track.enactMotion.encode_input(motion[0], created.events["MotionCreated"]["_evmScriptCallData"]),
+        stranger,
+    )
+    assert irm.marketCurveConfig(mid) == invalid.address
+    assert core.market(mid) == before
+    assert any(pending[0] == motion[0] for pending in easy_track.getMotions())
+
+    # The DAO Agent can recover directly without reading the old configuration.
+    with reverts("not authorized"):
+        irm.applyIrmConfig(params, good_config, {"from": stranger})
+    assert irm.owner() == AGENT
+    irm.applyIrmConfig(params, good_config, {"from": set_balance(AGENT, 1000)})
+    assert irm.marketCurveConfig(mid) == good_config
+    assert irm.borrowRateView(params, core.market(mid)) > 0
+    recovered = core.accrueInterest(params, {"from": stranger})
+    assert core.market(mid)["lastUpdate"] == recovered.timestamp
+    assert len(recovered.events["AccrueInterest"]) == 1
+    easy_track.enactMotion(motion[0], created.events["MotionCreated"]["_evmScriptCallData"], {"from": stranger})
+    assert irm.marketCurveConfig(mid) == good_config
+    assert not any(pending[0] == motion[0] for pending in easy_track.getMotions())
 
 
 def circuit_breaker_actions_via_motions(easy_track, trusted_caller, stranger, market=LIDO_LEND_WETH_WSTETH_MARKET):

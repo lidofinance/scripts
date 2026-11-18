@@ -33,7 +33,8 @@ from utils.test.lido_lend_helpers import (
     guardian_actions_via_motions,
     risk_steward_actions_via_motions,
     circuit_breaker_actions_via_motions,
-    apply_irm_config_via_motion,
+    apply_new_irm_config_with_accrual,
+    invalid_irm_config_and_owner_recovery,
 )
 
 
@@ -752,4 +753,9 @@ def test_vote(
     risk_steward_actions_via_motions(easy_track, trusted_caller, stranger, market)
 
     # 7. LidoLendApplyIrmConfig
-    apply_irm_config_via_motion(easy_track, trusted_caller, stranger, market["irm_config"], market)
+    chain.snapshot()
+    try:
+        apply_new_irm_config_with_accrual(easy_track, trusted_caller, stranger, market)
+    finally:
+        chain.revert()
+    invalid_irm_config_and_owner_recovery(easy_track, trusted_caller, stranger, market)
