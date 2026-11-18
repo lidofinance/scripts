@@ -170,7 +170,7 @@ EXPECTED_DG_PROPOSAL_ID = 16
 EXPECTED_VOTE_EVENTS_COUNT = 7
 EXPECTED_DG_EVENTS_FROM_AGENT = 9
 EXPECTED_DG_EVENTS_COUNT = 9
-IPFS_DESCRIPTION_HASH = "bafkreigsx7mduqogfe2mxoky6ktbfpzsovodzyxaj2efc3w5pt3javadnu"
+IPFS_DESCRIPTION_HASH = "bafkreihe67l7b6l6b3j7gqmdmakl6han4r4ztjbctjnmvhgt5zvprpppji"
 DG_PROPOSAL_METADATA = (
     "Enable CMv2 top-up allocation controls, consolidation migration and Curated Verifier for consolidated validators"
 )
