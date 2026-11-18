@@ -108,6 +108,7 @@ from utils.config import (
     TWO_PHASE_FRAME_CONFIG_UPDATE,
     LIDO_LEND,
     LIDO_LEND_OWNER,
+    LIDO_LEND_PRESEEDER,
     LIDO_LEND_IRM_ROUTER,
     LIDO_LEND_ADAPTIVE_CURVE_IRM,
     LIDO_LEND_RISK_STEWARD_DASHBOARD,
@@ -1043,6 +1044,19 @@ def protocol_permissions():
             },
         },
         {
+            "contract_name": "LidoLendPreseeder",
+            "address": LIDO_LEND_PRESEEDER,
+            "contract": "lido_lend_preseeder",
+            "type": "CustomApp",
+            "state": {"lidoLend": LIDO_LEND},
+            "roles": {
+                "DEFAULT_ADMIN_ROLE": [AGENT],
+                "EXECUTOR_ROLE": [EASYTRACK_EVMSCRIPT_EXECUTOR],
+                "ERC20_RECOVERER": [AGENT],
+            },
+            "role_preimages": {"ERC20_RECOVERER": "ERC20_RECOVERER"},
+        },
+        {
             "contract_name": "LidoLendIrmRouter",
             "address": LIDO_LEND_IRM_ROUTER,
             "contract": "lido_lend_irm_router",
@@ -1170,7 +1184,9 @@ def test_lido_lend_permissions(lido_lend_permissions):
         for role, holders in config["roles"].items():
             role_id = ZERO_BYTES32.hex() if role == "DEFAULT_ADMIN_ROLE" else web3.keccak(text=role).hex()
             assert config["contract"].getRoleAdmin(role_id) == ZERO_BYTES32.hex()
-            assert config["contract"].getRoleMemberCount(role_id) == len(holders)
+            # Preseeder uses AccessControl without enumerable role membership.
+            if "getRoleMemberCount" in config["contract"].signatures:
+                assert config["contract"].getRoleMemberCount(role_id) == len(holders)
 
 
 def test_protocol_permissions(protocol_permissions):

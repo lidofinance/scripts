@@ -439,6 +439,10 @@ class ContractsLazyLoader:
         return interface.LidoLendOwner(LIDO_LEND_OWNER)
 
     @property
+    def lido_lend_preseeder(self) -> interface.LidoLendPreseeder:
+        return interface.LidoLendPreseeder(LIDO_LEND_PRESEEDER)
+
+    @property
     def lido_lend_irm_router(self) -> interface.IrmRouter:
         return interface.IrmRouter(LIDO_LEND_IRM_ROUTER)
 

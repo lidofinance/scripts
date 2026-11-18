@@ -184,3 +184,192 @@ def apply_irm_config_via_motion(easy_track, trusted_caller, stranger, irm_config
     assert events[0]["marketId"] == market_id(market)
     assert events[0]["config"] == irm_config
     assert adaptive_curve_irm.marketCurveConfig(market_id(market)) == irm_config
+
+
+def circuit_breaker_actions_via_motions(easy_track, trusted_caller, stranger, market=LIDO_LEND_WETH_WSTETH_MARKET):
+    circuit_breaker = interface.CircuitBreaker(LIDO_LEND_CIRCUIT_BREAKER)
+    assert circuit_breaker.getPauser(market["controller"]) != stranger.address
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY,
+        encode_action(
+            CIRCUIT_BREAKER_REGISTER_PAUSER, ["bytes32", "address"], [market_id_bytes(market), stranger.address]
+        ),
+        stranger,
+    )
+    assert circuit_breaker.getPauser(market["controller"]) == stranger.address
+
+    set_pause_duration_via_motion(easy_track, trusted_caller, stranger)
+
+    current = circuit_breaker.heartbeatInterval()
+    interval = current + 1 if current < circuit_breaker.MAX_HEARTBEAT_INTERVAL() else current - 1
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_CIRCUIT_BREAKER_ACTIONS_FACTORY,
+        encode_action(CIRCUIT_BREAKER_SET_HEARTBEAT_INTERVAL, ["uint256"], [interval]),
+        stranger,
+    )
+    assert circuit_breaker.heartbeatInterval() == interval
+
+
+def guardian_actions_via_motions(
+    easy_track, trusted_caller, stranger, replacement, market=LIDO_LEND_WETH_WSTETH_MARKET
+):
+    signals = interface.GuardianSignals(market["guardian_signals"])
+    initial_quorum = signals.getQuorum()
+    initial_count = signals.getGuardianCount()
+    add_guardian_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+
+    # The launch quorum is one. Flag a fresh account so UnbanAccounts changes state.
+    assert initial_quorum == 1
+    assert not signals.isBanned(market_id(market), replacement)
+    signals.flag(market_id(market), stranger.address, [replacement], {"from": stranger})
+    assert signals.isBanned(market_id(market), replacement)
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
+        encode_action(GUARDIAN_UNBAN, ["(address,bytes32[])[]"], [[(replacement, [market_id_bytes(market)])]]),
+        stranger,
+    )
+    assert not signals.isBanned(market_id(market), replacement)
+
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
+        encode_action(GUARDIAN_SET_QUORUM, ["bytes32", "uint256"], [market_id_bytes(market), initial_quorum + 1]),
+        stranger,
+    )
+    assert signals.getQuorum() == initial_quorum + 1
+
+    current = signals.getSuspectWindow()
+    window = current + 1 if current < signals.MAX_SUSPECT_WINDOW() else current - 1
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
+        encode_action(GUARDIAN_SET_SUSPECT_WINDOW, ["bytes32", "uint256"], [market_id_bytes(market), window]),
+        stranger,
+    )
+    assert signals.getSuspectWindow() == window
+
+    assert not signals.isGuardian(replacement)
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
+        encode_action(
+            GUARDIAN_REPLACE,
+            ["bytes32", "address", "address"],
+            [market_id_bytes(market), stranger.address, replacement],
+        ),
+        stranger,
+    )
+    assert not signals.isGuardian(stranger.address)
+    assert signals.isGuardian(replacement)
+    assert signals.getGuardianCount() == initial_count + 1
+    assert signals.getQuorum() == initial_quorum + 1
+
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_GUARDIAN_ACTIONS_FACTORY,
+        encode_action(
+            GUARDIAN_REMOVE, ["bytes32", "address", "uint256"], [market_id_bytes(market), replacement, initial_quorum]
+        ),
+        stranger,
+    )
+    assert not signals.isGuardian(replacement)
+    assert signals.getGuardianCount() == initial_count
+    assert signals.getQuorum() == initial_quorum
+
+
+def market_manager_actions_via_motions(
+    easy_track, trusted_caller, stranger, steward, market=LIDO_LEND_WETH_WSTETH_MARKET
+):
+    controller = interface.LidoLendMarketController(market["controller"])
+    core = interface.LidoLend(LIDO_LEND)
+    enabled = not controller.hasInstantActivation(stranger.address)
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
+        encode_action(
+            MARKET_SET_INSTANT_ACTIVATION,
+            ["bytes32", "address", "bool"],
+            [market_id_bytes(market), stranger.address, enabled],
+        ),
+        stranger,
+    )
+    assert controller.hasInstantActivation(stranger.address) == enabled
+
+    activation_config = list(controller.collateralActivationConfig())
+    activation_config[2] += 1  # maxDelayInflow; keep all delay and dust constraints unchanged.
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
+        encode_action(
+            MARKET_SET_COLLATERAL_ACTIVATION_CONFIG,
+            ["bytes32", "(uint40,uint40,uint128,uint128,uint40,uint128,uint40,uint40,uint40)"],
+            [market_id_bytes(market), activation_config],
+        ),
+        stranger,
+    )
+    assert list(controller.collateralActivationConfig()) == activation_config
+
+    settlement_config = list(controller.settlementConfig())
+    settlement_config[1] += 1  # sliceFloorAssets
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
+        encode_action(
+            MARKET_SET_SETTLEMENT_CONFIG,
+            ["bytes32", "(uint16,uint96,uint96,uint16)"],
+            [market_id_bytes(market), settlement_config],
+        ),
+        stranger,
+    )
+    assert list(controller.settlementConfig()) == settlement_config
+
+    set_supply_cap_via_motion(easy_track, trusted_caller, stranger, market)
+
+    assert not controller.isFrozen()
+    dashboard = interface.RiskStewardDashboard(LIDO_LEND_RISK_STEWARD_DASHBOARD)
+    dashboard.freezeMarket(market_id(market), {"from": steward})
+    assert controller.isFrozen()
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
+        encode_action(MARKET_UNFREEZE, ["bytes32[]"], [[market_id_bytes(market)]]),
+        stranger,
+    )
+    assert not controller.isFrozen()
+
+    fee = 0 if core.market(market_id(market))["fee"] != 0 else 10**16
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_MARKET_MANAGER_ACTIONS_FACTORY,
+        encode_action(MARKET_SET_FEE, ["bytes32", "uint256"], [market_id_bytes(market), fee]),
+        stranger,
+    )
+    assert core.market(market_id(market))["fee"] == fee
+
+
+def risk_steward_actions_via_motions(easy_track, trusted_caller, stranger, market=LIDO_LEND_WETH_WSTETH_MARKET):
+    dashboard = interface.RiskStewardDashboard(LIDO_LEND_RISK_STEWARD_DASHBOARD)
+    add_risk_steward_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+    create_and_enact_motion(
+        easy_track,
+        trusted_caller,
+        EASYTRACK_LIDO_LEND_RISK_STEWARD_ACTIONS_FACTORY,
+        encode_action(RISK_STEWARD_REMOVE, ["bytes32", "address"], [market_id_bytes(market), stranger.address]),
+        stranger,
+    )
+    assert not dashboard.isMarketSteward(market_id(market), stranger.address)
