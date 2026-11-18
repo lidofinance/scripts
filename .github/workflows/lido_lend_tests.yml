@@ -92,10 +92,10 @@ jobs:
           ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
 
       - name: Run Lido Lend external regression tests
-        uses: lidofinance/lend-markets/.github/actions/regression-tests@refactor/solidity-deployment
+        uses: lidofinance/lend-markets/.github/actions/regression-tests@develop
         with:
           repository: lidofinance/lend-markets
-          ref: refactor/solidity-deployment
+          ref: develop
           path: lend-markets
           rpc_url: ${{ env.HARDHAT_NODE_URL }}
           run: mainnet

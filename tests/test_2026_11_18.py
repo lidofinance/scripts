@@ -29,10 +29,10 @@ from utils.balance import set_balance
 
 from utils.test.lido_lend_helpers import (
     activate_market_via_motion,
-    set_supply_cap_via_motion,
-    add_guardian_via_motion,
-    add_risk_steward_via_motion,
-    set_pause_duration_via_motion,
+    market_manager_actions_via_motions,
+    guardian_actions_via_motions,
+    risk_steward_actions_via_motions,
+    circuit_breaker_actions_via_motions,
     apply_irm_config_via_motion,
 )
 
@@ -739,16 +739,17 @@ def test_vote(
     activate_market_via_motion(easy_track, trusted_caller, stranger, market)
 
     # 3. LidoLendCircuitBreakerActions
-    set_pause_duration_via_motion(easy_track, trusted_caller, stranger)
+    circuit_breaker_actions_via_motions(easy_track, trusted_caller, stranger, market)
 
     # 4. LidoLendGuardianActions
-    add_guardian_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+    guardian_actions_via_motions(easy_track, trusted_caller, stranger, accounts[1].address, market)
 
     # 5. LidoLendMarketManagerActions
-    set_supply_cap_via_motion(easy_track, trusted_caller, stranger, market)
+    steward = set_balance(market["steward"], 1000)
+    market_manager_actions_via_motions(easy_track, trusted_caller, stranger, steward, market)
 
     # 6. LidoLendRiskStewardActions
-    add_risk_steward_via_motion(easy_track, trusted_caller, stranger, stranger.address, market)
+    risk_steward_actions_via_motions(easy_track, trusted_caller, stranger, market)
 
     # 7. LidoLendApplyIrmConfig
     apply_irm_config_via_motion(easy_track, trusted_caller, stranger, market["irm_config"], market)
