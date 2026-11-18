@@ -180,7 +180,7 @@ def apply_irm_config_via_motion(easy_track, trusted_caller, stranger, irm_config
 
     events = history[-1].events["IrmConfigApplied"]
     assert len(events) == 1
-    assert convert.to_address(events[0]["_emitted_by"]) == adaptive_curve_irm.address
+    assert convert.to_address(events[0].address) == adaptive_curve_irm.address
     assert events[0]["marketId"] == market_id(market)
     assert events[0]["config"] == irm_config
     assert adaptive_curve_irm.marketCurveConfig(market_id(market)) == irm_config
