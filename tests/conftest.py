@@ -286,9 +286,10 @@ def preregister_unparseable_contracts():
         "CSVerifierV2": [globals().get("CS_VERIFIER_V2_ADDRESS")],
         "Verifier": [
             globals().get("CS_VERIFIER_V3_ADDRESS"),
-            globals().get("CURATED_V2_VERIFIER"),
+            globals().get("CURATED_V2_VERIFIER_OLD"),
             globals().get("CSM0X02_VERIFIER_ADDRESS"),
         ],
+        "CuratedVerifier": [globals().get("CURATED_V2_VERIFIER")],
     }
     for contract_name, addresses in unparseable_contracts.items():
         with open(f"interfaces/{contract_name}.json") as fp:

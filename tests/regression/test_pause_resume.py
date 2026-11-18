@@ -4,7 +4,15 @@ import brownie
 import pytest
 from brownie import ZERO_ADDRESS, web3, chain, Contract
 
-from utils.config import contracts
+from utils.config import (
+    CS_MODULE_ID,
+    CSM0X02_ADDRESS,
+    CSM0X02_MODULE_ID,
+    CURATED_STAKING_MODULE_ID,
+    CURATED_V2_STAKING_MODULE_ID,
+    SIMPLE_DVT_MODULE_ID,
+    contracts,
+)
 from utils.evm_script import encode_error
 from utils.import_current_votes import is_there_any_vote_scripts, start_and_execute_votes
 from utils.staking_module import calc_module_reward_shares
@@ -313,132 +321,40 @@ def test_paused_staking_module_can_reward(burner: Contract, stranger):
     contracts.staking_router.setStakingModuleStatus(1, StakingModuleStatus.DepositsPaused, {"from": stranger})
 
     (report_tx, _) = oracle_report()
-    # print(report_tx.events["TransferShares"])
 
-    # zero index - mint to accounting contract, 1 index - module, 2 index - simple dvt, 3 index - csm, 4 index - curated v2
-    module_index = 1
-    simple_dvt_index = 2
-    csm_index = 3
-    curated_v2_index = 4
+    # Accounting mints the rewards (after an optional burner transfer), then transfers the fees: to each staking module
+    # with a validators balance in the module id order, then to the treasury
+    first_module_index = 1
+    if report_tx.events["TransferShares"][0]["to"] == burner.address:
+        first_module_index += 1
 
-    if report_tx.events["TransferShares"][module_index - 1]["to"] == burner.address:
-        module_index += 1
-        simple_dvt_index += 1
-        csm_index += 1
-        curated_v2_index += 1
+    rewarded_modules = [
+        (CURATED_STAKING_MODULE_ID, module_address),
+        (SIMPLE_DVT_MODULE_ID, contracts.simple_dvt.address),
+        (CS_MODULE_ID, contracts.csm.address),
+        (CURATED_V2_STAKING_MODULE_ID, contracts.cm.address),
+        (CSM0X02_MODULE_ID, CSM0X02_ADDRESS),
+    ]
+    agent_index = first_module_index + len(rewarded_modules)
 
-    agent_index = module_index + 4
-    assert report_tx.events["TransferShares"][module_index]["to"] == module_address
-    assert report_tx.events["TransferShares"][module_index]["from"] == contracts.accounting.address
-    assert report_tx.events["TransferShares"][simple_dvt_index]["to"] == contracts.simple_dvt.address
-    assert report_tx.events["TransferShares"][simple_dvt_index]["from"] == contracts.accounting.address
-    assert report_tx.events["TransferShares"][csm_index]["to"] == contracts.csm.address
-    assert report_tx.events["TransferShares"][csm_index]["from"] == contracts.accounting.address
-    assert report_tx.events["TransferShares"][curated_v2_index]["to"] == contracts.cm.address
-    assert report_tx.events["TransferShares"][curated_v2_index]["from"] == contracts.accounting.address
-    assert report_tx.events["TransferShares"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["TransferShares"][agent_index]["from"] == contracts.accounting.address
+    for event_name, amount_key in (("TransferShares", "sharesValue"), ("Transfer", "value")):
+        events = report_tx.events[event_name]
+        treasury_fee = 0
+        for i, (module_id, module_recipient) in enumerate(rewarded_modules):
+            event = events[first_module_index + i]
+            assert event["to"] == module_recipient
+            assert event["from"] == contracts.accounting.address
+            assert event[amount_key] > 0
 
-    # the staking modules ids starts from 1
-    module_stats = contracts.staking_router.getStakingModule(1)
-    # module_treasury_fee = module_share / share_pct * treasury_pct
-    module_treasury_fee = (
-        report_tx.events["TransferShares"][module_index]["sharesValue"]
-        * 100_00
-        // module_stats["stakingModuleFee"]
-        * module_stats["treasuryFee"]
-        // 100_00
-    )
-    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-    simple_dvt_treasury_fee = (
-        report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"]
-        * 100_00
-        // simple_dvt_stats["stakingModuleFee"]
-        * simple_dvt_stats["treasuryFee"]
-        // 100_00
-    )
-    csm_stats = contracts.staking_router.getStakingModule(3)
-    csm_treasury_fee = (
-        report_tx.events["TransferShares"][csm_index]["sharesValue"]
-        * 100_00
-        // csm_stats["stakingModuleFee"]
-        * csm_stats["treasuryFee"]
-        // 100_00
-    )
-    curated_v2_stats = contracts.staking_router.getStakingModule(4)
-    curated_v2_treasury_fee = (
-        report_tx.events["TransferShares"][curated_v2_index]["sharesValue"]
-        * 100_00
-        // curated_v2_stats["stakingModuleFee"]
-        * curated_v2_stats["treasuryFee"]
-        // 100_00
-    )
+            module_stats = contracts.staking_router.getStakingModule(module_id)
+            # module_treasury_fee = module_share / share_pct * treasury_pct
+            treasury_fee += (
+                event[amount_key] * 100_00 // module_stats["stakingModuleFee"] * module_stats["treasuryFee"] // 100_00
+            )
 
-    assert almostEqWithDiff(
-        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee + curated_v2_treasury_fee,
-        report_tx.events["TransferShares"][agent_index]["sharesValue"],
-        100,
-    )
-    assert report_tx.events["TransferShares"][module_index]["sharesValue"] > 0
-    assert report_tx.events["TransferShares"][simple_dvt_index]["sharesValue"] > 0
-    assert report_tx.events["TransferShares"][csm_index]["sharesValue"] > 0
-    assert report_tx.events["TransferShares"][curated_v2_index]["sharesValue"] > 0
-
-    # do the same checks for Transfer event -------------------------------------------------------
-
-    assert report_tx.events["Transfer"][module_index]["to"] == module_address
-    assert report_tx.events["Transfer"][module_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][simple_dvt_index]["to"] == contracts.simple_dvt.address
-    assert report_tx.events["Transfer"][simple_dvt_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][csm_index]["to"] == contracts.csm.address
-    assert report_tx.events["Transfer"][csm_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][curated_v2_index]["to"] == contracts.cm.address
-    assert report_tx.events["Transfer"][curated_v2_index]["from"] == contracts.accounting.address
-    assert report_tx.events["Transfer"][agent_index]["to"] == contracts.agent
-    assert report_tx.events["Transfer"][agent_index]["from"] == contracts.accounting.address
-
-    # module_treasury_fee = module_share / share_pct * treasury_pct
-    module_treasury_fee = (
-        report_tx.events["Transfer"][module_index]["value"]
-        * 100_00
-        // module_stats["stakingModuleFee"]
-        * module_stats["treasuryFee"]
-        // 100_00
-    )
-    simple_dvt_stats = contracts.staking_router.getStakingModule(2)
-    simple_dvt_treasury_fee = (
-        report_tx.events["Transfer"][simple_dvt_index]["value"]
-        * 100_00
-        // simple_dvt_stats["stakingModuleFee"]
-        * simple_dvt_stats["treasuryFee"]
-        // 100_00
-    )
-    csm_stats = contracts.staking_router.getStakingModule(3)
-    csm_treasury_fee = (
-        report_tx.events["Transfer"][csm_index]["value"]
-        * 100_00
-        // csm_stats["stakingModuleFee"]
-        * csm_stats["treasuryFee"]
-        // 100_00
-    )
-    curated_v2_stats = contracts.staking_router.getStakingModule(4)
-    curated_v2_treasury_fee = (
-        report_tx.events["Transfer"][curated_v2_index]["value"]
-        * 100_00
-        // curated_v2_stats["stakingModuleFee"]
-        * curated_v2_stats["treasuryFee"]
-        // 100_00
-    )
-
-    assert almostEqWithDiff(
-        module_treasury_fee + simple_dvt_treasury_fee + csm_treasury_fee + curated_v2_treasury_fee,
-        report_tx.events["Transfer"][agent_index]["value"],
-        100,
-    )
-    assert report_tx.events["Transfer"][module_index]["value"] > 0
-    assert report_tx.events["Transfer"][simple_dvt_index]["value"] > 0
-    assert report_tx.events["Transfer"][csm_index]["value"] > 0
-    assert report_tx.events["Transfer"][curated_v2_index]["value"] > 0
+        assert events[agent_index]["to"] == contracts.agent
+        assert events[agent_index]["from"] == contracts.accounting.address
+        assert almostEqWithDiff(treasury_fee, events[agent_index][amount_key], 100)
 
 
 def test_stopped_staking_module_cant_stake(stranger):

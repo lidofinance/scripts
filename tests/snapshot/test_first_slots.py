@@ -48,7 +48,9 @@ def test_first_slots(sandwich_upgrade: SandwichFn):
 @pytest.fixture(scope="module")
 def skip_slots() -> Sequence[tuple[str, int]]:
     """Slots that are not checked for equality"""
-    return []
+    # The vote adds six Lido Lend Easy Track factories, changing evmScriptFactories.length.
+    # The factories and their permissions are checked in test_2026_11_18.py.
+    return [(contracts.easy_track.address, 5)]
 
 
 @pytest.fixture(scope="module")
