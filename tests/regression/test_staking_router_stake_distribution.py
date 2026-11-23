@@ -20,6 +20,7 @@ from utils.test.staking_router_helpers import StakingModuleStatus
 
 TOTAL_BASIS_POINTS = 10000
 WC_TYPE_02 = 2
+CSM0X02_DEPOSITABLE_KEYS = 5
 
 
 class Module:
@@ -174,6 +175,22 @@ def calc_allocation(modules: Dict[int, Module], deposit_amount: int, is_top_up: 
     return sum(allocated), allocated, new_allocations
 
 
+def ensure_top_up_queue_capacity(module, capacity: int):
+    """
+    CSM 0x02 caps its depositable keys by the free places in its top-up queue, where every deposited key waits
+    for a top-up. On a fork the queue may be full: raise its limit with a temporary role and revoke the role.
+    """
+    _, limit, length, _ = module.getTopUpQueue()
+    if limit >= length + capacity:
+        return
+
+    role = module.MANAGE_TOP_UP_QUEUE_ROLE()
+    module.grantRole(role, contracts.agent, {"from": contracts.agent})
+    module.setTopUpQueueLimit(length + capacity, {"from": contracts.agent})
+    module.revokeRole(role, contracts.agent, {"from": contracts.agent})
+    assert not module.hasRole(role, contracts.agent)
+
+
 def assure_depositable_keys(stranger):
     modules = get_modules_info(contracts.staking_router)
     if not modules[CURATED_STAKING_MODULE_ID].depositable_keys:
@@ -186,11 +203,13 @@ def assure_depositable_keys(stranger):
         ensure_curated_v2_depositable_keys(5, stranger)
     if not modules[CSM0X02_MODULE_ID].depositable_keys:
         csm0x02 = interface.CSModule(CSM0X02_ADDRESS)
+        ensure_top_up_queue_capacity(csm0x02, CSM0X02_DEPOSITABLE_KEYS)
         csm_add_node_operator(
             csm0x02,
             interface.PermissionlessGate(CSM0X02_PERMISSIONLESS_GATE_ADDRESS),
             interface.ModuleAccounting(csm0x02.ACCOUNTING()),
             stranger,
+            keys_count=CSM0X02_DEPOSITABLE_KEYS,
         )
 
 
