@@ -18,7 +18,7 @@ Vote 2026_11_18
 6. Add LidoLendRiskStewardActions EVM script factory 0x7276CE5f92911216d41C7b0A9C3575DE873763E9 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0xc3c241bc213ef3ba16234a7c689999209ce515d7182d4cbbc3c241bc213ef3ba16234a7c689999209ce515d79fdcc880)
 7. Add LidoLendApplyIrmConfig EVM script factory 0x5795E73C0c2007ceD7D65cE4FC21c0C09F14C668 to Easy Track 0xF0211b7660680B49De1A7E9f25C65660F0a13Fea (permissions: 0x026a770badc7126c7252ef8d407e5b9c56147491151c1adef6f1565f4fd3d29e6bdab86764a50bcde381422f2078614b)
 
-TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
+Vote #207 passed & executed on Nov-23-2026 01:42:47 PM UTC, block 26478204.
 """
 
 from typing import Dict, List, Tuple

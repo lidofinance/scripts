@@ -41,7 +41,7 @@ from utils.test.lido_lend_helpers import (
 # ============================================================================
 # ============================== Import vote =================================
 # ============================================================================
-from scripts.upgrade_2026_11_18 import start_vote, get_vote_items, get_dg_items
+from archive.scripts.upgrade_2026_11_18 import start_vote, get_vote_items, get_dg_items
 
 
 # ============================================================================
