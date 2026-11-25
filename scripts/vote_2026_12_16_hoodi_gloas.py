@@ -24,37 +24,34 @@ Hoodi vote for the on-chain part of LIP-43 (Glamsterdam/Gloas compatibility).
 1.20. Revoke VERIFIER_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
 1.21. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on CSM 0x02 from the old CSM 0x02 Verifier
 1.22. Unregister the old CSM 0x02 Verifier from CircuitBreaker
-1.23. Upgrade Curated Module v2 implementation
-1.24. Call finalizeUpgradeV2() on Curated Module v2
-1.25. Grant ENABLE_TOP_UP_ALLOCATION_ROLE on Curated Module v2 to the Curated Module Committee
-1.26. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
-1.27. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
-1.28. Register the new Curated Module v2 Verifier on CircuitBreaker
-1.29. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
-1.30. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
-1.31. Unregister the old Curated Module v2 Verifier from CircuitBreaker
-1.32. Grant EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle to Aragon Agent
-1.33. Set the max validators per report on ValidatorsExitBusOracle to 500
-1.34. Revoke EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle from Aragon Agent
-1.35. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
-1.36. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
-1.37. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
-1.38. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
-1.39. Set the AccountingOracle consensus version to 7
-1.40. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
-1.41. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
-1.42. Set the ValidatorsExitBusOracle consensus version to 6
-1.43. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
-1.44. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
-1.45. Set the CSM FeeOracle consensus version to 5
-1.46. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
-1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
-1.48. Set the CSM 0x02 FeeOracle consensus version to 5
-1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
-1.50. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
-1.51. Set the Curated Module v2 FeeOracle consensus version to 5
-1.52. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
-1.53. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
+1.23. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
+1.24. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
+1.25. Register the new Curated Module v2 Verifier on CircuitBreaker
+1.26. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
+1.27. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
+1.28. Unregister the old Curated Module v2 Verifier from CircuitBreaker
+1.29. Grant EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle to Aragon Agent
+1.30. Set the max validators per report on ValidatorsExitBusOracle to 500
+1.31. Revoke EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle from Aragon Agent
+1.32. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
+1.33. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
+1.34. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
+1.35. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
+1.36. Set the AccountingOracle consensus version to 7
+1.37. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
+1.38. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
+1.39. Set the ValidatorsExitBusOracle consensus version to 6
+1.40. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
+1.41. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
+1.42. Set the CSM FeeOracle consensus version to 5
+1.43. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
+1.44. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
+1.45. Set the CSM 0x02 FeeOracle consensus version to 5
+1.46. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
+1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
+1.48. Set the Curated Module v2 FeeOracle consensus version to 5
+1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
+1.50. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
 
 TODO (after vote) Vote #{vote number} passed & executed on {date+time}, block {blockNumber}.
 """
@@ -87,28 +84,17 @@ from utils.voting import bake_vote_items, confirm_vote_script, create_vote
 
 
 # ============================== Constants ===================================
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L753
-NEW_LIDO_LOCATOR_IMPLEMENTATION = "0x101430e537EFfA1385CC74838EbD43a91D58a722"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L906
-NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION = "0x972A2a03011D629cded15b5b7e70e60b3E17a142"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1012
-NEW_TOP_UP_GATEWAY_IMPLEMENTATION = "0x18Ed6Ba7EBaecEd415b71dbB3795362070b227C5"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L368
-NEW_CONSOLIDATION_BUS_IMPLEMENTATION = "0x95a435Bbae97685d4a9B77d77E23e2a827a717a5"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1403
-NEW_WITHDRAWAL_VAULT_IMPLEMENTATION = "0xdfC1E89ceb393C15e2d864F453c7991230367708"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L1312
-NEW_VALIDATOR_EXIT_DELAY_VERIFIER = "0x34eFB78e7e4241269D6fe96042Eaa0c5715C7Ba4"
-# https://github.com/lidofinance/core/blob/f4c5782c5b0930c59c6e2d99c92fdb24c1f9eefa/deployed-hoodi.json#L374
-NEW_CONSOLIDATION_GATEWAY = "0x0718B7DE68ee5A82ebb17a86cF99371881154E51"
-# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/csm/upgrade-v3-hoodi.json#L206
-NEW_CSM_VERIFIER = "0xb70fA371989d7C1FCb88d6Be10A83F286E8e3508"
-# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/csm0x02/deploy-hoodi.json#L114
-NEW_CSM0X02_VERIFIER = "0x3B30b0F9b4dEc685F79192fAa407898B20E5688c"
-# https://github.com/lidofinance/staking-modules/blob/844b05f64370a06e6daceccb156238c8aad5a06b/artifacts/hoodi/curated/deploy-hoodi.json#L636
-NEW_CM_V2_VERIFIER = "0xda4e4a7F600bF6974e4837fBB0Caced8E9C8056D"
-# https://github.com/lidofinance/staking-modules/blob/ce72d603f9460438d3c4544b7cc392758be16fdc/artifacts/hoodi/curated/deploy-hoodi.json#L611
-NEW_CURATED_MODULE_IMPLEMENTATION = "0x0d7cBAf91cc6cbfB72ea70ec09c04855A06ac7Ee"
+# TODO: addresses after the Gloas redeploy
+NEW_LIDO_LOCATOR_IMPLEMENTATION = None
+NEW_PREDEPOSIT_GUARANTEE_IMPLEMENTATION = None
+NEW_TOP_UP_GATEWAY_IMPLEMENTATION = None
+NEW_CONSOLIDATION_BUS_IMPLEMENTATION = None
+NEW_WITHDRAWAL_VAULT_IMPLEMENTATION = None
+NEW_VALIDATOR_EXIT_DELAY_VERIFIER = None
+NEW_CONSOLIDATION_GATEWAY = None
+NEW_CSM_VERIFIER = None
+NEW_CSM0X02_VERIFIER = None
+NEW_CM_V2_VERIFIER = None
 
 # https://github.com/lidofinance/core/blob/ab9a169759f28ffad0f618c7714e3bd24fa89782/deployed-hoodi.json#L345
 CIRCUIT_BREAKER = "0x44a5789dFeDa59cD176Ab5709ec2F4829dE4d555"
@@ -145,8 +131,8 @@ OLD_CSM0X02_VERIFIER = "0xFdE0FD9aDa4E898D3b34Dd4EA3433b75f0B6dd30"
 CM_V2 = "0x87EB69Ae51317405FD285efD2326a4a11f6173b9"
 # https://github.com/lidofinance/staking-modules/blob/1289e46b41e6b591e0c34fad59cefa38a7c0da54/artifacts/hoodi/curated/deploy-hoodi.json#L25
 CM_V2_FEE_ORACLE = "0x5D2F27000C80f6f7A03015Fd49dB7FEba3fBfa83"
-# https://github.com/lidofinance/staking-modules/blob/1289e46b41e6b591e0c34fad59cefa38a7c0da54/artifacts/hoodi/curated/deploy-hoodi.json#L35
-OLD_CM_V2_VERIFIER = "0x209190Ebc2Be80367a15d05e626784Eb94d6A880"
+# https://github.com/lidofinance/staking-modules/blob/12bbf9a75ee1f6e0dcc12e1ad73c02594c433aaa/artifacts/hoodi/curated/deploy-hoodi.json#L635
+OLD_CM_V2_VERIFIER = "0xd82f10880590dc6C67D1e84098357DBbc88058EA"
 # Curated Module committee, pauser of the old CM v2 Verifier,
 # https://github.com/lidofinance/core/blob/ab9a169759f28ffad0f618c7714e3bd24fa89782/scripts/upgrade/upgrade-params-hoodi.toml#L146
 CM_COMMITTEE = "0x84DffcfB232594975C608DE92544Ff239a24c9E9"
@@ -195,7 +181,7 @@ SECOND_OPINION_ORACLE = ZERO_ADDRESS
 DG_PROPOSAL_METADATA = "Upgrade the protocol on Hoodi for the Gloas hard fork (LIP-43): fork-aware verifiers, oracle consensus versions and sanity limits"
 DG_SUBMISSION_DESCRIPTION = "1. Submit the Gloas upgrade to Dual Governance"
 IPFS_DESCRIPTION = """
-1. **Submit the Gloas upgrade (LIP-43) to Dual Governance on Hoodi**: upgrade the LidoLocator, PredepositGuarantee, TopUpGateway, ConsolidationBus and WithdrawalVault implementations, switch the protocol to the fork-aware ValidatorExitDelayVerifier and ConsolidationGateway, upgrade the Curated Module v2 implementation, replace the CSM, CSM 0x02 and Curated Module v2 Verifiers, set the StakingRouter per-block top-up limit, bump the consensus versions of the AccountingOracle, ValidatorsExitBusOracle and the three FeeOracles, set the max validators per report on the ValidatorsExitBusOracle and update the OracleReportSanityChecker limits. Items 1.1-1.53.
+1. **Submit the Gloas upgrade (LIP-43) to Dual Governance on Hoodi**: upgrade the LidoLocator, PredepositGuarantee, TopUpGateway, ConsolidationBus and WithdrawalVault implementations, switch the protocol to the fork-aware ValidatorExitDelayVerifier and ConsolidationGateway, replace the CSM, CSM 0x02 and Curated Module v2 Verifiers, set the StakingRouter per-block top-up limit, bump the consensus versions of the AccountingOracle, ValidatorsExitBusOracle and the three FeeOracles, set the max validators per report on the ValidatorsExitBusOracle and update the OracleReportSanityChecker limits. Items 1.1-1.50.
 """
 
 
@@ -211,8 +197,6 @@ def get_dg_items() -> List[Tuple[str, str]]:
     csm = interface.CSModule(CSM_ADDRESS)
     csm0x02 = interface.CSModule(CSM0X02)
     cm_v2 = interface.CuratedModule(CM_V2)
-    cm_v2_proxy = interface.OssifiableProxy(CM_V2)
-    cm_v2_gloas = interface.CuratedModuleGloas(CM_V2)
     accounting_oracle = interface.AccountingOracle(ACCOUNTING_ORACLE)
     validators_exit_bus_oracle = interface.ValidatorsExitBusOracle(VALIDATORS_EXIT_BUS_ORACLE)
     csm_fee_oracle = interface.FeeOracle(CS_FEE_ORACLE_ADDRESS)
@@ -343,172 +327,156 @@ def get_dg_items() -> List[Tuple[str, str]]:
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CSM0X02_VERIFIER, ZERO_ADDRESS),
                 ),
-                # 1.23. Upgrade Curated Module v2 implementation
-                (
-                    cm_v2_proxy.address,
-                    cm_v2_proxy.proxy__upgradeTo.encode_input(NEW_CURATED_MODULE_IMPLEMENTATION),
-                ),
-                # 1.24. Call finalizeUpgradeV2() on Curated Module v2
-                (
-                    cm_v2_gloas.address,
-                    cm_v2_gloas.finalizeUpgradeV2.encode_input(),
-                ),
-                # 1.25. Grant ENABLE_TOP_UP_ALLOCATION_ROLE on Curated Module v2 to the Curated Module Committee
-                encode_oz_grant_role(
-                    contract=cm_v2,
-                    role_name="ENABLE_TOP_UP_ALLOCATION_ROLE",
-                    grant_to=CM_COMMITTEE,
-                ),
-                # 1.26. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
+                # 1.23. Grant VERIFIER_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
                 encode_oz_grant_role(
                     contract=cm_v2,
                     role_name="VERIFIER_ROLE",
                     grant_to=NEW_CM_V2_VERIFIER,
                 ),
-                # 1.27. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
+                # 1.24. Grant REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 to the new Curated Module v2 Verifier
                 encode_oz_grant_role(
                     contract=cm_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     grant_to=NEW_CM_V2_VERIFIER,
                 ),
-                # 1.28. Register the new Curated Module v2 Verifier on CircuitBreaker
+                # 1.25. Register the new Curated Module v2 Verifier on CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(NEW_CM_V2_VERIFIER, CM_COMMITTEE),
                 ),
-                # 1.29. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
+                # 1.26. Revoke VERIFIER_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
                 encode_oz_revoke_role(
                     contract=cm_v2,
                     role_name="VERIFIER_ROLE",
                     revoke_from=OLD_CM_V2_VERIFIER,
                 ),
-                # 1.30. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
+                # 1.27. Revoke REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE on Curated Module v2 from the old Curated Module v2 Verifier
                 encode_oz_revoke_role(
                     contract=cm_v2,
                     role_name="REPORT_REGULAR_WITHDRAWN_VALIDATORS_ROLE",
                     revoke_from=OLD_CM_V2_VERIFIER,
                 ),
-                # 1.31. Unregister the old Curated Module v2 Verifier from CircuitBreaker
+                # 1.28. Unregister the old Curated Module v2 Verifier from CircuitBreaker
                 (
                     circuit_breaker.address,
                     circuit_breaker.registerPauser.encode_input(OLD_CM_V2_VERIFIER, ZERO_ADDRESS),
                 ),
-                # 1.32. Grant EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle to Aragon Agent
+                # 1.29. Grant EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=validators_exit_bus_oracle,
                     role_name="EXIT_REQUEST_LIMIT_MANAGER_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.33. Set the max validators per report on ValidatorsExitBusOracle to 500
+                # 1.30. Set the max validators per report on ValidatorsExitBusOracle to 500
                 (
                     validators_exit_bus_oracle.address,
                     validators_exit_bus_oracle.setMaxValidatorsPerReport.encode_input(VEBO_MAX_VALIDATORS_PER_REPORT),
                 ),
-                # 1.34. Revoke EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle from Aragon Agent
+                # 1.31. Revoke EXIT_REQUEST_LIMIT_MANAGER_ROLE on ValidatorsExitBusOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=validators_exit_bus_oracle,
                     role_name="EXIT_REQUEST_LIMIT_MANAGER_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.35. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
+                # 1.32. Grant ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker to Aragon Agent
                 encode_oz_grant_role(
                     contract=sanity_checker,
                     role_name="ALL_LIMITS_MANAGER_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.36. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
+                # 1.33. Update OracleReportSanityChecker limits: exited 411975, consolidation 205875, max exit requested 11520
                 (
                     sanity_checker.address,
                     sanity_checker.setOracleReportLimits.encode_input(ORACLE_REPORT_LIMITS, SECOND_OPINION_ORACLE),
                 ),
-                # 1.37. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
+                # 1.34. Revoke ALL_LIMITS_MANAGER_ROLE on OracleReportSanityChecker from Aragon Agent
                 encode_oz_revoke_role(
                     contract=sanity_checker,
                     role_name="ALL_LIMITS_MANAGER_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.38. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
+                # 1.35. Grant MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.39. Set the AccountingOracle consensus version to 7
+                # 1.36. Set the AccountingOracle consensus version to 7
                 (
                     accounting_oracle.address,
                     accounting_oracle.setConsensusVersion.encode_input(ACCOUNTING_ORACLE_CONSENSUS_VERSION),
                 ),
-                # 1.40. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
+                # 1.37. Revoke MANAGE_CONSENSUS_VERSION_ROLE on AccountingOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=accounting_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.41. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
+                # 1.38. Grant MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=validators_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.42. Set the ValidatorsExitBusOracle consensus version to 6
+                # 1.39. Set the ValidatorsExitBusOracle consensus version to 6
                 (
                     validators_exit_bus_oracle.address,
                     validators_exit_bus_oracle.setConsensusVersion.encode_input(
                         VALIDATORS_EXIT_BUS_ORACLE_CONSENSUS_VERSION
                     ),
                 ),
-                # 1.43. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
+                # 1.40. Revoke MANAGE_CONSENSUS_VERSION_ROLE on ValidatorsExitBusOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=validators_exit_bus_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.44. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
+                # 1.41. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=csm_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.45. Set the CSM FeeOracle consensus version to 5
+                # 1.42. Set the CSM FeeOracle consensus version to 5
                 (
                     csm_fee_oracle.address,
                     csm_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
                 ),
-                # 1.46. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
+                # 1.43. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=csm_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
+                # 1.44. Grant MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=csm0x02_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.48. Set the CSM 0x02 FeeOracle consensus version to 5
+                # 1.45. Set the CSM 0x02 FeeOracle consensus version to 5
                 (
                     csm0x02_fee_oracle.address,
                     csm0x02_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
                 ),
-                # 1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
+                # 1.46. Revoke MANAGE_CONSENSUS_VERSION_ROLE on CSM 0x02 FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=csm0x02_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     revoke_from=AGENT,
                 ),
-                # 1.50. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
+                # 1.47. Grant MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle to Aragon Agent
                 encode_oz_grant_role(
                     contract=cm_v2_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
                     grant_to=AGENT,
                 ),
-                # 1.51. Set the Curated Module v2 FeeOracle consensus version to 5
+                # 1.48. Set the Curated Module v2 FeeOracle consensus version to 5
                 (
                     cm_v2_fee_oracle.address,
                     cm_v2_fee_oracle.setConsensusVersion.encode_input(FEE_ORACLE_CONSENSUS_VERSION),
                 ),
-                # 1.52. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
+                # 1.49. Revoke MANAGE_CONSENSUS_VERSION_ROLE on Curated Module v2 FeeOracle from Aragon Agent
                 encode_oz_revoke_role(
                     contract=cm_v2_fee_oracle,
                     role_name="MANAGE_CONSENSUS_VERSION_ROLE",
@@ -516,7 +484,7 @@ def get_dg_items() -> List[Tuple[str, str]]:
                 ),
             ]
         ),
-        # 1.53. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
+        # 1.50. Set time window constraint (14:00 - 23:00 UTC) for Dual Governance Proposal execution
         (
             TIME_CONSTRAINTS,
             interface.TimeConstraints(TIME_CONSTRAINTS).checkTimeWithinDayTimeAndEmit.encode_input(
